@@ -31,7 +31,15 @@ _OMP_EXTERN int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
   switch (evid) {
 
 #define ompt_event(event_name, callback_type, event_id, is_impl) \
-	case event_name:  if (is_impl) { *cb = (ompt_callback_t) ompt_callbacks . ompt_callback(event_name); return get_success; } else { return get_failure; }
+  case event_name:  \
+    if (is_impl) { \
+      ompt_callback_t mycb = (ompt_callback_t) ompt_callbacks . ompt_callback(event_name); \
+      if (mycb) { \
+        *cb = mycb; \
+         return get_success; \
+      } \
+    } \
+    return get_failure; 
 
 #include "ompt-event.h"
 
