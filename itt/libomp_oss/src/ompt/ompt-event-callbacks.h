@@ -3,9 +3,11 @@
 
 #include "ompt-types.h"
 
+#define ompt_callback(e) e ## _callback
+
 typedef struct ompt_callbacks_s {
 
-#define ompt_event(event, callback, eventid) callback event ## _callback; 
+#define ompt_event(event, callback, eventid) callback ompt_callback(event); 
 
 #include "ompt-event.h"
 

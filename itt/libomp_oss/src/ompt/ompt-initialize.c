@@ -15,7 +15,7 @@ _OMP_EXTERN int ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
   switch (evid) {
 
 #define ompt_event(event_name, callback_type, event_id) \
-	case event_name: ompt_callbacks.event_name ## _callback = (callback_type) cb; return set_success;
+	case event_name: ompt_callbacks . ompt_callback(event_name) = (callback_type) cb; return set_success;
 
 #include "ompt-event.h"
 
@@ -32,7 +32,7 @@ _OMP_EXTERN int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
   switch (evid) {
 
 #define ompt_event(event_name, callback_type, event_id) \
-	case event_name:  *cb = (ompt_callback_t) ompt_callbacks.event_name ## _callback; return get_success;
+	case event_name:  *cb = (ompt_callback_t) ompt_callbacks . ompt_callback(event_name); return get_success;
 
 #include "ompt-event.h"
 
