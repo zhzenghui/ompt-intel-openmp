@@ -7,6 +7,8 @@
 #define get_success 0
 #define get_failure -1
 
+#define no_tool_present 0
+
 
 int
 ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
@@ -44,6 +46,8 @@ ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
 }
 
 __attribute__ (( weak ))
+int 
 ompt_initialize()
 {
+  return no_tool_present; /* no tool present */
 }
