@@ -7,7 +7,7 @@
 
 typedef struct ompt_callbacks_s {
 
-#define ompt_event(event, callback, eventid) callback ompt_callback(event); 
+#define ompt_event(event, callback, eventid, is_impl) callback ompt_callback(event); 
 
 #include "ompt-event.h"
 
