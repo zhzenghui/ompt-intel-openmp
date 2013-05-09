@@ -1,3 +1,6 @@
+#ifndef __OMPT_TYPES_H__
+#define __OMPT_TYPES_H__
+
 #include <stdint.h>
 
 /* -------------- OMPT data types -------------- */
@@ -59,3 +62,5 @@ typedef void (*ompt_control_callback_t) (
 
 typedef void (*ompt_callback_t) (
   );
+
+#endif

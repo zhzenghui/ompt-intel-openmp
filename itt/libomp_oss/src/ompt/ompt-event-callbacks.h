@@ -1,3 +1,6 @@
+#ifndef __OMPT_EVENT_CALLBACKS_H__
+#define __OMPT_EVENT_CALLBACKS_H__
+
 #include "ompt-types.h"
 
 typedef struct ompt_callbacks_s {
@@ -12,3 +15,4 @@ typedef struct ompt_callbacks_s {
 
 extern ompt_callbacks_t ompt_callbacks;
 
+#endif
