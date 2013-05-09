@@ -3,7 +3,7 @@
 
 typedef enum {
 
-#define ompt_event(event, callback, eventid) event = eventid,
+#define ompt_event(event, callback, eventid, is_impl) event = eventid,
 
 #include "ompt-event.h"
 
