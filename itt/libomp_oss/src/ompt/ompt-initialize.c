@@ -46,5 +46,5 @@ _OMP_EXTERN int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
 
 _OMP_EXTERN __attribute__ (( weak )) int ompt_initialize()
 {
-  return no_tool_present; /* no tool present */
+  return no_tool_present;
 }
