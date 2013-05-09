@@ -1,3 +1,5 @@
+#ifndef __OMPT_EVENT_ENUM_H__
+#define __OMPT_EVENT_ENUM_H__
 
 typedef enum {
 
@@ -9,3 +11,4 @@ typedef enum {
 
 } ompt_event_t;
 
+#endif
