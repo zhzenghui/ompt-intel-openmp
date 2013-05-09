@@ -1,6 +1,8 @@
 #ifndef __OMPT_TYPES_H__
 #define __OMPT_TYPES_H__
 
+#define _OMP_EXTERN
+
 #include <stdint.h>
 
 /* -------------- OMPT data types -------------- */

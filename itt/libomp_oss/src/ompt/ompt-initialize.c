@@ -10,8 +10,7 @@
 #define no_tool_present 0
 
 
-int
-ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
+_OMP_EXTERN int ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
 {
   switch (evid) {
 
@@ -28,8 +27,7 @@ ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
 }
 
 
-int
-ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
+_OMP_EXTERN int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
 {
   switch (evid) {
 
@@ -45,9 +43,8 @@ ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
   }
 }
 
-__attribute__ (( weak ))
-int 
-ompt_initialize()
+
+_OMP_EXTERN __attribute__ (( weak )) int ompt_initialize()
 {
   return no_tool_present; /* no tool present */
 }
