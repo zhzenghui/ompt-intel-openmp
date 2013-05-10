@@ -7,6 +7,6 @@ typedef enum {
   ompt_status_track_callbacks,
 } ompt_status_t;
 
-#include "ompt-callbacks.h"
+#include "ompt-event-callbacks.h"
 
 extern ompt_status_t ompt_status;
