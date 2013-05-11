@@ -3,6 +3,15 @@
 
 #include <stdint.h>
 
+/* -------------- OMPT state type -------------- */
+
+typedef enum {
+#define ompt_state(state, code) state = code,
+#include "ompt-state.h"
+#undef ompt_state
+} ompt_state_t;
+
+
 /* -------------- OMPT data types -------------- */
 
 typedef uint64_t ompt_parallel_id_t;
