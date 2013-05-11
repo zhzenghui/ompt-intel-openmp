@@ -3,6 +3,8 @@
 
 #include "ompt.h"
 
+#define OMPT_VERSION 1
+
 #define _OMP_EXTERN
 
 typedef enum {

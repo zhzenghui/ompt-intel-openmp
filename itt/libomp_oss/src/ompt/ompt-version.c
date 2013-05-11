@@ -2,5 +2,5 @@
 
 _OMP_EXTERN int ompt_get_ompt_version()
 {
-  return 1;
+  return OMPT_VERSION;
 }
