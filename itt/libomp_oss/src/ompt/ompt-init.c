@@ -16,11 +16,11 @@ _OMP_EXTERN void ompt_init()
 
    if (!ompt_env_var || ompt_env_var_is_null) {
       int ompt_init_val = ompt_initialize();
-      if (ompt_init_val) ompt_status = ompt_status_track_callbacks;
+      if (ompt_init_val) ompt_status = ompt_status_track_callback;
       // else remain in ready
    } else if (ompt_env_var_is_true) {
       int ompt_init_val = ompt_initialize();
-      ompt_status = (ompt_init_val ?  ompt_status_track_callbacks : ompt_status_track);
+      ompt_status = (ompt_init_val ? ompt_status_track_callback : ompt_status_track);
    } else if (ompt_env_var_is_false) {
       // no-op: remain in ready
    } else if (ompt_env_var_is_disabled) {
