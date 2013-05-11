@@ -1,4 +1,3 @@
-#include "ompt-event-enum.h"
 #include "ompt-internal.h"
 
 #define set_success 0

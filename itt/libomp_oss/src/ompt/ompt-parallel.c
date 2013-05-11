@@ -1,6 +1,5 @@
 #include "ompt-openmp-interface.h"
 
-#include "ompt.h"
 #include "ompt-internal.h"
 
 _OMP_EXTERN ompt_parallel_id_t ompt_get_parallel_id(int ancestor_level)
