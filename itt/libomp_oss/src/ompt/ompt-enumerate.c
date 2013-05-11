@@ -1,6 +1,5 @@
 #include <assert.h>
 
-#include "ompt.h"
 #include "ompt-internal.h"
 
 

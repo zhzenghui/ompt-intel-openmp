@@ -1,3 +1,8 @@
+#ifndef __OMPT_INTERNAL_H__
+#define __OMPT_INTERNAL_H__
+
+#include "ompt.h"
+
 #define _OMP_EXTERN
 
 typedef enum {
@@ -10,3 +15,5 @@ typedef enum {
 #include "ompt-event-callbacks.h"
 
 extern ompt_status_t ompt_status;
+
+#endif
