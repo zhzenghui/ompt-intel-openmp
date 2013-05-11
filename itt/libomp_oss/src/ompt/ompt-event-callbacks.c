@@ -1,5 +1,5 @@
 #include "ompt-event-enum.h"
-#include "ompt-event-callbacks.h"
+#include "ompt-internal.h"
 
 #define set_success 0
 #define set_failure -1
