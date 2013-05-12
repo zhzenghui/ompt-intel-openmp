@@ -7,7 +7,7 @@
 extern const char *ompt_debugger_plugin; /* unimplemented */
 
 extern int ompt_enumerate_state(int current_state, int *next_state, const char **next_state_name);
-extern ompt_state_t ompt_get_state(void);
+extern ompt_state_t ompt_get_state(ompt_wait_id_t *ompt_wait_id);
 extern ompt_data_t *ompt_get_thread_data(void);
 
 extern int ompt_initialize(void);
