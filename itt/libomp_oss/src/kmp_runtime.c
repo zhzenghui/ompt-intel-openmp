@@ -8010,3 +8010,45 @@ __kmp_get_reduce_method( void ) {
 }
 
 /* ------------------------------------------------------------------------ */
+
+#include "ompt/ompt-internal.h"
+
+ompt_state_t ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
+{
+	int gtid = __kmp_gtid_get_specific();
+	ompt_state_t state;
+	switch(gtid) {
+		case KMP_GTID_DNE:
+		case KMP_GTID_SHUTDOWN:
+		case KMP_GTID_MONITOR:        
+		case KMP_GTID_UNKNOWN:       
+			state = ompt_state_undefined;
+			break;
+		default: {
+				 kmp_info_t  *ti = __kmp_threads[ gtid ];
+				 ompt_state_t state = ti->th.ompt_thread_state.ompt_state;
+				 *ompt_wait_id = ti->th.ompt_thread_state.ompt_wait_id;
+			 }
+	}
+	return state;
+}
+
+ompt_data_t *ompt_get_thread_data_internal(void)
+{
+	int gtid = __kmp_gtid_get_specific();
+	ompt_data_t *data;
+	switch(gtid) {
+		case KMP_GTID_DNE:
+		case KMP_GTID_SHUTDOWN:
+		case KMP_GTID_MONITOR:        
+		case KMP_GTID_UNKNOWN:       
+			data = NULL;
+			break;
+		default: {
+				 kmp_info_t  *ti = __kmp_threads[ gtid ];
+				 data = &ti->th.ompt_thread_state.ompt_data;
+			 }
+	}
+	return data;
+}
+
