@@ -142,6 +142,11 @@ typedef __float128 _Quad;
 #include <lmmintrin.h>
 #endif // KMP_MIC1 AC: no lmmintrin.h in KNC compiler
 
+#ifndef OMPT_DISABLED
+#define OMPT_SUPPORT 1
+#include "ompt/ompt-internal.h"
+#endif
+
 /*Select data placement in NUMA memory */
 #define NO_FIRST_TOUCH 0
 #define FIRST_TOUCH 1       /* Exploit SGI's first touch page placement algo */
@@ -2116,6 +2121,11 @@ typedef struct KMP_ALIGN_CACHE kmp_base_info {
     /* TODO the first serial team should actually be stored in the info_t
      * structure.  this will help reduce initial allocation overhead */
     KMP_ALIGN_CACHE kmp_team_p *th_serial_team; /*serialized team held in reserve*/
+
+#if OMPT_SUPPORT
+    ompt_thread_state_t ompt_thread_state;
+#endif
+
 /* The following are also read by the master during reinit */
     struct common_table    *th_pri_common;
 
@@ -3339,6 +3349,8 @@ void
 kmp_threadprivate_insert_private_data( int gtid, void *pc_addr, void *data_addr, size_t pc_size );
 struct private_common *
 kmp_threadprivate_insert( int gtid, void *pc_addr, void *data_addr, size_t pc_size );
+
+
 
 #ifdef __cplusplus
 }
