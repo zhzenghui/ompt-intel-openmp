@@ -8016,21 +8016,19 @@ __kmp_get_reduce_method( void ) {
 kmp_info_t *ompt_get_thread()
 {
   int gtid = __kmp_gtid_get_specific();
-  switch(gtid) {
-    case KMP_GTID_DNE:
-    case KMP_GTID_SHUTDOWN:
-    case KMP_GTID_MONITOR:        
-    case KMP_GTID_UNKNOWN:       
-      return NULL;
-    default: 
-      return __kmp_thread_from_gtid(gtid);
-  }
+  return (gtid >= 0) ? __kmp_thread_from_gtid(gtid) : NULL;
 }
 
+
+/* safely extract team from a thread. 
+ * - a thread may not be an openmp thread
+ * - an openmp thread may have an uninitialized team
+ */
 kmp_team_t *ompt_team(int ancestor_level)
 {
   int i;
-  kmp_team_t *team = __kmp_get_team(); 
+  kmp_info_t *th = ompt_get_thread();
+  kmp_team_t *team = th ? th->th.th_team : NULL;
   for (i = 0; i < ancestor_level; i++) {
       team = team ? team->t.t_parent : NULL;
   }
@@ -8038,12 +8036,15 @@ kmp_team_t *ompt_team(int ancestor_level)
 } 
 
 
+/* safely extract a task from a thread. 
+ * - a thread may not be an openmp thread
+ * - an openmp thread may have an uninitialized task
+ */
 kmp_taskdata_t *ompt_task(int ancestor_level)
 {
   int i;
-  // kmp_team_t *team = __kmp_get_team(); 
   kmp_info_t *th = ompt_get_thread();
-  kmp_taskdata_t *task = th->t.th_current_task;
+  kmp_taskdata_t *task = th ? th->th.th_current_task : NULL;
   for (i = 0; i < ancestor_level; i++) {
       task = task ? task->td_parent : NULL;
   }
@@ -8087,16 +8088,17 @@ ompt_parallel_id_t ompt_get_parallel_id_internal(int ancestor_level)
 }
 
 
+#if 0
+// FIXME
+
 ompt_data_t *ompt_get_task_data_internal(int ancestor_level) 
 {
   kmp_taskdata_t *task = ompt_get_task();
-  ompt_data_t *data =  task ? &task->t.td_ompt_data : NULL;
+  ompt_data_t *data =  task ? &task->th.td_ompt_data : NULL;
   return data;
 }
 
 
-#if 0
-// FIXME
 void *ompt_get_task_function_internal(int ancestor_level) 
 {
   kmp_taskdata_t *task = ompt_get_task();
