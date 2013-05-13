@@ -2289,6 +2289,10 @@ typedef struct KMP_ALIGN_CACHE kmp_base_team {
     microtask_t              t_pkfn;
     launch_t                 t_invoke;       /* procedure to launch the microtask */
 
+#if OMPT_SUPPORT
+    ompt_parallel_id_t       t_parallel_id;  /* id for a parallel region */
+#endif
+
 #if KMP_ARCH_X86 || KMP_ARCH_X86_64
     kmp_int8                 t_fp_control_saved;
     kmp_int8                 t_pad2b;

@@ -8013,42 +8013,109 @@ __kmp_get_reduce_method( void ) {
 
 #include "ompt/ompt-internal.h"
 
+kmp_info_t *ompt_get_thread()
+{
+  int gtid = __kmp_gtid_get_specific();
+  switch(gtid) {
+    case KMP_GTID_DNE:
+    case KMP_GTID_SHUTDOWN:
+    case KMP_GTID_MONITOR:        
+    case KMP_GTID_UNKNOWN:       
+      return NULL;
+    default: 
+      return __kmp_thread_from_gtid(gtid);
+  }
+}
+
+kmp_team_t *ompt_team(int ancestor_level)
+{
+  int i;
+  kmp_team_t *team = __kmp_get_team(); 
+  for (i = 0; i < ancestor_level; i++) {
+      team = team ? team->t.t_parent : NULL;
+  }
+  return team;
+} 
+
+
+kmp_taskdata_t *ompt_task(int ancestor_level)
+{
+  int i;
+  // kmp_team_t *team = __kmp_get_team(); 
+  kmp_info_t *th = ompt_get_thread();
+  kmp_taskdata_t *task = th->t.th_current_task;
+  for (i = 0; i < ancestor_level; i++) {
+      task = task ? task->td_parent : NULL;
+  }
+  return task;
+} 
+
+
 ompt_state_t ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
 {
-	int gtid = __kmp_gtid_get_specific();
-	ompt_state_t state;
-	switch(gtid) {
-		case KMP_GTID_DNE:
-		case KMP_GTID_SHUTDOWN:
-		case KMP_GTID_MONITOR:        
-		case KMP_GTID_UNKNOWN:       
-			state = ompt_state_undefined;
-			break;
-		default: {
-				 kmp_info_t  *ti = __kmp_threads[ gtid ];
-				 ompt_state_t state = ti->th.ompt_thread_state.ompt_state;
-				 *ompt_wait_id = ti->th.ompt_thread_state.ompt_wait_id;
-			 }
-	}
-	return state;
+  kmp_info_t  *ti = ompt_get_thread();
+  ompt_state_t state = ompt_state_undefined;
+  if (ti) {
+    state = ti->th.ompt_thread_state.ompt_state;
+    *ompt_wait_id = ti->th.ompt_thread_state.ompt_wait_id;
+  } 
+  return state;
 }
+
 
 ompt_data_t *ompt_get_thread_data_internal(void)
 {
-	int gtid = __kmp_gtid_get_specific();
-	ompt_data_t *data;
-	switch(gtid) {
-		case KMP_GTID_DNE:
-		case KMP_GTID_SHUTDOWN:
-		case KMP_GTID_MONITOR:        
-		case KMP_GTID_UNKNOWN:       
-			data = NULL;
-			break;
-		default: {
-				 kmp_info_t  *ti = __kmp_threads[ gtid ];
-				 data = &ti->th.ompt_thread_state.ompt_data;
-			 }
-	}
-	return data;
+  kmp_info_t  *ti = ompt_get_thread();
+  ompt_data_t *data = ti ?  &ti->th.ompt_thread_state.ompt_data : NULL;
+  return data;
 }
+
+
+void *ompt_get_parallel_function_internal(int ancestor_level) 
+{
+  kmp_team_t *team = ompt_team(ancestor_level);
+  microtask_t task =  team ? team->t.t_pkfn : NULL;
+  return (void *) task;
+}
+
+
+ompt_parallel_id_t ompt_get_parallel_id_internal(int ancestor_level) 
+{
+  kmp_team_t *team = ompt_team(ancestor_level);
+  ompt_parallel_id_t id =  team ? team->t.t_parallel_id : 0;
+  return id;
+}
+
+
+ompt_data_t *ompt_get_task_data_internal(int ancestor_level) 
+{
+  kmp_taskdata_t *task = ompt_get_task();
+  ompt_data_t *data =  task ? &task->t.td_ompt_data : NULL;
+  return data;
+}
+
+
+#if 0
+// FIXME
+void *ompt_get_task_function_internal(int ancestor_level) 
+{
+  kmp_taskdata_t *task = ompt_get_task();
+  function?
+  return (void *) task;
+}
+
+
+ompt_parallel_id_t ompt_get_task_frame_internal(int ancestor_level) 
+{
+  int i;
+  kmp_team_t *team = __kmp_get_team(); 
+
+  for (i = 0; i < ancestor_level; i++) {
+      team = team ? team->t.t_parent : NULL;
+  }
+
+  ompt_parallel_id_t id =  team ? team->t.t_parallel_id : 0;
+  return id;
+}
+#endif
 
