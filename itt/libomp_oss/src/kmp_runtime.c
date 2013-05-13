@@ -110,6 +110,10 @@ kmp_info_t __kmp_monitor;
 
 /* Forward declarations */
 
+#if OMPT_SUPPORT
+static void ompt_team_assign_id(kmp_team_t *team);
+#endif
+
 void __kmp_cleanup( void );
 
 static void __kmp_initialize_info( kmp_info_t *, kmp_team_t *, int tid, int gtid );
@@ -5410,6 +5414,10 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
 
         KMP_MB();
 
+#if OMPT_SUPPORT
+        ompt_team_assign_id(team);
+#endif
+
         return team;
     }
 
@@ -5458,6 +5466,10 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
 
             KA_TRACE( 20, ("__kmp_allocate_team: using team from pool %d.\n", team->t.t_id ));
             KMP_MB();
+
+#if OMPT_SUPPORT
+            ompt_team_assign_id(team);
+#endif
 
             return team;
         }
@@ -5519,6 +5531,10 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
     KMP_MB();
 
     KA_TRACE( 20, ("__kmp_allocate_team: done creating a new team %d.\n", team->t.t_id ));
+
+#if OMPT_SUPPORT
+    ompt_team_assign_id(team);
+#endif
 
     return team;
 }
@@ -8011,14 +8027,22 @@ __kmp_get_reduce_method( void ) {
 
 /* ------------------------------------------------------------------------ */
 
+#if OMPT_SUPPORT
 #include "ompt/ompt-internal.h"
 
-kmp_info_t *ompt_get_thread()
+
+inline
+kmp_info_t *ompt_get_thread_gtid(int gtid)
 {
-  int gtid = __kmp_gtid_get_specific();
   return (gtid >= 0) ? __kmp_thread_from_gtid(gtid) : NULL;
 }
 
+inline
+kmp_info_t *ompt_get_thread()
+{
+  int gtid = __kmp_gtid_get_specific();
+  return ompt_get_thread_gtid(gtid);
+}
 
 /* safely extract team from a thread. 
  * - a thread may not be an openmp thread
@@ -8088,25 +8112,32 @@ ompt_parallel_id_t ompt_get_parallel_id_internal(int ancestor_level)
 }
 
 
-#if 0
-// FIXME
+#define OMPT_THREAD_ID_BITS 20
+void ompt_team_assign_id(kmp_team_t *team)
+{
+  int gtid = __kmp_gtid_get_specific();
+  kmp_info_t *ti = ompt_get_thread_gtid(gtid);
+  team->t.t_parallel_id = (ti->th.ompt_thread_state.next_parallel_id++ << OMPT_THREAD_ID_BITS) | gtid;
+}
+
 
 ompt_data_t *ompt_get_task_data_internal(int ancestor_level) 
 {
-  kmp_taskdata_t *task = ompt_get_task();
-  ompt_data_t *data =  task ? &task->th.td_ompt_data : NULL;
+  kmp_taskdata_t *task = ompt_task(ancestor_level);
+  ompt_data_t *data =  task ? &task->ompt_data : NULL;
   return data;
 }
 
 
 void *ompt_get_task_function_internal(int ancestor_level) 
 {
-  kmp_taskdata_t *task = ompt_get_task();
-  function?
-  return (void *) task;
+  kmp_taskdata_t *td = ompt_task(ancestor_level);
+  kmp_task_t *task = KMP_TASKDATA_TO_TASK(td);
+  void *fcn =  (void *) (task ? task->routine : NULL);
+  return fcn;
 }
 
-
+#if 0
 ompt_parallel_id_t ompt_get_task_frame_internal(int ancestor_level) 
 {
   int i;
@@ -8121,3 +8152,4 @@ ompt_parallel_id_t ompt_get_task_frame_internal(int ancestor_level)
 }
 #endif
 
+#endif

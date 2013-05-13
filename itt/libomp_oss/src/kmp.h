@@ -1991,6 +1991,9 @@ struct kmp_taskdata {                                 /* aligned during dynamic 
 #if OMP_40_ENABLED
     kmp_taskgroup_t *       td_taskgroup;         // Each task keeps pointer to its current taskgroup
 #endif
+#if OMPT_SUPPORT
+    ompt_data_t             ompt_data;
+#endif
     _Quad                   td_dummy;             // Align structure 16-byte size since allocated just before kmp_task_t
 }; // struct kmp_taskdata
 
