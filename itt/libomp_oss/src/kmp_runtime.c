@@ -8140,8 +8140,8 @@ void *ompt_get_task_function_internal(int ancestor_level)
 
 ompt_frame_t *ompt_get_task_frame_internal(int ancestor_level) 
 {
-  kmp_team_t *team = ompt_team(ancestor_level);
-  ompt_frame_t *frame =  team ? &(team->t.ompt_team_info.frame) : NULL;
+  kmp_taskdata_t *task = ompt_task(ancestor_level);
+  ompt_frame_t *frame =  task ? &task->ompt_task_info.frame : NULL;
   return frame;
 }
 
