@@ -8138,21 +8138,11 @@ void *ompt_get_task_function_internal(int ancestor_level)
   return fcn;
 }
 
-#if 0
-ompt_parallel_id_t ompt_get_task_frame_internal(int ancestor_level) 
+ompt_frame_t *ompt_get_task_frame_internal(int ancestor_level) 
 {
   kmp_team_t *team = ompt_team(ancestor_level);
-  ompt_parallel_id_t id =  team ? team->t.ompt_team_info.frame : 0;
-  int i;
-  kmp_team_t *team = __kmp_get_team(); 
-
-  for (i = 0; i < ancestor_level; i++) {
-      team = team ? team->t.t_parent : NULL;
-  }
-
-  ompt_parallel_id_t id =  team ? team->t.t_parallel_id : 0;
-  return id;
+  ompt_frame_t *frame =  team ? &(team->t.ompt_team_info.frame) : NULL;
+  return frame;
 }
-#endif
 
 #endif
