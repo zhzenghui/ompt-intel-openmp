@@ -17,11 +17,23 @@ typedef enum {
 #include "ompt-event-callbacks.h"
 
 typedef struct {
-  ompt_state_t     ompt_state;
-  ompt_wait_id_t   ompt_wait_id;
-  ompt_data_t      ompt_data;             /* OMPT tool data */
-  uint64_t         next_parallel_id;
-} ompt_thread_state_t;
+  ompt_state_t        state;
+  ompt_wait_id_t      wait_id;
+  ompt_data_t         data;             /* OMPT tool data */
+  uint64_t            next_parallel_id;
+} ompt_thread_info_t;
+
+
+typedef struct {
+  ompt_data_t         data;
+  ompt_frame_t        frame;
+} ompt_task_info_t;
+
+
+typedef struct {
+  ompt_parallel_id_t  parallel_id;
+  ompt_frame_t        frame;
+} ompt_team_info_t;
 
 extern ompt_status_t ompt_status;
 
