@@ -5415,11 +5415,11 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
         }
 #endif
 
-        KMP_MB();
-
 #if OMPT_SUPPORT
         ompt_team_assign_id(team);
 #endif
+
+        KMP_MB();
 
         return team;
     }
@@ -5468,11 +5468,12 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
 #endif
 
             KA_TRACE( 20, ("__kmp_allocate_team: using team from pool %d.\n", team->t.t_id ));
-            KMP_MB();
 
 #if OMPT_SUPPORT
             ompt_team_assign_id(team);
 #endif
+
+            KMP_MB();
 
             return team;
         }
@@ -5531,13 +5532,13 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
     team->t.t_proc_bind = new_proc_bind;
 #endif
 
-    KMP_MB();
-
-    KA_TRACE( 20, ("__kmp_allocate_team: done creating a new team %d.\n", team->t.t_id ));
-
 #if OMPT_SUPPORT
     ompt_team_assign_id(team);
 #endif
+
+    KMP_MB();
+
+    KA_TRACE( 20, ("__kmp_allocate_team: done creating a new team %d.\n", team->t.t_id ));
 
     return team;
 }
