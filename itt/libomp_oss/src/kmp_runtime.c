@@ -8117,7 +8117,8 @@ void ompt_team_assign_id(kmp_team_t *team)
 {
   int gtid = __kmp_gtid_get_specific();
   kmp_info_t *ti = ompt_get_thread_gtid(gtid);
-  team->t.t_parallel_id = (ti->th.ompt_thread_state.next_parallel_id++ << OMPT_THREAD_ID_BITS) | gtid;
+  team->t.t_parallel_id = 
+     ti ? ((ti->th.ompt_thread_state.next_parallel_id++ << OMPT_THREAD_ID_BITS) | gtid) : 0;
 }
 
 
