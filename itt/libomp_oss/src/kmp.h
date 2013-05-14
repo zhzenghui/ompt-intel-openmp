@@ -1992,7 +1992,7 @@ struct kmp_taskdata {                                 /* aligned during dynamic 
     kmp_taskgroup_t *       td_taskgroup;         // Each task keeps pointer to its current taskgroup
 #endif
 #if OMPT_SUPPORT
-    ompt_data_t             ompt_data;
+    ompt_task_info_t       ompt_task_info;
 #endif
     _Quad                   td_dummy;             // Align structure 16-byte size since allocated just before kmp_task_t
 }; // struct kmp_taskdata
@@ -2126,7 +2126,7 @@ typedef struct KMP_ALIGN_CACHE kmp_base_info {
     KMP_ALIGN_CACHE kmp_team_p *th_serial_team; /*serialized team held in reserve*/
 
 #if OMPT_SUPPORT
-    ompt_thread_state_t ompt_thread_state;
+    ompt_thread_info_t     ompt_thread_info;
 #endif
 
 /* The following are also read by the master during reinit */
@@ -2293,7 +2293,7 @@ typedef struct KMP_ALIGN_CACHE kmp_base_team {
     launch_t                 t_invoke;       /* procedure to launch the microtask */
 
 #if OMPT_SUPPORT
-    ompt_parallel_id_t       t_parallel_id;  /* id for a parallel region */
+    ompt_team_info_t        ompt_team_info;  
 #endif
 
 #if KMP_ARCH_X86 || KMP_ARCH_X86_64
