@@ -2579,6 +2579,9 @@ __kmp_fork_call(
     TCW_SYNC_PTR(team->t.t_pkfn, microtask);
     team->t.t_invoke     = invoker;  /* TODO move this to root, maybe */
     team->t.t_ident      = loc;
+#if OMPT_SUPPORT
+    team->t.ompt_team_state.reenter_runtime_frame = __builtin_frame_address(0);
+#endif
 #if OMP_30_ENABLED
     // TODO: parent_team->t.t_level == INT_MAX ???
     team->t.t_level        = parent_team->t.t_level + 1;
