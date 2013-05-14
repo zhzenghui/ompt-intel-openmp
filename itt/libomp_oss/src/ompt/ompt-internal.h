@@ -32,6 +32,7 @@ typedef struct {
 
 typedef struct {
   ompt_parallel_id_t  parallel_id;
+  void *reenter_runtime_frame; /* previous frame is user code */
 } ompt_team_info_t;
 
 extern ompt_status_t ompt_status;
