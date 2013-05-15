@@ -232,8 +232,11 @@ __kmp_print_version_2( void ) {
     #endif // KMP_STUB
 } // __kmp_print_version_2
 
+#if OMPT_SUPPORT
 
-int ompt_get_runtime_version_internal(char *buffer, int length)
+#include "ompt/ompt-openmp-interface.h"
+
+int __ompt_get_runtime_version_internal(char *buffer, int length)
 {
   int slen = strlen(__kmp_version_lib_ver) + 1; /* include space for null */
   int extra = slen - length;                    
@@ -246,6 +249,7 @@ int ompt_get_runtime_version_internal(char *buffer, int length)
 
   return result;
 }
+#endif
 
 
 // end of file //

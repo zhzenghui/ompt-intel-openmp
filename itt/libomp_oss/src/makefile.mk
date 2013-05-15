@@ -579,6 +579,7 @@ ld-flags   += $(LDFLAGS)
 # --------------------------------------------------------------------------------------------------
 # Files.
 # --------------------------------------------------------------------------------------------------
+ompt_items = ompt-control ompt-enumerate ompt-event-callbacks ompt-fini ompt-init ompt-initialize ompt-parallel ompt-runtime-version ompt-state ompt-thread-data ompt-task ompt-version
 
 # Library files. These files participate in all kinds of library.
 lib_c_items :=      \
@@ -586,6 +587,7 @@ lib_c_items :=      \
     kmp_ftn_extra   \
     kmp_ftn_stdcall \
     kmp_version     \
+    $(ompt_items) \
     $(empty)
 lib_cpp_items :=
 lib_asm_items :=
