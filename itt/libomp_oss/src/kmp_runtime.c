@@ -8058,6 +8058,7 @@ __kmp_get_reduce_method( void ) {
 
 #if OMPT_SUPPORT
 #include "ompt/ompt-internal.h"
+#include "ompt/ompt-openmp-interface.h"
 
 
 inline
@@ -8105,7 +8106,7 @@ kmp_taskdata_t *ompt_task(int ancestor_level)
 } 
 
 
-ompt_state_t ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
+ompt_state_t __ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
 {
   kmp_info_t  *ti = ompt_get_thread();
   ompt_state_t state = ompt_state_undefined;
@@ -8117,7 +8118,7 @@ ompt_state_t ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
 }
 
 
-ompt_data_t *ompt_get_thread_data_internal(void)
+ompt_data_t *__ompt_get_thread_data_internal(void)
 {
   kmp_info_t  *ti = ompt_get_thread();
   ompt_data_t *data = ti ?  &ti->th.ompt_thread_info.data : NULL;
@@ -8125,7 +8126,7 @@ ompt_data_t *ompt_get_thread_data_internal(void)
 }
 
 
-void *ompt_get_parallel_function_internal(int ancestor_level) 
+void *__ompt_get_parallel_function_internal(int ancestor_level) 
 {
   kmp_team_t *team = ompt_team(ancestor_level);
   microtask_t task =  team ? team->t.t_pkfn : NULL;
@@ -8133,7 +8134,7 @@ void *ompt_get_parallel_function_internal(int ancestor_level)
 }
 
 
-ompt_parallel_id_t ompt_get_parallel_id_internal(int ancestor_level) 
+ompt_parallel_id_t __ompt_get_parallel_id_internal(int ancestor_level) 
 {
   kmp_team_t *team = ompt_team(ancestor_level);
   ompt_parallel_id_t id =  team ? team->t.ompt_team_info.parallel_id : 0;
@@ -8151,7 +8152,7 @@ void ompt_team_assign_id(kmp_team_t *team)
 }
 
 
-ompt_data_t *ompt_get_task_data_internal(int ancestor_level) 
+ompt_data_t *__ompt_get_task_data_internal(int ancestor_level) 
 {
   kmp_taskdata_t *task = ompt_task(ancestor_level);
   ompt_data_t *data =  task ? &task->ompt_task_info.data : NULL;
@@ -8159,7 +8160,7 @@ ompt_data_t *ompt_get_task_data_internal(int ancestor_level)
 }
 
 
-void *ompt_get_task_function_internal(int ancestor_level) 
+void *__ompt_get_task_function_internal(int ancestor_level) 
 {
   kmp_taskdata_t *td = ompt_task(ancestor_level);
   kmp_task_t *task = KMP_TASKDATA_TO_TASK(td);
@@ -8167,7 +8168,7 @@ void *ompt_get_task_function_internal(int ancestor_level)
   return fcn;
 }
 
-ompt_frame_t *ompt_get_task_frame_internal(int ancestor_level) 
+ompt_frame_t *__ompt_get_task_frame_internal(int ancestor_level) 
 {
   kmp_taskdata_t *task = ompt_task(ancestor_level);
   ompt_frame_t *frame =  task ? &task->ompt_task_info.frame : NULL;
