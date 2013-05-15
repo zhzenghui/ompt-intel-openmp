@@ -1549,6 +1549,7 @@ LOOP:
 //	%edx:	tid
 //	%ecx:	argc
 //	%r8:	p_argv
+//	%r9:	&exit_frame
 //
 // locals:
 //	__gtid:	gtid parm pushed on stack so can pass &gtid to pkfn
@@ -1634,6 +1635,14 @@ L_kmp_invoke_push_parms:	// push nth - 7th parms to pkfn on stack
 L_kmp_invoke_pass_parms:	// put 1st - 6th parms to pkfn in registers.
 				// order here is important to avoid trashing
 				// registers used for both input and output parms!
+
+// begin OMPT SUPPORT
+	push	%rsp 	        // push stack pointer to find offset of where it would be after
+	                        // return address was pushed 
+	movq	%rsp, (%r9)	// save exit_frame
+	pop	%rsp 	        // restore stack pointer
+// end OMPT SUPPORT
+
 	movq	%rdi, %rbx	// pkfn -> %rbx
 	leaq	__gtid(%rbp), %rdi // &gtid -> %rdi (store 1st parm to pkfn)
 	leaq	__tid(%rbp), %rsi  // &tid -> %rsi (store 2nd parm to pkfn)
