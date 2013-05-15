@@ -2433,7 +2433,18 @@ __kmp_fork_call(
             #endif
             master_th -> th.th_serial_team -> t.t_ident =  loc;
             KMP_MB();
-            __kmp_invoke_microtask( microtask, gtid, 0, argc, args );
+
+#if OMPT_SUPPORT
+	   int  tid = __kmp_tid_from_gtid( gtid );
+           void **exit_runtime_p = 
+	     &(parent_team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.exit_runtime_frame);
+	   parent_team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.reenter_runtime_frame = 
+	     __builtin_frame_address(0);
+#else
+           void *dummy;
+           void **exit_runtime_p = &dummy;
+#endif
+           __kmp_invoke_microtask( microtask, gtid, 0, argc, args, exit_runtime_p );
         }
         else {
             KMP_ASSERT2( exec_master <= 1, "__kmp_fork_call: unknown parameter exec_master" );
@@ -2580,7 +2591,7 @@ __kmp_fork_call(
     team->t.t_invoke     = invoker;  /* TODO move this to root, maybe */
     team->t.t_ident      = loc;
 #if OMPT_SUPPORT
-    team->t.ompt_team_state.reenter_runtime_frame = __builtin_frame_address(0);
+    team->t.ompt_team_info.reenter_runtime_frame = __builtin_frame_address(0);
 #endif
 #if OMP_30_ENABLED
     // TODO: parent_team->t.t_level == INT_MAX ???
@@ -6011,6 +6022,12 @@ __kmp_fork_barrier( int gtid, int tid )
           team, tid, FALSE );
         copy_icvs( &team->t.t_implicit_task_taskdata[tid].td_icvs,
           &team->t.t_initial_icvs );
+
+#if OMPT_SUPPORT
+	team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.reenter_runtime_frame = 
+	  team->t.ompt_team_info.reenter_runtime_frame;
+#endif
+
     }
 # endif // KMP_BARRIER_ICV_PULL
 
@@ -7337,9 +7354,17 @@ __kmp_invoke_task_func( int gtid )
     kmp_info_t  *this_thr = __kmp_threads[ gtid ];
     kmp_team_t  *team     = this_thr -> th.th_team;
 
+     
+#if OMPT_SUPPORT
+    void **exit_runtime_p = &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.exit_runtime_frame);
+#else
+    void *dummy;
+    void **exit_runtime_p = &dummy;
+#endif
+
     __kmp_run_before_invoked_task( gtid, tid, this_thr, team );
     rc = __kmp_invoke_microtask( (microtask_t) TCR_SYNC_PTR(team->t.t_pkfn),
-      gtid, tid, (int) team->t.t_argc, (void **) team->t.t_argv );
+				 gtid, tid, (int) team->t.t_argc, (void **) team->t.t_argv, exit_runtime_p );
 
     __kmp_run_after_invoked_task( gtid, tid, this_thr, team );
 
