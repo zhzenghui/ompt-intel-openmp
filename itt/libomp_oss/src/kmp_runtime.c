@@ -4431,6 +4431,13 @@ __kmp_initialize_info( kmp_info_t *this_thr, kmp_team_t *team, int tid, int gtid
     KMP_DEBUG_ASSERT( !this_thr->th.th_spin_here );
     KMP_DEBUG_ASSERT( this_thr->th.th_next_waiting == 0 );
 
+#if OMPT_SUPPORT
+    this_thr->th.ompt_thread_info.state = ompt_state_overhead;
+    this_thr->th.ompt_thread_info.wait_id = 0;
+    this_thr->th.ompt_thread_info.data.value = 0;
+    this_thr->th.ompt_thread_info.next_parallel_id = 1;
+#endif
+
     KMP_MB();
 }
 
