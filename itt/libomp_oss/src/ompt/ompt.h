@@ -4,6 +4,10 @@
 #include "ompt-event-enum.h"
 #include "ompt-types.h"
 
+#ifdef  __cplusplus
+extern "C" {
+#endif 
+
 extern const char *ompt_debugger_plugin; /* unimplemented */
 
 extern int ompt_enumerate_state(int current_state, int *next_state, const char **next_state_name);
@@ -25,6 +29,10 @@ void *ompt_get_parallel_function(int ancestor_level);
 ompt_data_t *ompt_get_task_data(int ancestor_level);
 ompt_frame_t *ompt_get_task_frame(int ancestor_level);
 void *ompt_get_task_function(int ancestor_level);
+
+#ifdef  __cplusplus
+};
+#endif 
 
 
 

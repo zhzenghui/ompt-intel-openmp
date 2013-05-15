@@ -4,5 +4,5 @@
 
 _OMP_EXTERN int ompt_get_runtime_version(char *buffer, int length)
 {
-  return ompt_get_runtime_version_internal(buffer,length);
+  return __ompt_get_runtime_version_internal(buffer,length);
 }

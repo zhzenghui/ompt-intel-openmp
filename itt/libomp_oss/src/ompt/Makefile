@@ -9,6 +9,7 @@ SRCS = \
   ompt-runtime-version.c \
   ompt-state.c \
   ompt-thread-data.c \
+  ompt-task.c \
   ompt-version.c
 
 OBJS = $(patsubst %.c, %.o, $(SRCS))
