@@ -1,7 +1,7 @@
 LIB =../itt/libomp_oss/tmp/lin_32e-rtl_5_nor_dyn.12.rel.40.c0.t0-mic/unstripped/libiomp5.so
 INCLUDES=-I../itt/libomp_oss/src
 
-EXEC = main level-1 level-2 level-3 level-4 task-4 parallel-4
+EXEC = main level-1 level-2 level-3 level-4 
 
 all: $(EXEC)
 
