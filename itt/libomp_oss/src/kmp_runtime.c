@@ -54,6 +54,10 @@
 #include "kmp_io.h"
 #include "kmp_error.h"
 
+#if OMPT_SUPPORT
+#include "ompt-specific.h"
+#endif
+
 /* these are temporary issues to be dealt with */
 #define KMP_USE_PRCTL 0
 #define KMP_USE_POOLED_ALLOC 0
@@ -110,9 +114,6 @@ kmp_info_t __kmp_monitor;
 
 /* Forward declarations */
 
-#if OMPT_SUPPORT
-static void ompt_team_assign_id(kmp_team_t *team);
-#endif
 
 void __kmp_cleanup( void );
 
@@ -5434,7 +5435,7 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
 #endif
 
 #if OMPT_SUPPORT
-        ompt_team_assign_id(team);
+        __ompt_team_assign_id(team);
 #endif
 
         KMP_MB();
@@ -5488,7 +5489,7 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
             KA_TRACE( 20, ("__kmp_allocate_team: using team from pool %d.\n", team->t.t_id ));
 
 #if OMPT_SUPPORT
-            ompt_team_assign_id(team);
+            __ompt_team_assign_id(team);
 #endif
 
             KMP_MB();
@@ -5551,7 +5552,7 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
 #endif
 
 #if OMPT_SUPPORT
-    ompt_team_assign_id(team);
+    __ompt_team_assign_id(team);
 #endif
 
     KMP_MB();
@@ -8063,6 +8064,8 @@ __kmp_get_reduce_method( void ) {
 
 /* ------------------------------------------------------------------------ */
 
+#if 0
+
 #if OMPT_SUPPORT
 #include "ompt/ompt-internal.h"
 #include "ompt/ompt-openmp-interface.h"
@@ -8170,7 +8173,7 @@ ompt_data_t *__ompt_get_task_data_internal(int ancestor_level)
 void *__ompt_get_task_function_internal(int ancestor_level) 
 {
   kmp_taskdata_t *td = ompt_task(ancestor_level);
-  kmp_task_t *task = KMP_TASKDATA_TO_TASK(td);
+  kmp_task_t *task = td ? KMP_TASKDATA_TO_TASK(td) : NULL;
   void *fcn =  (void *) (task ? task->routine : NULL);
   return fcn;
 }
@@ -8182,4 +8185,5 @@ ompt_frame_t *__ompt_get_task_frame_internal(int ancestor_level)
   return frame;
 }
 
+#endif
 #endif
