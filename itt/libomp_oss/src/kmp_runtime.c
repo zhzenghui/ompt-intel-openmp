@@ -8067,8 +8067,7 @@ __kmp_get_reduce_method( void ) {
 #if 0
 
 #if OMPT_SUPPORT
-#include "ompt/ompt-internal.h"
-#include "ompt/ompt-openmp-interface.h"
+#include "ompt-internal.h"
 
 
 inline
