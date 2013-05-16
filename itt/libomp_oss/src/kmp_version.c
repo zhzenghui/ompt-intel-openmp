@@ -232,6 +232,7 @@ __kmp_print_version_2( void ) {
     #endif // KMP_STUB
 } // __kmp_print_version_2
 
+#if 0
 #if OMPT_SUPPORT
 
 #include "ompt/ompt-openmp-interface.h"
@@ -249,6 +250,7 @@ int __ompt_get_runtime_version_internal(char *buffer, int length)
 
   return result;
 }
+#endif
 #endif
 
 
