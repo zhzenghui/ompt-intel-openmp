@@ -55,7 +55,6 @@ ompt_status_t ompt_status = ompt_status_ready;
 ompt_state_info_t ompt_state_info[] = {
 #define ompt_state(state, code) { # state, state },
 #include "ompt-state.h"
-#undef ompt_state
 };
 
 
@@ -125,8 +124,6 @@ _OMP_EXTERN int ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
 
 #include "ompt-event.h"
 
-#undef ompt_event
-
   default: return set_failure;
   }
 }
@@ -149,8 +146,6 @@ _OMP_EXTERN int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
     return get_failure; 
 
 #include "ompt-event.h"
-
-#undef ompt_event
 
   default: return get_failure;
   }
