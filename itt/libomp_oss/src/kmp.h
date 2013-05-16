@@ -144,7 +144,7 @@ typedef __float128 _Quad;
 
 #ifndef OMPT_DISABLED
 #define OMPT_SUPPORT 1
-#include "ompt/ompt-internal.h"
+#include "ompt-internal.h"
 #endif
 
 /*Select data placement in NUMA memory */
