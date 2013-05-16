@@ -232,26 +232,4 @@ __kmp_print_version_2( void ) {
     #endif // KMP_STUB
 } // __kmp_print_version_2
 
-#if 0
-#if OMPT_SUPPORT
-
-#include "ompt/ompt-openmp-interface.h"
-
-int __ompt_get_runtime_version_internal(char *buffer, int length)
-{
-  int slen = strlen(__kmp_version_lib_ver) + 1; /* include space for null */
-  int extra = slen - length;                    
-  int result = (extra > 0) ? extra : 0; /* how many characters won't fit */
-  int copylen = slen - result; /* all of the characters that will fit */
-
-  /* fill buffer with a null-terminated string that fits */
-  strncpy(buffer, __kmp_version_lib_ver, copylen); 
-  buffer[copylen-1] = NULL; /* no matter what, last character is null */
-
-  return result;
-}
-#endif
-#endif
-
-
 // end of file //
