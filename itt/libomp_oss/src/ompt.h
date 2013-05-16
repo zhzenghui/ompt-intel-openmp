@@ -106,9 +106,6 @@ typedef void (*ompt_control_callback_t) (
 typedef void (*ompt_callback_t) (
   );
 
-#ifdef  __cplusplus
-extern "C" {
-#endif 
 
 
 /****************************************************************************
@@ -122,6 +119,10 @@ extern const char *ompt_debugger_plugin; /* unimplemented */
 /****************************************************************************
  * ompt API 
  ***************************************************************************/
+
+#ifdef  __cplusplus
+extern "C" {
+#endif 
 
 /* initialization */
 extern int 			ompt_initialize(void);
