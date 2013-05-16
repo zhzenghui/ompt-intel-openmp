@@ -1,9 +1,21 @@
 #ifndef __OMPT___
 #define __OMPT___
 
+/*****************************************************************************
+ * system include files
+ *****************************************************************************/
+
 #include <stdint.h>
 
-/* -------------- OMPT state type -------------- */
+
+
+/*****************************************************************************
+ * data types
+ *****************************************************************************/
+
+/*---------------------
+ * runtime states
+ *---------------------*/
 
 typedef enum {
 #define ompt_state(state, code) state = code,
@@ -11,15 +23,37 @@ typedef enum {
 } ompt_state_t;
 
 
-/* -------------- OMPT data types -------------- */
+/*---------------------
+ * runtime events
+ *---------------------*/
+
+typedef enum {
+#define ompt_event(event, callback, eventid, is_impl) event = eventid,
+#include "ompt-event.h"
+} ompt_event_t;
+
+
+/*---------------------
+ * identifiers
+ *---------------------*/
 
 typedef uint64_t ompt_parallel_id_t;
 typedef uint64_t ompt_wait_id_t;
+
+
+/*---------------------
+ * ompt_data_t
+ *---------------------*/
 
 typedef union ompt_data_u {
   uint64_t value;               /* data under tool control    */
   void *ptr;                    /* pointer under tool control */
 } ompt_data_t;
+
+
+/*---------------------
+ * ompt_frame_t
+ *---------------------*/
 
 typedef struct ompt_frame_s {
    void *exit_runtime_frame;    /* next frame is user code     */
@@ -27,7 +61,9 @@ typedef struct ompt_frame_s {
 } ompt_frame_t;
 
 
-/* -------------- OMPT callback interfaces -------------- */
+/*---------------------
+ * callback interfaces
+ *---------------------*/
 
 typedef void (*ompt_thread_callback_t) (
   ompt_data_t *thread_data           /* tool data for thread       */
@@ -71,19 +107,13 @@ typedef void (*ompt_control_callback_t) (
 typedef void (*ompt_callback_t) (
   );
 
-
-typedef enum {
-#define ompt_event(event, callback, eventid, is_impl) event = eventid,
-#include "ompt-event.h"
-} ompt_event_t;
-
-
 #ifdef  __cplusplus
 extern "C" {
 #endif 
 
+
 /****************************************************************************
- * ompt data 
+ * public variables 
  ***************************************************************************/
 
 /* debugger interface */
