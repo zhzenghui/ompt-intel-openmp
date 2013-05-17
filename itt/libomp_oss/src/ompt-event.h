@@ -4,7 +4,7 @@
 #define ompt_event_unimplemented 0
 
   /*--- Mandatory Events ---*/
-ompt_event(ompt_event_parallel_create, ompt_parallel_callback_t, 1, ompt_event_implemented) /* parallel create */
+ompt_event(ompt_event_parallel_create, ompt_new_parallel_callback_t, 1, ompt_event_implemented) /* parallel create */
 ompt_event(ompt_event_parallel_exit, ompt_new_parallel_callback_t, 2, ompt_event_implemented) /* parallel exit */
 
 ompt_event(ompt_event_task_create, ompt_new_task_callback_t, 3, ompt_event_implemented) /* task create */
