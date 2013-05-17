@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "callback.h"
 main()
 {
 #pragma omp parallel
