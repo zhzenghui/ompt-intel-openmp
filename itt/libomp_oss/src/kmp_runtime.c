@@ -2651,6 +2651,18 @@ __kmp_fork_call(
     if (!root -> r.r_active)  /* Only do the assignment if it makes a difference to prevent cache ping-pong */
         root -> r.r_active = TRUE;
 
+#if OMPT_SUPPORT
+   if ((ompt_status == ompt_status_track_callback)) {
+     if (ompt_callbacks.ompt_callback(ompt_event_parallel_create)) {
+       int  tid = __kmp_tid_from_gtid( gtid );
+       ompt_callbacks.ompt_callback(ompt_event_parallel_create)(
+         &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
+         &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame),
+         team->t.ompt_team_info.parallel_id);
+     }
+   }
+#endif
+
     __kmp_fork_team_threads( root, team, master_th, gtid );
 
 
@@ -2729,6 +2741,17 @@ __kmp_join_call(ident_t *loc, int gtid)
     __kmp_internal_join( loc, gtid, team );
     KMP_MB();
 
+#if OMPT_SUPPORT
+   if ((ompt_status == ompt_status_track_callback)) {
+     if (ompt_callbacks.ompt_callback(ompt_event_parallel_exit)) {
+       int  tid = __kmp_tid_from_gtid( gtid );
+       ompt_callbacks.ompt_callback(ompt_event_parallel_exit)(
+         &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
+         &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame),
+         team->t.ompt_team_info.parallel_id);
+     }
+   }
+#endif
 
     /* do cleanup and restore the parent team */
     master_th -> th.th_info .ds.ds_tid = team -> t.t_master_tid;
