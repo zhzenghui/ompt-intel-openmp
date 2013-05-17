@@ -163,7 +163,7 @@ _OMP_EXTERN __attribute__ (( weak )) int ompt_initialize()
 }
 
 
-_OMP_EXTERN void ompt_init()
+void ompt_init()
 {
    char *ompt_env_var = getenv("OMPT_INITIALIZE");
 
@@ -190,7 +190,7 @@ _OMP_EXTERN void ompt_init()
 }
 
 
-_OMP_EXTERN void ompt_fini()
+void ompt_fini()
 {
    ompt_status = ompt_status_disabled;
 
@@ -286,8 +286,9 @@ _OMP_EXTERN int ompt_get_ompt_version()
 
 _OMP_EXTERN void ompt_control(uint64_t command, uint64_t modifier)
 {
-  // no control yet
-  assert(0);
+   if (ompt_callbacks.ompt_callback(ompt_event_control)) {
+     ompt_callbacks.ompt_callback(ompt_event_control)(command, modifier);
+   }
 }
 
 /*----------------------------------------------------------------------------
