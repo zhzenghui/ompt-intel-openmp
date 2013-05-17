@@ -1,6 +1,8 @@
 VER=rel
 VER=deb
-LIB =../itt/libomp_oss/tmp/lin_32e-rtl_5_nor_dyn.12.$(VER).40.c0.t0-mic/unstripped/libiomp5.so
+
+LIBDIR =../itt/libomp_oss/tmp/lin_32e-rtl_5_nor_dyn.12.$(VER).40.c0.t0-mic/unstripped
+LIB =$(LIBDIR)/libiomp5.so
 
 INCLUDES=-I../itt/libomp_oss/src
 
@@ -13,4 +15,4 @@ clean:
 	/bin/rm -f $(EXEC)
 
 %: %.c
-	icc $(INCLUDES) -g -o $@ -openmp $< $(LIB)
+	icc $(INCLUDES) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
