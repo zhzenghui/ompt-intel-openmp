@@ -318,6 +318,14 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     va_list     ap;
     va_start(   ap, microtask );
 
+#if OMPT_SUPPORT
+    kmp_info_t *master_th = __kmp_threads[ gtid ];
+    kmp_team_t *parent_team = master_th->th.th_team;
+    int tid = __kmp_tid_from_gtid( gtid );
+    parent_team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.reenter_runtime_frame = 
+       __builtin_frame_address(0); 
+#endif
+
     __kmp_fork_call( loc, gtid, TRUE,
             argc,
             VOLATILE_CAST(microtask_t) microtask,
