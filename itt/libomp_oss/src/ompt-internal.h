@@ -41,7 +41,19 @@ typedef struct {
   ompt_parallel_id_t  parallel_id;
 } ompt_team_info_t;
 
+
 extern ompt_status_t ompt_status;
 extern ompt_callbacks_t ompt_callbacks;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void ompt_init(void);
+void ompt_fini(void);
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif

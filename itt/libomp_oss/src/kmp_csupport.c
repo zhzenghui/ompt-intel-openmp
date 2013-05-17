@@ -49,6 +49,8 @@
 #include "kmp_i18n.h"
 #include "kmp_error.h"
 
+#include "ompt-internal.h"
+
 #define MAX_MESSAGE 512
 
 /* ------------------------------------------------------------------------ */
@@ -75,6 +77,9 @@ __kmpc_begin(ident_t *loc, kmp_int32 flags)
 
         KC_TRACE( 10, ("__kmpc_begin: called\n" ) );
     }
+#if OMPT_SUPPORT
+    ompt_init();
+#endif
 }
 
 /*!
@@ -97,6 +102,9 @@ __kmpc_end(ident_t *loc)
 
         __kmp_internal_end_thread( -1 );
     }
+#if OMPT_SUPPORT
+    ompt_fini();
+#endif
 }
 
 /*!
