@@ -1545,11 +1545,6 @@ __kmp_linear_barrier_release( enum barrier_type bt,
         KA_TRACE( 20, ("__kmp_linear_barrier_release: T#%d(%d:%d) set go(%p) = %u\n",
           gtid, team->t.t_id, tid, &thr_bar->b_go, KMP_INIT_BARRIER_STATE ) );
 
-#if OMPT_SUPPORT
-        team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.reenter_runtime_frame =
-          team->t.ompt_team_info.reenter_runtime_frame;
-#endif
-
         KMP_MB();       /* Flush all pending memory write invalidates.  */
     }
 
@@ -1617,11 +1612,6 @@ __kmp_tree_barrier_release( enum barrier_type bt,
           gtid, team->t.t_id, tid, bt ) );
     }
 
-
-#if OMPT_SUPPORT
-        team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.reenter_runtime_frame =
-          team->t.ompt_team_info.reenter_runtime_frame;
-#endif
 
     nproc     = this_thr -> th.th_team_nproc;
     child_tid = ( tid << branch_bits ) + 1;
@@ -1737,11 +1727,6 @@ __kmp_hyper_barrier_release( enum barrier_type bt,
 
     num_threads = this_thr -> th.th_team_nproc;
     other_threads = team -> t.t_threads;
-
-#if OMPT_SUPPORT
-        team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.reenter_runtime_frame =
-          team->t.ompt_team_info.reenter_runtime_frame;
-#endif
 
     /* count up to correct level for parent */
     for ( level = 0, offset = 1;
@@ -2397,6 +2382,12 @@ __kmp_fork_call(
     }
 #endif // OMP_30_ENABLED
 
+#if OMPT_SUPPORT
+    int  tid = __kmp_tid_from_gtid( gtid );
+    parent_team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.reenter_runtime_frame = 
+	     __builtin_frame_address(0); 
+#endif
+
     /* determine how many new threads we can use */
     __kmp_acquire_bootstrap_lock( &__kmp_forkjoin_lock );
 
@@ -2454,8 +2445,6 @@ __kmp_fork_call(
 	   int  tid = __kmp_tid_from_gtid( gtid );
            void **exit_runtime_p = 
 	     &(parent_team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.exit_runtime_frame);
-	   parent_team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.reenter_runtime_frame = 
-	     __builtin_frame_address(0); 
 #else
            void *dummy;
            void **exit_runtime_p = &dummy;
@@ -2606,9 +2595,7 @@ __kmp_fork_call(
     TCW_SYNC_PTR(team->t.t_pkfn, microtask);
     team->t.t_invoke     = invoker;  /* TODO move this to root, maybe */
     team->t.t_ident      = loc;
-#if OMPT_SUPPORT
-    team->t.ompt_team_info.reenter_runtime_frame = __builtin_frame_address(0);
-#endif
+
 #if OMP_30_ENABLED
     // TODO: parent_team->t.t_level == INT_MAX ???
     team->t.t_level        = parent_team->t.t_level + 1;
@@ -6137,7 +6124,6 @@ __kmp_launch_thread( kmp_info_t *this_thr )
 #if OMPT_SUPPORT
                 /* no frame set while outside task */
 	        int tid = __kmp_tid_from_gtid(gtid); 
-                (*pteam)->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.reenter_runtime_frame = 0;
                 (*pteam)->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.exit_runtime_frame = 0;
 #endif
                 KMP_MB();
