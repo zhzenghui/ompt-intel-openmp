@@ -1,10 +1,10 @@
 /* -------------- OMPT events -------------- */
 
 /*
- * As events are supported in the runtime, update the coverage header
+ * As events are supported in the runtime, update the specific header
  * to enable the callback functions.
  */
-#include "ompt-event-coverage.h"
+#include "ompt-event-specific.h"
 
   /*--- Mandatory Events ---*/
 ompt_event(ompt_event_parallel_create, ompt_new_parallel_callback_t, 1, ompt_event_parallel_create_implemented) /* parallel create */
