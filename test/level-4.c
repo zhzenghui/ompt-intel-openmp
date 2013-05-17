@@ -2,6 +2,7 @@
 #include <ompt.h>
 
 #include "dump.h"
+#include "callback.h"
 
 
 main()

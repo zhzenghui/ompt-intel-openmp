@@ -4,6 +4,7 @@
 // extern int omp_get_num_threads(void);
 
 #include "dump.h"
+#include "callback.h"
 
 main()
 {
