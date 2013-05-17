@@ -1,7 +1,9 @@
 VER=deb
+HOST:= $(shell hostname -s)
+
+ifeq ($(HOST),manticore)
 VER=rel
-HOST=mic
-HOST=manticore
+endif
 
 LIBDIR =../itt/libomp_oss/tmp/lin_32e-rtl_5_nor_dyn.12.$(VER).40.c0.t0-$(HOST)/unstripped
 LIB =$(LIBDIR)/libiomp5.so
@@ -17,5 +19,7 @@ all: $(EXEC)
 clean:
 	/bin/rm -f $(EXEC)
 
-%: %.c $(HEADERS) Makefile $(LIB)
+$(EXEC) : $(HEADERS) Makefile $(LIB)
+
+%: %.c 
 	icc $(INCLUDES) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
