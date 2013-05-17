@@ -192,11 +192,13 @@ void ompt_init()
 
 void ompt_fini()
 {
-   ompt_status = ompt_status_disabled;
-
-   if (ompt_callbacks.ompt_callback(ompt_event_runtime_shutdown)) {
-     ompt_callbacks.ompt_callback(ompt_event_runtime_shutdown)();
+   if (ompt_status == ompt_status_track_callback) {
+     if (ompt_callbacks.ompt_callback(ompt_event_runtime_shutdown)) {
+       ompt_callbacks.ompt_callback(ompt_event_runtime_shutdown)();
+     }
    }
+
+   ompt_status = ompt_status_disabled;
 }
 
 
@@ -286,8 +288,10 @@ _OMP_EXTERN int ompt_get_ompt_version()
 
 _OMP_EXTERN void ompt_control(uint64_t command, uint64_t modifier)
 {
-   if (ompt_callbacks.ompt_callback(ompt_event_control)) {
-     ompt_callbacks.ompt_callback(ompt_event_control)(command, modifier);
+   if (ompt_status == ompt_status_track_callback) {
+     if (ompt_callbacks.ompt_callback(ompt_event_control)) {
+       ompt_callbacks.ompt_callback(ompt_event_control)(command, modifier);
+     }
    }
 }
 
