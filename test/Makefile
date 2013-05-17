@@ -1,4 +1,7 @@
-LIB =../itt/libomp_oss/tmp/lin_32e-rtl_5_nor_dyn.12.rel.40.c0.t0-mic/unstripped/libiomp5.so
+VER=rel
+VER=deb
+LIB =../itt/libomp_oss/tmp/lin_32e-rtl_5_nor_dyn.12.$(VER).40.c0.t0-mic/unstripped/libiomp5.so
+
 INCLUDES=-I../itt/libomp_oss/src
 
 FC = ifort
