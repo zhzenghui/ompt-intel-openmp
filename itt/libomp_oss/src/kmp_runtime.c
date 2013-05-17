@@ -6089,6 +6089,14 @@ __kmp_launch_thread( kmp_info_t *this_thr )
         this_thr -> th.th_cons = __kmp_allocate_cons_stack( gtid );  // ATT: Memory leak?
     }
 
+#if OMPT_SUPPORT
+   if ((ompt_status == ompt_status_track_callback)) {
+     if (ompt_callbacks.ompt_callback(ompt_event_thread_create)) {
+       ompt_callbacks.ompt_callback(ompt_event_thread_create)(&(this_thr->th.ompt_thread_info.data));
+     }
+   }
+#endif
+
     /* This is the place where threads wait for work */
     while( ! TCR_4(__kmp_global.g.g_done) ) {
         KMP_DEBUG_ASSERT( this_thr == __kmp_threads[ gtid ] );
@@ -6136,6 +6144,14 @@ __kmp_launch_thread( kmp_info_t *this_thr )
         }
     }
     TCR_SYNC_PTR(__kmp_global.g.g_done);
+
+#if OMPT_SUPPORT
+   if ((ompt_status == ompt_status_track_callback)) {
+     if (ompt_callbacks.ompt_callback(ompt_event_thread_exit)) {
+       ompt_callbacks.ompt_callback(ompt_event_thread_exit)(&(this_thr->th.ompt_thread_info.data));
+     }
+   }
+#endif
 
 #if OMP_30_ENABLED
     if ( TCR_PTR( this_thr->th.th_task_team ) != NULL ) {
