@@ -49,6 +49,7 @@
 #endif
 #include "kmp.h"
 #include "kmp_atomic.h"
+#include "ompt-specific.h"
 
 #ifdef __cplusplus
     extern "C" {
@@ -137,6 +138,7 @@ GOMP_atomic_start(void)
 {
     int gtid = __kmp_entry_gtid();
     KA_TRACE(20, ("GOMP_atomic_start: T#%d\n", gtid));
+	__ompt_thread_assign_wait_id(0);
     __kmp_acquire_atomic_lock(&__kmp_atomic_lock, gtid);
 }
 

@@ -68,6 +68,27 @@ void my_shutdown()
   printf("OpenMP Shutdown.\n"); fflush(stdout);
 }
 
+/* Wait for atomic lock */
+void my_atomic_wait (
+  ompt_wait_id_t *waitid)            /* address of atomic variable          */
+{
+  printf("OpenMP Atomic Wait: %llx\n", waitid); fflush(stdout);
+}
+
+/* Acquired atomic lock */
+void my_atomic_acquired (
+  ompt_wait_id_t *waitid)            /* address of atomic variable          */
+{
+  printf("OpenMP Atomic Acquired: %llx\n", waitid); fflush(stdout);
+}
+
+/* Released atomic lock */
+void my_atomic_released (
+  ompt_wait_id_t *waitid)            /* address of atomic variable          */
+{
+  printf("OpenMP Atomic Released: %llx\n", waitid); fflush(stdout);
+}
+
 #define CHECK(RC) \
   if (RC != 0) { fprintf(stderr, "Error registering callback.\n"); return 0; }
 
@@ -81,6 +102,9 @@ int ompt_initialize() {
   CHECK(ompt_set_callback(ompt_event_thread_exit, my_thread_exit));
   CHECK(ompt_set_callback(ompt_event_control, my_control));
   CHECK(ompt_set_callback(ompt_event_runtime_shutdown, my_shutdown));
+  CHECK(ompt_set_callback(ompt_event_wait_atomic, my_atomic_wait));
+  CHECK(ompt_set_callback(ompt_event_acquired_atomic, my_atomic_acquired));
+  CHECK(ompt_set_callback(ompt_event_release_atomic, my_atomic_released));
   return 1;
 }
 

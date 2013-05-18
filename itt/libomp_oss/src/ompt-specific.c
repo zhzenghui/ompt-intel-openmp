@@ -92,6 +92,12 @@ void __ompt_team_assign_id(kmp_team_t *team)
      ti ? ((ti->th.ompt_thread_info.next_parallel_id++ << OMPT_THREAD_ID_BITS) | gtid) : 0;
 }
 
+void __ompt_thread_assign_wait_id(void *variable)
+{
+  int gtid = __kmp_gtid_get_specific();
+  kmp_info_t *ti = ompt_get_thread_gtid(gtid);
+  ti->th.ompt_thread_info.wait_id = (ompt_wait_id_t)(variable);
+}
 
 ompt_data_t *__ompt_get_task_data_internal(int ancestor_level) 
 {

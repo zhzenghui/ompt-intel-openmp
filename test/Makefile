@@ -22,4 +22,4 @@ clean:
 $(EXEC) : $(HEADERS) Makefile $(LIB)
 
 %: %.c 
-	icc $(INCLUDES) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
+	icc $(INCLUDES) -O0 -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
