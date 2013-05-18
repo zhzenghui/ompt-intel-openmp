@@ -46,6 +46,7 @@
 
 #include "kmp_atomic.h"
 #include "kmp.h"                  // TRUE, asm routines prototypes
+#include "stdio.h"
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
@@ -653,7 +654,8 @@ kmp_atomic_lock_t __kmp_atomic_lock_32c; /* Control access to all user coded ato
 RET_TYPE __kmpc_atomic_##TYPE_ID##_##OP_ID( ident_t *id_ref, int gtid, TYPE * lhs, TYPE rhs ) \
 {                                                                                         \
     KMP_DEBUG_ASSERT( __kmp_init_serial );                                                \
-    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID ": T#%d\n", gtid ));
+    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID ": T#%d\n", gtid )); \
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 
 // ------------------------------------------------------------------------
 // Lock variables used for critical sections for various size operands
@@ -1029,6 +1031,7 @@ ATOMIC_CMPX_L( fixed8,  orl, kmp_int64, 64, ||, 8i, 7, KMP_ARCH_X86 )  // __kmpc
 // MIN and MAX need separate macros
 // OP - operator to check if we need any actions?
 #define MIN_MAX_CRITSECT(OP,LCK_ID)                                        \
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs); \
     __kmp_acquire_atomic_lock( & ATOMIC_LOCK##LCK_ID, gtid );                     \
                                                                            \
     if ( *lhs OP rhs ) {                 /* still need actions? */         \
@@ -1262,7 +1265,8 @@ ATOMIC_CRITICAL( cmplx16, div, CPLX128_LEG,     /, 32c,   1 )            // __km
 RET_TYPE __kmpc_atomic_##TYPE_ID##_##OP_ID##_rev( ident_t *id_ref, int gtid, TYPE * lhs, TYPE rhs ) \
 {                                                                                         \
     KMP_DEBUG_ASSERT( __kmp_init_serial );                                                \
-    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID "_rev: T#%d\n", gtid ));
+    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID "_rev: T#%d\n", gtid )); \
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs)
 
 // ------------------------------------------------------------------------
 // Operation on *lhs, rhs using "compare_and_store" routine
@@ -1405,7 +1409,8 @@ ATOMIC_CRITICAL_REV( cmplx16, div, CPLX128_LEG,     /, 32c,   1 )            // 
 void __kmpc_atomic_##TYPE_ID##_##OP_ID##_##RTYPE_ID( ident_t *id_ref, int gtid, TYPE * lhs, RTYPE rhs ) \
 {                                                                                                       \
     KMP_DEBUG_ASSERT( __kmp_init_serial );                                                              \
-    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID "_" #RTYPE_ID ": T#%d\n", gtid ));
+    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID "_" #RTYPE_ID ": T#%d\n", gtid )); \
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 
 // -------------------------------------------------------------------------
 #define ATOMIC_CRITICAL_FP(TYPE_ID,TYPE,OP_ID,OP,RTYPE_ID,RTYPE,LCK_ID,GOMP_FLAG)         \
@@ -1541,7 +1546,8 @@ ATOMIC_CMPXCHG_CMPLX( cmplx4, kmp_cmplx32, div, 64, /, cmplx8,  kmp_cmplx64,  8c
 RET_TYPE __kmpc_atomic_##TYPE_ID##_##OP_ID( ident_t *id_ref, int gtid, TYPE * loc ) \
 {                                                                                   \
     KMP_DEBUG_ASSERT( __kmp_init_serial );                                          \
-    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID ": T#%d\n", gtid ));
+    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID ": T#%d\n", gtid )); \
+    OMPT_THREAD_ASSIGN_WAIT_ID(loc);
 
 // ------------------------------------------------------------------------
 // Operation on *lhs, rhs using "compare_and_store_ret" routine
@@ -1650,7 +1656,8 @@ ATOMIC_BEGIN_READ(TYPE_ID,OP_ID,TYPE,TYPE)                                \
 void __kmpc_atomic_##TYPE_ID##_##OP_ID( TYPE * out, ident_t *id_ref, int gtid, TYPE * loc ) \
 {                                                                                   \
     KMP_DEBUG_ASSERT( __kmp_init_serial );                                          \
-    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID ": T#%d\n", gtid ));
+    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID ": T#%d\n", gtid )); \
+    OMPT_THREAD_ASSIGN_WAIT_ID(loc);
 
 // ------------------------------------------------------------------------
 #define ATOMIC_CRITICAL_READ_WRK(TYPE_ID,OP_ID,TYPE,OP,LCK_ID,GOMP_FLAG)      \
@@ -1792,7 +1799,8 @@ ATOMIC_CRITICAL_WR( cmplx16, wr, CPLX128_LEG, =, 32c,   1 )         // __kmpc_at
 RET_TYPE __kmpc_atomic_##TYPE_ID##_##OP_ID( ident_t *id_ref, int gtid, TYPE * lhs, TYPE rhs, int flag ) \
 {                                                                                         \
     KMP_DEBUG_ASSERT( __kmp_init_serial );                                                \
-    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID ": T#%d\n", gtid ));
+    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID ": T#%d\n", gtid )); \
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs); \
 
 // -------------------------------------------------------------------------
 // Operation on *lhs, rhs bound by critical section
@@ -2189,7 +2197,8 @@ ATOMIC_BEGIN_CPT(TYPE_ID,OP_ID,TYPE,TYPE)                           \
 void __kmpc_atomic_##TYPE_ID##_##OP_ID( ident_t *id_ref, int gtid, TYPE * lhs, TYPE rhs, TYPE * out, int flag ) \
 {                                                                         \
     KMP_DEBUG_ASSERT( __kmp_init_serial );                                \
-    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID ": T#%d\n", gtid ));
+    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_" #OP_ID ": T#%d\n", gtid )); \
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 // ------------------------------------------------------------------------
 
 #define ATOMIC_CRITICAL_CPT_WRK(TYPE_ID,OP_ID,TYPE,OP,LCK_ID,GOMP_FLAG)   \
@@ -2440,7 +2449,8 @@ ATOMIC_CRITICAL_CPT_REV( cmplx16, div_cpt_rev, CPLX128_LEG, /, 32c,   1 )       
 TYPE __kmpc_atomic_##TYPE_ID##_swp( ident_t *id_ref, int gtid, TYPE * lhs, TYPE rhs )     \
 {                                                                                         \
     KMP_DEBUG_ASSERT( __kmp_init_serial );                                                \
-    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_swp: T#%d\n", gtid ));
+    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_swp: T#%d\n", gtid )); \
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 
 #define CRITICAL_SWP(LCK_ID)                                              \
     __kmp_acquire_atomic_lock( & ATOMIC_LOCK##LCK_ID, gtid );             \
@@ -2541,7 +2551,8 @@ ATOMIC_BEGIN_SWP(TYPE_ID,TYPE)                                          \
 void __kmpc_atomic_##TYPE_ID##_swp( ident_t *id_ref, int gtid, TYPE * lhs, TYPE rhs, TYPE * out )     \
 {                                                                                         \
     KMP_DEBUG_ASSERT( __kmp_init_serial );                                                \
-    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_swp: T#%d\n", gtid ));
+    KA_TRACE(100,("__kmpc_atomic_" #TYPE_ID "_swp: T#%d\n", gtid )); \
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 
 
 #define CRITICAL_SWP_WRK(LCK_ID)                                          \
@@ -2640,6 +2651,7 @@ __kmpc_atomic_1( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( voi
         // All 1-byte data is of integer data type.
         //
 
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 #ifdef KMP_GOMP_COMPAT
         if ( __kmp_atomic_mode == 2 ) {
             __kmp_acquire_atomic_lock( & __kmp_atomic_lock, gtid );
@@ -2695,6 +2707,7 @@ __kmpc_atomic_2( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( voi
         // All 2-byte data is of integer data type.
         //
 
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 #ifdef KMP_GOMP_COMPAT
         if ( __kmp_atomic_mode == 2 ) {
             __kmp_acquire_atomic_lock( & __kmp_atomic_lock, gtid );
@@ -2755,6 +2768,7 @@ __kmpc_atomic_4( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( voi
         // even if it isn't of integer data type.
         //
 
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 #ifdef KMP_GOMP_COMPAT
         if ( __kmp_atomic_mode == 2 ) {
             __kmp_acquire_atomic_lock( & __kmp_atomic_lock, gtid );
@@ -2812,6 +2826,7 @@ __kmpc_atomic_8( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( voi
         // even if it isn't of integer data type.
         //
 
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 #ifdef KMP_GOMP_COMPAT
         if ( __kmp_atomic_mode == 2 ) {
             __kmp_acquire_atomic_lock( & __kmp_atomic_lock, gtid );
@@ -2837,6 +2852,7 @@ __kmpc_atomic_10( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( vo
 {
     KMP_DEBUG_ASSERT( __kmp_init_serial );
 
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 #ifdef KMP_GOMP_COMPAT
     if ( __kmp_atomic_mode == 2 ) {
         __kmp_acquire_atomic_lock( & __kmp_atomic_lock, gtid );
@@ -2861,6 +2877,7 @@ __kmpc_atomic_16( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( vo
 {
     KMP_DEBUG_ASSERT( __kmp_init_serial );
 
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 #ifdef KMP_GOMP_COMPAT
     if ( __kmp_atomic_mode == 2 ) {
         __kmp_acquire_atomic_lock( & __kmp_atomic_lock, gtid );
@@ -2885,6 +2902,7 @@ __kmpc_atomic_20( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( vo
 {
     KMP_DEBUG_ASSERT( __kmp_init_serial );
 
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 #ifdef KMP_GOMP_COMPAT
     if ( __kmp_atomic_mode == 2 ) {
         __kmp_acquire_atomic_lock( & __kmp_atomic_lock, gtid );
@@ -2909,6 +2927,7 @@ __kmpc_atomic_32( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( vo
 {
     KMP_DEBUG_ASSERT( __kmp_init_serial );
 
+    OMPT_THREAD_ASSIGN_WAIT_ID(lhs);
 #ifdef KMP_GOMP_COMPAT
     if ( __kmp_atomic_mode == 2 ) {
         __kmp_acquire_atomic_lock( & __kmp_atomic_lock, gtid );
@@ -2936,6 +2955,7 @@ __kmpc_atomic_start(void)
 {
     int gtid = __kmp_entry_gtid();
     KA_TRACE(20, ("__kmpc_atomic_start: T#%d\n", gtid));
+    OMPT_THREAD_ASSIGN_WAIT_ID(0); // the atomic target is unknown here...
     __kmp_acquire_atomic_lock(&__kmp_atomic_lock, gtid);
 }
 

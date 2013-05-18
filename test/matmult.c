@@ -59,8 +59,9 @@ __inline double multiply(double a, double b) {
 #endif /* APP_USE_INLINE_MULTIPLY */
 
 // cols_a and rows_b are the same value
-void compute(double **a, double **b, double **c, int rows_a, int cols_a, int cols_b) {
+double compute(double **a, double **b, double **c, int rows_a, int cols_a, int cols_b) {
   int i,j,k;
+  double total = 0.0;
   printf("Compute...\n");
   fflush(stdout);
 #pragma omp parallel private(i,j,k) shared(a,b,c)
@@ -76,10 +77,13 @@ void compute(double **a, double **b, double **c, int rows_a, int cols_a, int col
 #else /* APP_USE_INLINE_MULTIPLY */
           c[i][j] += a[i][k] * b[k][j];
 #endif /* APP_USE_INLINE_MULTIPLY */
+#pragma omp atomic
+          total += c[i][j];
         }
       }
     }
   }   /*** End of parallel region ***/
+  return total;
 }
 
 // cols_a and rows_b are the same value
