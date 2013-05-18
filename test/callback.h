@@ -89,6 +89,22 @@ void my_atomic_released (
   printf("OpenMP Atomic Released: %llx\n", waitid); fflush(stdout);
 }
 
+/* Entering a barrier */
+void my_barrier_begin (
+  ompt_data_t  *parent_task_data,   /* tool data for parent task   */
+  ompt_parallel_id_t parallel_id)   /* id of parallel region       */
+{
+  printf("OpenMP Barrier begin: %llx\n", parallel_id); fflush(stdout);
+}
+
+/* Exiting a barrier */
+void my_barrier_end (
+  ompt_data_t  *parent_task_data,   /* tool data for parent task   */
+  ompt_parallel_id_t parallel_id)   /* id of parallel region       */
+{
+  printf("OpenMP Barrier end: %llx\n", parallel_id); fflush(stdout);
+}
+
 #define CHECK(RC) \
   if (RC != 0) { fprintf(stderr, "Error registering callback.\n"); return 0; }
 
@@ -105,6 +121,8 @@ int ompt_initialize() {
   CHECK(ompt_set_callback(ompt_event_wait_atomic, my_atomic_wait));
   CHECK(ompt_set_callback(ompt_event_acquired_atomic, my_atomic_acquired));
   CHECK(ompt_set_callback(ompt_event_release_atomic, my_atomic_released));
+  CHECK(ompt_set_callback(ompt_event_barrier_begin, my_barrier_begin));
+  CHECK(ompt_set_callback(ompt_event_barrier_end, my_barrier_end));
   return 1;
 }
 

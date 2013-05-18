@@ -1930,6 +1930,16 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
 
     KA_TRACE( 15, ( "__kmp_barrier: T#%d(%d:%d) has arrived\n",
                     gtid, __kmp_team_from_gtid(gtid)->t.t_id, __kmp_tid_from_gtid(gtid) ) );
+#if OMPT_SUPPORT
+    if ((ompt_status == ompt_status_track_callback)) {
+      if (ompt_callbacks.ompt_callback(ompt_event_barrier_begin)) {
+        int  tid = __kmp_tid_from_gtid( gtid );
+        ompt_callbacks.ompt_callback(ompt_event_barrier_begin)(
+          &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
+          team->t.ompt_team_info.parallel_id);
+      }
+    }
+#endif
 
     if ( ! team->t.t_serialized ) {
         #if OMP_30_ENABLED
@@ -2028,6 +2038,16 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
     KA_TRACE( 15, ( "__kmp_barrier: T#%d(%d:%d) is leaving with return value %d\n",
                     gtid, __kmp_team_from_gtid(gtid)->t.t_id, __kmp_tid_from_gtid(gtid),
                     status ) );
+#if OMPT_SUPPORT
+    if ((ompt_status == ompt_status_track_callback)) {
+      if (ompt_callbacks.ompt_callback(ompt_event_barrier_end)) {
+        int  tid = __kmp_tid_from_gtid( gtid );
+        ompt_callbacks.ompt_callback(ompt_event_barrier_end)(
+          &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
+          team->t.ompt_team_info.parallel_id);
+      }
+    }
+#endif
     return status;
 }
 
@@ -5831,6 +5851,16 @@ __kmp_join_barrier( int gtid )
 
     KA_TRACE( 10, ("__kmp_join_barrier: T#%d(%d:%d) arrived at join barrier\n",
                    gtid, team_id, tid ));
+#if OMPT_SUPPORT
+   if ((ompt_status == ompt_status_track_callback)) {
+     if (ompt_callbacks.ompt_callback(ompt_event_barrier_begin)) {
+       int  tid = __kmp_tid_from_gtid( gtid );
+       ompt_callbacks.ompt_callback(ompt_event_barrier_begin)(
+         &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
+         team->t.ompt_team_info.parallel_id);
+     }
+   }
+#endif
 
     #if OMP_30_ENABLED
         if ( __kmp_tasking_mode == tskm_extra_barrier ) {
@@ -5930,6 +5960,17 @@ __kmp_join_barrier( int gtid )
     KMP_MB();       /* Flush all pending memory write invalidates.  */
     KA_TRACE( 10, ("__kmp_join_barrier: T#%d(%d:%d) leaving\n",
                    gtid, team_id, tid ));
+#if OMPT_SUPPORT
+   if ((ompt_status == ompt_status_track_callback)) {
+     if (ompt_callbacks.ompt_callback(ompt_event_barrier_end)) {
+       int  tid = __kmp_tid_from_gtid( gtid );
+       ompt_callbacks.ompt_callback(ompt_event_barrier_end)(
+         &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
+         team->t.ompt_team_info.parallel_id);
+     }
+   }
+#endif
+
 }
 
 

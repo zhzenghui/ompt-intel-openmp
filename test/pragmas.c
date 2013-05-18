@@ -357,9 +357,10 @@ int main (int argc, char *argv[])
 {
   printf("Main...\n"); fflush(stdout);
 #if 0
-#endif
   printf ("\n\nDoing atomic: %d\n\n", atomic()); fflush(stdout);
+#endif
   printf ("\n\nDoing barrier: %d\n\n", barrier()); fflush(stdout);
+#if 0
   printf ("\n\nDoing critical: %d\n\n", critical()); fflush(stdout);
   printf ("\n\nDoing fortest: %d\n\n", fortest()); fflush(stdout);
   printf ("\n\nDoing flush: %d\n\n", flush()); fflush(stdout);
@@ -374,7 +375,6 @@ int main (int argc, char *argv[])
   printf ("\n\nDoing parallelfor_runtime: %d\n\n", parallelfor_runtime()); fflush(stdout);
   printf ("\n\nDoing locktest: %d\n\n", locktest()); fflush(stdout);
   printf ("\n\nDoing tasks: %d\n\n", fibouter(20)); fflush(stdout);
-#if 0
 #endif
 
   printf ("Done.\n"); fflush(stdout);
