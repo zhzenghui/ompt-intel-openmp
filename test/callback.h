@@ -1,3 +1,4 @@
+#ifndef TAU_OPENMP
 /* 
  * This header file implements a dummy tool which will execute all
  * of the implemented callbacks in the OMPT framework. When a supported
@@ -230,3 +231,4 @@ int ompt_initialize() {
 }
 
 
+#endif

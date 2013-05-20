@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "omp.h"
 #include <ompt.h>
 
 // extern int omp_get_num_threads(void);

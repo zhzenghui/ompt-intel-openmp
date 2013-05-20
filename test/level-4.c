@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "omp.h"
 #include <ompt.h>
 
 #include "dump.h"
