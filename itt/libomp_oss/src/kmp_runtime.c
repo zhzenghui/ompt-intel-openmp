@@ -2426,14 +2426,6 @@ __kmp_fork_call(
     }
 #endif // OMP_30_ENABLED
 
-#if 0
-#if OMPT_SUPPORT
-    int  tid = __kmp_tid_from_gtid( gtid );
-    parent_team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.reenter_runtime_frame = 
-	     __builtin_frame_address(0); 
-#endif
-#endif
-
     /* determine how many new threads we can use */
     __kmp_acquire_bootstrap_lock( &__kmp_forkjoin_lock );
 
