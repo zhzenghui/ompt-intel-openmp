@@ -1394,7 +1394,7 @@ __kmp_acquire_queuing_lock_timed_template( kmp_queuing_lock_t *lck,
 #endif
 	    
 #if OMPT_SUPPORT
-                    if (prev_state != ompt_state_undefined) {
+                    if ((ompt_status & ompt_status_track) && (prev_state != ompt_state_undefined)) {
 		      /* change the state before clearing wait_id */
 		      this_thr->th.ompt_thread_info.state = prev_state;
 		      this_thr->th.ompt_thread_info.wait_id = 0;
@@ -1409,10 +1409,12 @@ __kmp_acquire_queuing_lock_timed_template( kmp_queuing_lock_t *lck,
         }
 
 #if OMPT_SUPPORT
-	/* this thread will spin; set wait_id before entering wait state */
-	 prev_state = this_thr->th.ompt_thread_info.state;
-	 this_thr->th.ompt_thread_info.wait_id = (uint64_t) lck;
-	 this_thr->th.ompt_thread_info.state = ompt_state_wait_lock;
+        if (ompt_status & ompt_status_track) {
+	  /* this thread will spin; set wait_id before entering wait state */
+	   prev_state = this_thr->th.ompt_thread_info.state;
+	   this_thr->th.ompt_thread_info.wait_id = (uint64_t) lck;
+	   this_thr->th.ompt_thread_info.state = ompt_state_wait_lock;
+        }
 #endif
 
         if ( enqueued ) {
@@ -1681,7 +1683,11 @@ __kmp_release_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid )
 
 #if OMPT_SUPPORT
 	    if (ompt_status == ompt_status_track_callback) {
-	      if (ompt_callbacks.ompt_callback(ompt_event_release_lock)) {
+	      if (lck->lk.flags == kmp_lf_critical_section) {
+		if (ompt_callbacks.ompt_callback(ompt_event_release_critical)) {
+		  ompt_callbacks.ompt_callback(ompt_event_release_critical)((uint64_t) lck);
+		} 
+	      } else if (ompt_callbacks.ompt_callback(ompt_event_release_lock)) {
 		ompt_callbacks.ompt_callback(ompt_event_release_lock)((uint64_t) lck);
 	      }
 	    }

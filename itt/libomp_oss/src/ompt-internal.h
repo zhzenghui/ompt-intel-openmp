@@ -9,11 +9,14 @@
 
 #define ompt_callback(e) e ## _callback
 
+/* track and track_callback share a bit so that one can test whether either is set 
+ * by anding a bit.
+ */
 typedef enum {
-  ompt_status_disabled,
-  ompt_status_ready,
-  ompt_status_track,
-  ompt_status_track_callback,
+  ompt_status_disabled       = 0x0,
+  ompt_status_ready          = 0x1,
+  ompt_status_track          = 0x2,
+  ompt_status_track_callback = 0x6,
 } ompt_status_t;
 
 
