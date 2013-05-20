@@ -105,11 +105,49 @@ void my_barrier_end (
   printf("OpenMP Barrier end: %llx\n", parallel_id); fflush(stdout);
 }
 
+/* Entering a master */
+void my_master_begin (
+  ompt_data_t  *parent_task_data,   /* tool data for parent task   */
+  ompt_parallel_id_t parallel_id)   /* id of parallel region       */
+{
+  printf("%d: OpenMP Master begin: %llx\n", omp_get_thread_num(), parallel_id); fflush(stdout);
+}
+
+/* Exiting a master */
+void my_master_end (
+  ompt_data_t  *parent_task_data,   /* tool data for parent task   */
+  ompt_parallel_id_t parallel_id)   /* id of parallel region       */
+{
+  printf("%d: OpenMP Master end: %llx\n", omp_get_thread_num(), parallel_id); fflush(stdout);
+}
+
+/* Wait for ordered */
+void my_ordered_wait (
+  ompt_wait_id_t *waitid)            /* address of ordered variable          */
+{
+  printf("%d: OpenMP Ordered Wait: %llx\n", omp_get_thread_num(), waitid); fflush(stdout);
+}
+
+/* Acquired ordered lock */
+void my_ordered_acquired (
+  ompt_wait_id_t *waitid)            /* address of ordered variable          */
+{
+  printf("%d: OpenMP Ordered Acquired: %llx\n", omp_get_thread_num(), waitid); fflush(stdout);
+}
+
+/* Released ordered lock */
+void my_ordered_released (
+  ompt_wait_id_t *waitid)            /* address of ordered variable          */
+{
+  printf("%d: OpenMP Ordered Released: %llx\n", omp_get_thread_num(), waitid); fflush(stdout);
+}
+
 #define CHECK(RC) \
   if (RC != 0) { fprintf(stderr, "Error registering callback.\n"); return 0; }
 
 int ompt_initialize() {
   int rc = 0;
+  /* required events */
   CHECK(ompt_set_callback(ompt_event_parallel_create, my_parallel_region_create));
   CHECK(ompt_set_callback(ompt_event_parallel_exit, my_parallel_region_exit));
   CHECK(ompt_set_callback(ompt_event_task_create, my_task_create));
@@ -118,11 +156,17 @@ int ompt_initialize() {
   CHECK(ompt_set_callback(ompt_event_thread_exit, my_thread_exit));
   CHECK(ompt_set_callback(ompt_event_control, my_control));
   CHECK(ompt_set_callback(ompt_event_runtime_shutdown, my_shutdown));
+  /* optional events */
   CHECK(ompt_set_callback(ompt_event_wait_atomic, my_atomic_wait));
   CHECK(ompt_set_callback(ompt_event_acquired_atomic, my_atomic_acquired));
   CHECK(ompt_set_callback(ompt_event_release_atomic, my_atomic_released));
   CHECK(ompt_set_callback(ompt_event_barrier_begin, my_barrier_begin));
   CHECK(ompt_set_callback(ompt_event_barrier_end, my_barrier_end));
+  CHECK(ompt_set_callback(ompt_event_master_begin, my_master_begin));
+  CHECK(ompt_set_callback(ompt_event_master_end, my_master_end));
+  //CHECK(ompt_set_callback(ompt_event_wait_ordered, my_ordered_wait));
+  //CHECK(ompt_set_callback(ompt_event_acquired_ordered, my_ordered_acquired));
+  //CHECK(ompt_set_callback(ompt_event_release_ordered, my_ordered_released));
   return 1;
 }
 

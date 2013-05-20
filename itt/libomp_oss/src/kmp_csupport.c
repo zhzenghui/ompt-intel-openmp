@@ -842,6 +842,19 @@ __kmpc_master(ident_t *loc, kmp_int32 global_tid)
     if( KMP_MASTER_GTID( global_tid ))
         status = 1;
 
+#if OMPT_SUPPORT
+   kmp_info_t  *this_thr        = __kmp_threads[ global_tid ];
+   kmp_team_t  *team            = this_thr -> th.th_team;
+   if ((ompt_status == ompt_status_track_callback)) {
+     if (ompt_callbacks.ompt_callback(ompt_event_master_begin)) {
+       int  tid = __kmp_tid_from_gtid( global_tid );
+       ompt_callbacks.ompt_callback(ompt_event_master_begin)(
+         &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
+         team->t.ompt_team_info.parallel_id);
+     }
+   }
+#endif
+
     if ( __kmp_env_consistency_check ) {
         if (status)
             __kmp_push_sync( global_tid, ct_master, loc, NULL );
@@ -866,6 +879,19 @@ __kmpc_end_master(ident_t *loc, kmp_int32 global_tid)
     KC_TRACE( 10, ("__kmpc_end_master: called T#%d\n", global_tid ) );
 
     KMP_DEBUG_ASSERT( KMP_MASTER_GTID( global_tid ));
+
+#if OMPT_SUPPORT
+    kmp_info_t  *this_thr        = __kmp_threads[ global_tid ];
+    kmp_team_t  *team            = this_thr -> th.th_team;
+    if ((ompt_status == ompt_status_track_callback)) {
+      if (ompt_callbacks.ompt_callback(ompt_event_master_end)) {
+        int  tid = __kmp_tid_from_gtid( global_tid );
+        ompt_callbacks.ompt_callback(ompt_event_master_end)(
+          &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
+          team->t.ompt_team_info.parallel_id);
+      }
+    }
+#endif
 
     if ( __kmp_env_consistency_check ) {
         if( global_tid < 0 )
@@ -898,10 +924,36 @@ __kmpc_ordered( ident_t * loc, kmp_int32 gtid )
 
     th = __kmp_threads[ gtid ];
 
+#if 0 // this is the wrong place for this...
+#if OMPT_SUPPORT
+    kmp_info_t  *this_thr        = __kmp_threads[ gtid ];
+    kmp_team_t  *team            = this_thr -> th.th_team;
+    int  tid = __kmp_tid_from_gtid( gtid );
+    kmp_info_t *ompt_this_thr = __kmp_thread_from_gtid( gtid );
+    if ((ompt_status == ompt_status_track_callback)) {
+      if (ompt_callbacks.ompt_callback(ompt_event_wait_ordered)) {
+        ompt_callbacks.ompt_callback(ompt_event_wait_ordered)(
+	      ompt_this_thr->th.ompt_thread_info.wait_id);
+      }
+    }
+#endif // OMPT_SUPPORT
+#endif // 0
+
     if ( th -> th.th_dispatch -> th_deo_fcn != 0 )
         (*th->th.th_dispatch->th_deo_fcn)( & gtid, & cid, loc );
     else
         __kmp_parallel_deo( & gtid, & cid, loc );
+
+#if 0 // this is the wrong place for this...
+#if OMPT_SUPPORT
+    if ((ompt_status == ompt_status_track_callback)) {
+      if (ompt_callbacks.ompt_callback(ompt_event_acquired_ordered)) {
+        ompt_callbacks.ompt_callback(ompt_event_acquired_ordered)(
+	      ompt_this_thr->th.ompt_thread_info.wait_id);
+      }
+    }
+#endif // OMPT_SUPPORT
+#endif // 0
 
 }
 
@@ -927,6 +979,22 @@ __kmpc_end_ordered( ident_t * loc, kmp_int32 gtid )
         (*th->th.th_dispatch->th_dxo_fcn)( & gtid, & cid, loc );
     else
         __kmp_parallel_dxo( & gtid, & cid, loc );
+
+#if 0 // this is the wrong place for this...?
+#if OMPT_SUPPORT
+    kmp_info_t  *this_thr        = __kmp_threads[ gtid ];
+    kmp_team_t  *team            = this_thr -> th.th_team;
+    kmp_info_t *ompt_this_thr = __kmp_thread_from_gtid( gtid );
+    if ((ompt_status == ompt_status_track_callback)) {
+      if (ompt_callbacks.ompt_callback(ompt_event_release_ordered)) {
+        int  tid = __kmp_tid_from_gtid( gtid );
+        ompt_callbacks.ompt_callback(ompt_event_release_ordered)(
+	      ompt_this_thr->th.ompt_thread_info.wait_id);
+      }
+    }
+#endif // OMPT_SUPPORT
+#endif // 0
+
 }
 
 inline void

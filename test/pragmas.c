@@ -243,7 +243,7 @@ void test(int first, int last)
 
 void test2(int iter) 
 {
-  #pragma omp ordered
+  #pragma omp ordered 
   printf("test2() iteration %d, thread %d\n", iter, omp_get_thread_num());
   fflush(stdout);
 }
@@ -254,7 +254,7 @@ int ordered( )
 #pragma omp parallel
   {
     test(1, 8);
-#pragma omp for ordered schedule(dynamic) 
+#pragma omp for ordered schedule(dynamic,1)
     for (i = 0 ; i < 5 ; i++)
       test2(i);
   }
@@ -357,15 +357,15 @@ int main (int argc, char *argv[])
 {
   printf("Main...\n"); fflush(stdout);
 #if 0
-  printf ("\n\nDoing atomic: %d\n\n", atomic()); fflush(stdout);
 #endif
+  printf ("\n\nDoing atomic: %d\n\n", atomic()); fflush(stdout);
   printf ("\n\nDoing barrier: %d\n\n", barrier()); fflush(stdout);
+  printf ("\n\nDoing master: %d\n\n", master()); fflush(stdout);
+  printf ("\n\nDoing ordered: %d\n\n", ordered()); fflush(stdout);
 #if 0
   printf ("\n\nDoing critical: %d\n\n", critical()); fflush(stdout);
   printf ("\n\nDoing fortest: %d\n\n", fortest()); fflush(stdout);
   printf ("\n\nDoing flush: %d\n\n", flush()); fflush(stdout);
-  printf ("\n\nDoing master: %d\n\n", master()); fflush(stdout);
-  printf ("\n\nDoing ordered: %d\n\n", ordered()); fflush(stdout);
   printf ("\n\nDoing sections: %d\n\n", sections()); fflush(stdout);
   printf ("\n\nDoing single: %d\n\n", single()); fflush(stdout);
   printf ("\n\nDoing critical named: %d\n\n", critical_named()); fflush(stdout);
