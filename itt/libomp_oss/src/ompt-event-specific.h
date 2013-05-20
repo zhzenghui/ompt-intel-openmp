@@ -58,7 +58,7 @@
 #define ompt_event_wait_taskgroup_begin_implemented     ompt_event_unimplemented
 #define ompt_event_wait_taskgroup_end_implemented       ompt_event_unimplemented
 
-#define ompt_event_release_lock_implemented             ompt_event_unimplemented
+#define ompt_event_release_lock_implemented             ompt_event_IMPLEMENTED
 #define ompt_event_release_nest_lock_implemented        ompt_event_unimplemented
 #define ompt_event_release_nest_lock_last_implemented   ompt_event_unimplemented
 #define ompt_event_release_critical_implemented         ompt_event_unimplemented
