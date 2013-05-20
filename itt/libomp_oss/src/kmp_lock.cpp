@@ -1683,10 +1683,12 @@ __kmp_release_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid )
 
 #if OMPT_SUPPORT
 	    if (ompt_status == ompt_status_track_callback) {
-	      if (lck->lk.flags == kmp_lf_critical_section) {
-		if (ompt_callbacks.ompt_callback(ompt_event_release_critical)) {
-		  ompt_callbacks.ompt_callback(ompt_event_release_critical)((uint64_t) lck);
-		} 
+	      if ((lck->lk.flags == kmp_lf_critical_section) &&
+		  ompt_callbacks.ompt_callback(ompt_event_release_critical)) {
+		ompt_callbacks.ompt_callback(ompt_event_release_critical)((uint64_t) lck);
+	      } else if ((lck->lk.flags == kmp_lf_atomic) &&
+			 ompt_callbacks.ompt_callback(ompt_event_release_atomic)) {
+		ompt_callbacks.ompt_callback(ompt_event_release_atomic)((uint64_t) lck);
 	      } else if (ompt_callbacks.ompt_callback(ompt_event_release_lock)) {
 		ompt_callbacks.ompt_callback(ompt_event_release_lock)((uint64_t) lck);
 	      }
@@ -1957,7 +1959,7 @@ __kmp_get_queuing_lock_flags( kmp_queuing_lock_t *lck )
     return lck->lk.flags;
 }
 
-static void
+void
 __kmp_set_queuing_lock_flags( kmp_queuing_lock_t *lck, kmp_lock_flags_t flags )
 {
     lck->lk.flags = flags;
