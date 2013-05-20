@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "omp.h"
 #include "callback.h"
 foo()
 {
