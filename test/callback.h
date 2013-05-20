@@ -8,165 +8,224 @@
 #include <stdlib.h>
 #include <ompt.h>
 
-/* Entering a parallel region */
-void my_parallel_region_create (
-  ompt_data_t  *parent_task_data,   /* tool data for parent task   */
-  ompt_frame_t *parent_task_frame,  /* frame data of parent task   */
-  ompt_parallel_id_t parallel_id)   /* id of parallel region       */
-{
-  printf("OpenMP Parallel Region Create: %llx\n", parallel_id); fflush(stdout);
+/*
+ * Macros to help generate test functions for each event
+ */
+
+#define TEST_THREAD_CALLBACK(EVENT) \
+void my_##EVENT ( \
+ompt_data_t *thread_data)  /* tool data for thread       */ \
+{ \
+  printf("%d: %s: %llx\n", omp_get_thread_num(), #EVENT, thread_data); \
+  fflush(stdout);\
 }
 
-/* Exiting a parallel region */
-void my_parallel_region_exit (
-  ompt_data_t  *parent_task_data,   /* tool data for parent task   */
-  ompt_frame_t *parent_task_frame,  /* frame data of parent task   */
-  ompt_parallel_id_t parallel_id)   /* id of parallel region       */
-{
-  printf("OpenMP Parallel Region Exit: %llx\n", parallel_id); fflush(stdout);
+#define TEST_PARALLEL_CALLBACK(EVENT) \
+void my_##EVENT ( \
+ompt_data_t  *parent_task_data,   /* tool data for parent task   */ \
+ompt_parallel_id_t parallel_id)   /* id of parallel region       */ \
+{ \
+  printf("%d: %s: %llx\n", omp_get_thread_num(), #EVENT, parallel_id); \
+  fflush(stdout); \
 }
 
-/* Task creation */
-void my_task_create (
-  ompt_data_t *task_data)            /* tool data for task          */
-{
-  printf("OpenMP Task Create: %llx\n", task_data); fflush(stdout);
+#define TEST_NEW_PARALLEL_CALLBACK(EVENT) \
+void my_##EVENT ( \
+  ompt_data_t  *parent_task_data,   /* tool data for parent task   */ \
+  ompt_frame_t *parent_task_frame,  /* frame data of parent task   */ \
+  ompt_parallel_id_t parallel_id)   /* id of parallel region       */ \
+{ \
+  printf("%d: %s: %llx\n", omp_get_thread_num(), #EVENT, parallel_id); \
+  fflush(stdout); \
 }
 
-/* Task exit */
-void my_task_exit (
-  ompt_data_t *task_data)            /* tool data for task          */
-{
-  printf("OpenMP Task Exit: %llx\n", task_data); fflush(stdout);
+#define TEST_TASK_CALLBACK(EVENT) \
+void my_##EVENT ( \
+ompt_data_t *task_data)            /* tool data for task          */ \
+{ \
+  printf("%d: %s: %llx\n", omp_get_thread_num(), #EVENT, task_data); \
+  fflush(stdout); \
+} \
+
+#define TEST_CONTROL_CALLBACK(EVENT) \
+void my_##EVENT( \
+uint64_t command,                /* command of control call      */ \
+uint64_t modifier)                /* modifier of control call     */ \
+{ \
+  printf("%d: %s: %llx, %llx\n", omp_get_thread_num(), #EVENT, command, modifier); \
+  fflush(stdout); \
 }
 
-/* Thread creation */
-void my_thread_create(
-  ompt_data_t *thread_data)           /* tool data for thread       */
-{
-  printf("OpenMP Thread Create: %llx\n", thread_data); fflush(stdout);
+#define TEST_CALLBACK(EVENT) \
+void my_##EVENT() \
+{ \
+  printf("%d: %s.\n", omp_get_thread_num(), #EVENT); \
+  fflush(stdout); \
 }
 
-/* Thread exit */
-void my_thread_exit(
-  ompt_data_t *thread_data)           /* tool data for thread       */
-{
-  printf("OpenMP Thread Create: %llx\n", thread_data); fflush(stdout);
+#define TEST_WAIT_CALLBACK(EVENT) \
+void my_##EVENT ( \
+  ompt_wait_id_t *waitid)            /* address of atomic variable          */ \
+{ \
+  printf("%d: %s: %llx\n", omp_get_thread_num(), #EVENT, waitid); \
+  fflush(stdout); \
 }
 
-/* Some control event happened */
-void my_control(
-  uint64_t command,                /* command of control call      */
-  uint64_t modifier)                /* modifier of control call     */
-{
-  printf("OpenMP Control: %llx, %llx\n", command, modifier); fflush(stdout);
+#define TEST_TASK_SWITCH_CALLBACK(EVENT) \
+void my_##EVENT ( \
+  ompt_data_t *suspended_task_data, /* tool data for suspended task */ \
+  ompt_data_t *resumed_task_data)   /* tool data for resumed task   */ \
+{ \
+  printf("%d: %s: \n", omp_get_thread_num(), #EVENT); \
+  fflush(stdout); \
 }
 
-/* Shutting down the OpenMP runtime */
-void my_shutdown()
-{
-  printf("OpenMP Shutdown.\n"); fflush(stdout);
-}
+/*******************************************************************
+ * required events 
+ *******************************************************************/
 
-/* Wait for atomic lock */
-void my_atomic_wait (
-  ompt_wait_id_t *waitid)            /* address of atomic variable          */
-{
-  printf("OpenMP Atomic Wait: %llx\n", waitid); fflush(stdout);
-}
+TEST_NEW_PARALLEL_CALLBACK(ompt_event_parallel_create)
+TEST_NEW_PARALLEL_CALLBACK(ompt_event_parallel_exit)
+TEST_TASK_CALLBACK(ompt_event_task_create)
+TEST_TASK_CALLBACK(ompt_event_task_exit)
+TEST_THREAD_CALLBACK(ompt_event_thread_create)
+TEST_THREAD_CALLBACK(ompt_event_thread_exit)
+TEST_CONTROL_CALLBACK(ompt_event_control)
+TEST_CALLBACK(ompt_event_runtime_shutdown)
 
-/* Acquired atomic lock */
-void my_atomic_acquired (
-  ompt_wait_id_t *waitid)            /* address of atomic variable          */
-{
-  printf("OpenMP Atomic Acquired: %llx\n", waitid); fflush(stdout);
-}
+/*******************************************************************
+ * optional events
+ *******************************************************************/
 
-/* Released atomic lock */
-void my_atomic_released (
-  ompt_wait_id_t *waitid)            /* address of atomic variable          */
-{
-  printf("OpenMP Atomic Released: %llx\n", waitid); fflush(stdout);
-}
+/* Blameshifting events */
+TEST_PARALLEL_CALLBACK(ompt_event_idle_begin)
+TEST_PARALLEL_CALLBACK(ompt_event_idle_end)
+TEST_PARALLEL_CALLBACK(ompt_event_wait_barrier_begin);
+TEST_PARALLEL_CALLBACK(ompt_event_wait_barrier_end);
+TEST_PARALLEL_CALLBACK(ompt_event_wait_taskwait_begin);
+TEST_PARALLEL_CALLBACK(ompt_event_wait_taskwait_end);
+TEST_PARALLEL_CALLBACK(ompt_event_wait_taskgroup_begin);
+TEST_PARALLEL_CALLBACK(ompt_event_wait_taskgroup_end);
+TEST_WAIT_CALLBACK(ompt_event_release_lock);
+TEST_WAIT_CALLBACK(ompt_event_release_nest_lock_last);
+TEST_WAIT_CALLBACK(ompt_event_release_critical);
+TEST_WAIT_CALLBACK(ompt_event_release_ordered)
+TEST_WAIT_CALLBACK(ompt_event_release_atomic)
 
-/* Entering a barrier */
-void my_barrier_begin (
-  ompt_data_t  *parent_task_data,   /* tool data for parent task   */
-  ompt_parallel_id_t parallel_id)   /* id of parallel region       */
-{
-  printf("OpenMP Barrier begin: %llx\n", parallel_id); fflush(stdout);
-}
+/* synchronous events */
+TEST_PARALLEL_CALLBACK(ompt_event_implicit_task_create);
+TEST_PARALLEL_CALLBACK(ompt_event_implicit_task_exit);
+TEST_PARALLEL_CALLBACK(ompt_event_barrier_begin)
+TEST_PARALLEL_CALLBACK(ompt_event_barrier_end)
+TEST_PARALLEL_CALLBACK(ompt_event_master_begin)
+TEST_PARALLEL_CALLBACK(ompt_event_master_end)
+TEST_TASK_SWITCH_CALLBACK(ompt_event_task_switch);
+TEST_PARALLEL_CALLBACK(ompt_event_loop_begin);
+TEST_PARALLEL_CALLBACK(ompt_event_loop_end);
+TEST_PARALLEL_CALLBACK(ompt_event_section_begin);
+TEST_PARALLEL_CALLBACK(ompt_event_section_end);
+TEST_PARALLEL_CALLBACK(ompt_event_single_in_block_begin);
+TEST_PARALLEL_CALLBACK(ompt_event_single_in_block_end);
+TEST_PARALLEL_CALLBACK(ompt_event_single_others_begin);
+TEST_PARALLEL_CALLBACK(ompt_event_single_others_end);
+TEST_PARALLEL_CALLBACK(ompt_event_taskwait_begin);
+TEST_PARALLEL_CALLBACK(ompt_event_taskwait_end);
+TEST_PARALLEL_CALLBACK(ompt_event_taskgroup_begin);
+TEST_PARALLEL_CALLBACK(ompt_event_taskgroup_end);
+TEST_PARALLEL_CALLBACK(ompt_event_release_nest_lock_prev);
+TEST_WAIT_CALLBACK(ompt_event_wait_lock);
+TEST_WAIT_CALLBACK(ompt_event_wait_nest_lock);
+TEST_WAIT_CALLBACK(ompt_event_wait_critical);
+TEST_WAIT_CALLBACK(ompt_event_wait_atomic)
+TEST_WAIT_CALLBACK(ompt_event_wait_ordered)
+TEST_WAIT_CALLBACK(ompt_event_acquired_lock);
+TEST_WAIT_CALLBACK(ompt_event_acquired_nest_lock_first);
+TEST_PARALLEL_CALLBACK(ompt_event_acquired_nest_lock_next);
+TEST_WAIT_CALLBACK(ompt_event_acquired_critical);
+TEST_WAIT_CALLBACK(ompt_event_acquired_atomic);
+TEST_WAIT_CALLBACK(ompt_event_acquired_ordered)
+TEST_WAIT_CALLBACK(ompt_event_init_lock);
+TEST_WAIT_CALLBACK(ompt_event_init_nest_lock);
+TEST_WAIT_CALLBACK(ompt_event_destroy_lock);
+TEST_WAIT_CALLBACK(ompt_event_destroy_nest_lock);
+TEST_THREAD_CALLBACK(ompt_event_flush);
 
-/* Exiting a barrier */
-void my_barrier_end (
-  ompt_data_t  *parent_task_data,   /* tool data for parent task   */
-  ompt_parallel_id_t parallel_id)   /* id of parallel region       */
-{
-  printf("OpenMP Barrier end: %llx\n", parallel_id); fflush(stdout);
-}
+/*******************************************************************
+ * Register the events
+ *******************************************************************/
 
-/* Entering a master */
-void my_master_begin (
-  ompt_data_t  *parent_task_data,   /* tool data for parent task   */
-  ompt_parallel_id_t parallel_id)   /* id of parallel region       */
-{
-  printf("%d: OpenMP Master begin: %llx\n", omp_get_thread_num(), parallel_id); fflush(stdout);
+#define CHECK(EVENT) \
+if (ompt_set_callback(EVENT, my_##EVENT) != 0) { \
+  fprintf(stderr,"Failed to register OMPT callback %s!\n",#EVENT); \
 }
-
-/* Exiting a master */
-void my_master_end (
-  ompt_data_t  *parent_task_data,   /* tool data for parent task   */
-  ompt_parallel_id_t parallel_id)   /* id of parallel region       */
-{
-  printf("%d: OpenMP Master end: %llx\n", omp_get_thread_num(), parallel_id); fflush(stdout);
-}
-
-/* Wait for ordered */
-void my_ordered_wait (
-  ompt_wait_id_t *waitid)            /* address of ordered variable          */
-{
-  printf("%d: OpenMP Ordered Wait: %llx\n", omp_get_thread_num(), waitid); fflush(stdout);
-}
-
-/* Acquired ordered lock */
-void my_ordered_acquired (
-  ompt_wait_id_t *waitid)            /* address of ordered variable          */
-{
-  printf("%d: OpenMP Ordered Acquired: %llx\n", omp_get_thread_num(), waitid); fflush(stdout);
-}
-
-/* Released ordered lock */
-void my_ordered_released (
-  ompt_wait_id_t *waitid)            /* address of ordered variable          */
-{
-  printf("%d: OpenMP Ordered Released: %llx\n", omp_get_thread_num(), waitid); fflush(stdout);
-}
-
-#define CHECK(RC) \
-  if (RC != 0) { fprintf(stderr, "Error registering callback.\n"); return 0; }
 
 int ompt_initialize() {
-  int rc = 0;
+
   /* required events */
-  CHECK(ompt_set_callback(ompt_event_parallel_create, my_parallel_region_create));
-  CHECK(ompt_set_callback(ompt_event_parallel_exit, my_parallel_region_exit));
-  CHECK(ompt_set_callback(ompt_event_task_create, my_task_create));
-  CHECK(ompt_set_callback(ompt_event_task_exit, my_task_exit));
-  CHECK(ompt_set_callback(ompt_event_thread_create, my_thread_create));
-  CHECK(ompt_set_callback(ompt_event_thread_exit, my_thread_exit));
-  CHECK(ompt_set_callback(ompt_event_control, my_control));
-  CHECK(ompt_set_callback(ompt_event_runtime_shutdown, my_shutdown));
-  /* optional events */
-  CHECK(ompt_set_callback(ompt_event_wait_atomic, my_atomic_wait));
-  CHECK(ompt_set_callback(ompt_event_acquired_atomic, my_atomic_acquired));
-  CHECK(ompt_set_callback(ompt_event_release_atomic, my_atomic_released));
-  CHECK(ompt_set_callback(ompt_event_barrier_begin, my_barrier_begin));
-  CHECK(ompt_set_callback(ompt_event_barrier_end, my_barrier_end));
-  CHECK(ompt_set_callback(ompt_event_master_begin, my_master_begin));
-  CHECK(ompt_set_callback(ompt_event_master_end, my_master_end));
-  //CHECK(ompt_set_callback(ompt_event_wait_ordered, my_ordered_wait));
-  //CHECK(ompt_set_callback(ompt_event_acquired_ordered, my_ordered_acquired));
-  //CHECK(ompt_set_callback(ompt_event_release_ordered, my_ordered_released));
+
+  CHECK(ompt_event_parallel_create);
+  CHECK(ompt_event_parallel_exit);
+  CHECK(ompt_event_task_create);
+  CHECK(ompt_event_task_exit);
+  CHECK(ompt_event_thread_create);
+  CHECK(ompt_event_thread_exit);
+  CHECK(ompt_event_control);
+  CHECK(ompt_event_runtime_shutdown);
+
+  /* optional events, "blameshifting" */
+
+  CHECK(ompt_event_idle_begin);
+  CHECK(ompt_event_idle_end);
+  //CHECK(ompt_event_wait_barrier_begin);
+  //CHECK(ompt_event_wait_barrier_end);
+  //CHECK(ompt_event_wait_taskwait_begin);
+  //CHECK(ompt_event_wait_taskwait_end);
+  //CHECK(ompt_event_wait_taskgroup_begin);
+  //CHECK(ompt_event_wait_taskgroup_end);
+  //CHECK(ompt_event_release_lock);
+  //CHECK(ompt_event_release_nest_lock_last);
+  //CHECK(ompt_event_release_critical);
+  CHECK(ompt_event_release_atomic);
+  CHECK(ompt_event_release_ordered);
+
+  /* optional events, synchronous */
+
+  //CHECK(ompt_event_implicit_task_create);
+  //CHECK(ompt_event_implicit_task_exit);
+  CHECK(ompt_event_barrier_begin);
+  CHECK(ompt_event_barrier_end);
+  CHECK(ompt_event_master_begin);
+  CHECK(ompt_event_master_end);
+  //CHECK(ompt_event_task_switch);
+  //CHECK(ompt_event_loop_begin);
+  //CHECK(ompt_event_loop_end);
+  //CHECK(ompt_event_section_begin);
+  //CHECK(ompt_event_section_end);
+  //CHECK(ompt_event_single_in_block_begin);
+  //CHECK(ompt_event_single_in_block_end);
+  //CHECK(ompt_event_single_others_begin);
+  //CHECK(ompt_event_single_others_end);
+  //CHECK(ompt_event_taskwait_begin);
+  //CHECK(ompt_event_taskwait_end);
+  //CHECK(ompt_event_taskgroup_begin);
+  //CHECK(ompt_event_taskgroup_end);
+  //CHECK(ompt_event_release_nest_lock_prev);
+  //CHECK(ompt_event_wait_lock);
+  //CHECK(ompt_event_wait_nest_lock);
+  //CHECK(ompt_event_wait_critical);
+  CHECK(ompt_event_wait_atomic);
+  //CHECK(ompt_event_wait_ordered);
+  //CHECK(ompt_event_acquired_lock);
+  //CHECK(ompt_event_acquired_nest_lock_first);
+  //CHECK(ompt_event_acquired_nest_lock_next);
+  //CHECK(ompt_event_acquired_critical);
+  CHECK(ompt_event_acquired_atomic);
+  //CHECK(ompt_event_acquired_ordered);
+  //CHECK(ompt_event_init_lock);
+  //CHECK(ompt_event_init_nest_lock);
+  //CHECK(ompt_event_destroy_lock);
+  //CHECK(ompt_event_destroy_nest_lock);
+  //CHECK(ompt_event_flush);
   return 1;
 }
 

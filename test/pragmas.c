@@ -359,10 +359,10 @@ int main (int argc, char *argv[])
 #if 0
 #endif
   printf ("\n\nDoing atomic: %d\n\n", atomic()); fflush(stdout);
+#if 0
   printf ("\n\nDoing barrier: %d\n\n", barrier()); fflush(stdout);
   printf ("\n\nDoing master: %d\n\n", master()); fflush(stdout);
   printf ("\n\nDoing ordered: %d\n\n", ordered()); fflush(stdout);
-#if 0
   printf ("\n\nDoing critical: %d\n\n", critical()); fflush(stdout);
   printf ("\n\nDoing fortest: %d\n\n", fortest()); fflush(stdout);
   printf ("\n\nDoing flush: %d\n\n", flush()); fflush(stdout);
