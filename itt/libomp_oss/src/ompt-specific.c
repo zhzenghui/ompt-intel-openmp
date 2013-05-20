@@ -24,15 +24,16 @@ kmp_team_t *ompt_team(int ancestor_level)
   int i;
   kmp_info_t *th = ompt_get_thread();
   kmp_team_t *team = th ? th->th.th_team : NULL;
-  for (i = 0; i < ancestor_level; i++) {
-      team = team ? team->t.t_parent : NULL;
+
+  for (i = 0; team && (i < ancestor_level); i++) {
+    team = team->t.t_parent;
   }
   return team;
 } 
 
 
 /* safely extract a task from a thread. 
- * - a thread may not be an openmp thread
+ * - a thread need not be an openmp thread
  * - an openmp thread may have an uninitialized task
  */
 kmp_taskdata_t *ompt_task(int ancestor_level)
@@ -40,8 +41,9 @@ kmp_taskdata_t *ompt_task(int ancestor_level)
   int i;
   kmp_info_t *th = ompt_get_thread();
   kmp_taskdata_t *task = th ? th->th.th_current_task : NULL;
-  for (i = 0; i < ancestor_level; i++) {
-      task = task ? task->td_parent : NULL;
+
+  for (i = 0; task && (i < ancestor_level); i++) {
+    task = task->td_parent;
   }
   return task;
 } 
@@ -50,36 +52,37 @@ kmp_taskdata_t *ompt_task(int ancestor_level)
 ompt_state_t __ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
 {
   kmp_info_t  *ti = ompt_get_thread();
-  ompt_state_t state = ompt_state_undefined;
+
   if (ti) {
-    state = ti->th.ompt_thread_info.state;
     *ompt_wait_id = ti->th.ompt_thread_info.wait_id;
-  } 
-  return state;
+    return ti->th.ompt_thread_info.state;
+  } else {
+    return ompt_state_undefined;
+  }
 }
 
 
 ompt_data_t *__ompt_get_thread_data_internal(void)
 {
   kmp_info_t  *ti = ompt_get_thread();
-  ompt_data_t *data = ti ?  &ti->th.ompt_thread_info.data : NULL;
-  return data;
+
+  return ti ?  &ti->th.ompt_thread_info.data : NULL;
 }
 
 
 void *__ompt_get_parallel_function_internal(int ancestor_level) 
 {
   kmp_team_t *team = ompt_team(ancestor_level);
-  microtask_t task =  team ? team->t.t_pkfn : NULL;
-  return (void *) task;
+
+  return (void *) team ? team->t.t_pkfn : NULL;
 }
 
 
 ompt_parallel_id_t __ompt_get_parallel_id_internal(int ancestor_level) 
 {
   kmp_team_t *team = ompt_team(ancestor_level);
-  ompt_parallel_id_t id =  team ? team->t.ompt_team_info.parallel_id : 0;
-  return id;
+
+  return team ? team->t.ompt_team_info.parallel_id : 0;
 }
 
 
@@ -88,6 +91,7 @@ void __ompt_team_assign_id(kmp_team_t *team)
 {
   int gtid = __kmp_gtid_get_specific();
   kmp_info_t *ti = ompt_get_thread_gtid(gtid);
+
   team->t.ompt_team_info.parallel_id = 
      ti ? ((ti->th.ompt_thread_info.next_parallel_id++ << OMPT_THREAD_ID_BITS) | gtid) : 0;
 }
@@ -96,14 +100,15 @@ void __ompt_thread_assign_wait_id(void *variable)
 {
   int gtid = __kmp_gtid_get_specific();
   kmp_info_t *ti = ompt_get_thread_gtid(gtid);
+
   ti->th.ompt_thread_info.wait_id = (ompt_wait_id_t)(variable);
 }
 
 ompt_data_t *__ompt_get_task_data_internal(int ancestor_level) 
 {
   kmp_taskdata_t *task = ompt_task(ancestor_level);
-  ompt_data_t *data =  task ? &task->ompt_task_info.data : NULL;
-  return data;
+
+  return task ? &task->ompt_task_info.data : NULL;
 }
 
 
@@ -111,15 +116,15 @@ void *__ompt_get_task_function_internal(int ancestor_level)
 {
   kmp_taskdata_t *td = ompt_task(ancestor_level);
   kmp_task_t *task = td ? KMP_TASKDATA_TO_TASK(td) : NULL;
-  void *fcn =  (void *) (task ? task->routine : NULL);
-  return fcn;
+
+  return (void *) (task ? task->routine : NULL);
 }
 
 ompt_frame_t *__ompt_get_task_frame_internal(int ancestor_level) 
 {
   kmp_taskdata_t *task = ompt_task(ancestor_level);
-  ompt_frame_t *frame =  task ? &task->ompt_task_info.frame : NULL;
-  return frame;
+
+  return task ? &task->ompt_task_info.frame : NULL;
 }
 
 
@@ -136,4 +141,3 @@ int __ompt_get_runtime_version_internal(char *buffer, int length)
 
   return result;
 }
-
