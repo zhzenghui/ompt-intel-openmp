@@ -27,14 +27,6 @@ typedef struct ompt_callbacks_s {
 
 
 typedef struct {
-  ompt_state_t        state;
-  ompt_wait_id_t      wait_id;
-  ompt_data_t         data;             /* OMPT tool data */
-  uint64_t            next_parallel_id;
-} ompt_thread_info_t;
-
-
-typedef struct {
   ompt_data_t         data;
   ompt_frame_t        frame;
 } ompt_task_info_t;
@@ -43,6 +35,23 @@ typedef struct {
 typedef struct {
   ompt_parallel_id_t  parallel_id;
 } ompt_team_info_t;
+
+
+typedef struct ompt_lw_taskteam_s {
+  ompt_team_info_t    ompt_team_info;
+  void                *microtask;
+  ompt_task_info_t    ompt_task_info;
+  struct ompt_lw_taskteam_s *parent;  
+} ompt_lw_taskteam_t;
+
+
+typedef struct {
+  ompt_state_t        state;
+  ompt_wait_id_t      wait_id;
+  ompt_data_t         data;             /* OMPT tool data */
+  uint64_t            next_parallel_id;
+  ompt_lw_taskteam_t  *lw_taskteam;  
+} ompt_thread_info_t;
 
 
 extern ompt_status_t ompt_status;
