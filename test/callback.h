@@ -205,7 +205,7 @@ int ompt_initialize() {
   CHECK(ompt_event_single_in_block_begin);
   CHECK(ompt_event_single_in_block_end);
   CHECK(ompt_event_single_others_begin);
-  //CHECK(ompt_event_single_others_end);
+  CHECK(ompt_event_single_others_end);
   //CHECK(ompt_event_taskwait_begin);
   //CHECK(ompt_event_taskwait_end);
   //CHECK(ompt_event_taskgroup_begin);

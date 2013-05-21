@@ -1259,6 +1259,7 @@ __kmpc_single(ident_t *loc, kmp_int32 global_tid)
             &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
            team->t.ompt_team_info.parallel_id);
         }
+        this_thr->th.ompt_thread_info.state = ompt_state_wait_single;
 	  }
     }
 #endif
