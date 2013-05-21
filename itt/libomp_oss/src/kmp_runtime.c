@@ -6574,6 +6574,9 @@ __kmp_internal_end(void)
 
 
     __kmp_cleanup();
+#if OMPT_SUPPORT
+    ompt_fini();
+#endif
 }
 
 void
