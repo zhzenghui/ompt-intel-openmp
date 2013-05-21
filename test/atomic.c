@@ -1,2 +1,2 @@
-#define ORDERED
+#define ATOMIC
 #include "pragmas.h"
