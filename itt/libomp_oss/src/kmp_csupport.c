@@ -102,9 +102,6 @@ __kmpc_end(ident_t *loc)
 
         __kmp_internal_end_thread( -1 );
     }
-#if OMPT_SUPPORT
-    ompt_fini();
-#endif
 }
 
 /*!
