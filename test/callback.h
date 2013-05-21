@@ -198,13 +198,13 @@ int ompt_initialize() {
   CHECK(ompt_event_barrier_begin);
   CHECK(ompt_event_barrier_end);
   //CHECK(ompt_event_task_switch);
-  //CHECK(ompt_event_loop_begin);
-  //CHECK(ompt_event_loop_end);
+  CHECK(ompt_event_loop_begin);
+  CHECK(ompt_event_loop_end);
   //CHECK(ompt_event_section_begin);
   //CHECK(ompt_event_section_end);
-  //CHECK(ompt_event_single_in_block_begin);
-  //CHECK(ompt_event_single_in_block_end);
-  //CHECK(ompt_event_single_others_begin);
+  CHECK(ompt_event_single_in_block_begin);
+  CHECK(ompt_event_single_in_block_end);
+  CHECK(ompt_event_single_others_begin);
   //CHECK(ompt_event_single_others_end);
   //CHECK(ompt_event_taskwait_begin);
   //CHECK(ompt_event_taskwait_end);

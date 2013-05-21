@@ -12,7 +12,7 @@ INCLUDES=-I../itt/libomp_oss/src
 HEADERS=${wildcard *.h}
 
 FC = ifort
-EXEC = main level-1 level-2 level-3 level-4 level-5 lateinit matmult atomic ordered master # task-1 lateinitf
+EXEC = main level-1 level-2 level-3 level-4 level-5 lateinit matmult atomic ordered master single parallelfor # task-1 lateinitf
 
 all: $(EXEC)
 
