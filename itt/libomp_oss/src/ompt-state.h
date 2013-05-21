@@ -23,6 +23,7 @@ ompt_state(ompt_state_wait_nest_lock, 0x51)  /* waiting for nest lock */
 ompt_state(ompt_state_wait_critical, 0x52)   /* waiting for critical */
 ompt_state(ompt_state_wait_atomic, 0x53)     /* waiting for atomic */
 ompt_state(ompt_state_wait_ordered, 0x54)    /* waiting for ordered */
+ompt_state(ompt_state_wait_single, 0x55)     /* waiting for single */
 
 /* misc (96..127) */
 ompt_state(ompt_state_undefined, 0x60)       /* undefined thread state */

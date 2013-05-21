@@ -84,7 +84,7 @@
 #define ompt_event_single_in_block_begin_implemented    ompt_event_IMPLEMENTED
 #define ompt_event_single_in_block_end_implemented      ompt_event_IMPLEMENTED
 #define ompt_event_single_others_begin_implemented      ompt_event_IMPLEMENTED
-#define ompt_event_single_others_end_implemented        ompt_event_unimplemented
+#define ompt_event_single_others_end_implemented        ompt_event_IMPLEMENTED
 
 #define ompt_event_master_begin_implemented             ompt_event_IMPLEMENTED
 #define ompt_event_master_end_implemented               ompt_event_IMPLEMENTED
