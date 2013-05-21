@@ -157,7 +157,7 @@ TEST_THREAD_CALLBACK(ompt_event_flush);
 
 #define CHECK(EVENT) \
 if (ompt_set_callback(EVENT, my_##EVENT) != 0) { \
-  fprintf(stderr,"Failed to register OMPT callback %s!\n",#EVENT); \
+  fprintf(stderr,"Failed to register OMPT callback %s!\n",#EVENT); return 0; \
 }
 
 int ompt_initialize() {
@@ -183,9 +183,9 @@ int ompt_initialize() {
   //CHECK(ompt_event_wait_taskwait_end);
   //CHECK(ompt_event_wait_taskgroup_begin);
   //CHECK(ompt_event_wait_taskgroup_end);
-  //CHECK(ompt_event_release_lock);
+  CHECK(ompt_event_release_lock);
   //CHECK(ompt_event_release_nest_lock_last);
-  //CHECK(ompt_event_release_critical);
+  CHECK(ompt_event_release_critical);
   CHECK(ompt_event_release_atomic);
   CHECK(ompt_event_release_ordered);
 
@@ -193,10 +193,10 @@ int ompt_initialize() {
 
   //CHECK(ompt_event_implicit_task_create);
   //CHECK(ompt_event_implicit_task_exit);
-  CHECK(ompt_event_barrier_begin);
-  CHECK(ompt_event_barrier_end);
   CHECK(ompt_event_master_begin);
   CHECK(ompt_event_master_end);
+  CHECK(ompt_event_barrier_begin);
+  CHECK(ompt_event_barrier_end);
   //CHECK(ompt_event_task_switch);
   //CHECK(ompt_event_loop_begin);
   //CHECK(ompt_event_loop_end);
