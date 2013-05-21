@@ -72,47 +72,59 @@ ompt_data_t *__ompt_get_thread_data_internal(void)
 }
 
 
+ompt_lw_taskteam_t *__ompt_get_lw_taskteam(int *ancestor_level)
+{
+  int level = *ancestor_level;
+  kmp_info_t  *ti = ompt_get_thread();
+  if (ti) {
+    ompt_lw_taskteam_t *lwt = ti->th.ompt_thread_info.lw_taskteam;
+    while (lwt) {
+      if (level == 0) return lwt;
+      lwt = lwt->parent;
+      level--;
+    }
+    *ancestor_level = level;
+  } 
+  return NULL;
+}
+
+
 void *__ompt_get_parallel_function_internal(int ancestor_level) 
 {
-  kmp_team_t *team = ompt_team(ancestor_level);
-
-  return (void *) team ? team->t.t_pkfn : NULL;
+  int level = ancestor_level;
+  ompt_lw_taskteam_t *lwt = __ompt_get_lw_taskteam(&level);
+  if (lwt) {
+    return lwt->microtask;
+  } else {
+    kmp_team_t *team = ompt_team(level); /* remaining levels */
+    return (void *) (team ? team->t.t_pkfn : NULL);
+  }
 }
 
 
 ompt_parallel_id_t __ompt_get_parallel_id_internal(int ancestor_level) 
 {
-  kmp_team_t *team = ompt_team(ancestor_level);
-
-  return team ? team->t.ompt_team_info.parallel_id : 0;
-}
-
-
-#define OMPT_THREAD_ID_BITS 20
-void __ompt_team_assign_id(kmp_team_t *team)
-{
-  int gtid = __kmp_gtid_get_specific();
-  kmp_info_t *ti = ompt_get_thread_gtid(gtid);
-
-  team->t.ompt_team_info.parallel_id = 
-     ti ? ((ti->th.ompt_thread_info.next_parallel_id++ << OMPT_THREAD_ID_BITS) | gtid) : 0;
-}
-
-
-void __ompt_thread_assign_wait_id(void *variable)
-{
-  int gtid = __kmp_gtid_get_specific();
-  kmp_info_t *ti = ompt_get_thread_gtid(gtid);
-
-  ti->th.ompt_thread_info.wait_id = (ompt_wait_id_t)(variable);
+  int level = ancestor_level;
+  ompt_lw_taskteam_t *lwt = __ompt_get_lw_taskteam(&level);
+  if (lwt) {
+    return lwt->ompt_team_info.parallel_id;
+  } else {
+    kmp_team_t *team = ompt_team(level); /* remaining levels */
+    return team ? team->t.ompt_team_info.parallel_id : 0; 
+  }
 }
 
 
 ompt_data_t *__ompt_get_task_data_internal(int ancestor_level) 
 {
-  kmp_taskdata_t *task = ompt_task(ancestor_level);
-
-  return task ? &task->ompt_task_info.data : NULL;
+  int level = ancestor_level;
+  ompt_lw_taskteam_t *lwt = __ompt_get_lw_taskteam(&level);
+  if (lwt) {
+    return &lwt->ompt_task_info.data;
+  } else {
+    kmp_taskdata_t *task = ompt_task(level); /* remaining levels */
+    return task ? &task->ompt_task_info.data : NULL;
+  }
 }
 
 
@@ -130,6 +142,45 @@ ompt_frame_t *__ompt_get_task_frame_internal(int ancestor_level)
   kmp_taskdata_t *task = ompt_task(ancestor_level);
 
   return task ? &task->ompt_task_info.frame : NULL;
+}
+
+
+#define OMPT_THREAD_ID_BITS 20
+#define NEXT_ID(ti,tid) (((ti)->th.ompt_thread_info.next_parallel_id++ << OMPT_THREAD_ID_BITS) | (tid))
+
+void __ompt_team_assign_id(kmp_team_t *team)
+{
+  int gtid = __kmp_gtid_get_specific();
+  kmp_info_t *ti = ompt_get_thread_gtid(gtid);
+
+  team->t.ompt_team_info.parallel_id = ti ? NEXT_ID(ti, gtid) : 0;
+}
+
+
+void __ompt_thread_assign_wait_id(void *variable)
+{
+  int gtid = __kmp_gtid_get_specific();
+  kmp_info_t *ti = ompt_get_thread_gtid(gtid);
+
+  ti->th.ompt_thread_info.wait_id = (ompt_wait_id_t)(variable);
+}
+
+
+void __ompt_lw_taskteam_init(ompt_lw_taskteam_t *lwt, kmp_info_t *thr, int gtid, microtask_t microtask)
+{
+  lwt->microtask = (void *) microtask;
+  lwt->ompt_team_info.parallel_id = NEXT_ID(thr, gtid);
+  lwt->ompt_task_info.data.value = 0;
+  lwt->ompt_task_info.frame.reenter_runtime_frame = 0;
+  lwt->ompt_task_info.frame.exit_runtime_frame = 0;
+  ompt_lw_taskteam_t *my_parent = thr->th.ompt_thread_info.lw_taskteam;
+  lwt->parent = my_parent;
+}
+
+
+void __ompt_lw_taskteam_fini(ompt_lw_taskteam_t *lwt, kmp_info_t *thr)
+{
+  thr->th.ompt_thread_info.lw_taskteam = lwt->parent;
 }
 
 

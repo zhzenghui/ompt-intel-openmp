@@ -2480,14 +2480,38 @@ __kmp_fork_call(
             KMP_MB();
 
 #if OMPT_SUPPORT
-	   int  tid = __kmp_tid_from_gtid( gtid );
-           void **exit_runtime_p = 
-	     &(parent_team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.exit_runtime_frame);
+	    ompt_lw_taskteam_t lw_taskteam;
+	    void **exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
+	    if (ompt_status & ompt_status_track) {
+	      __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, microtask); 
+	    }
+
+	    if ((ompt_status == ompt_status_track_callback) &&
+		ompt_callbacks.ompt_callback(ompt_event_parallel_create)) {
+	      ompt_callbacks.ompt_callback(ompt_event_parallel_create)
+		(&lw_taskteam.ompt_task_info.data,
+		 &lw_taskteam.ompt_task_info.frame,
+		 lw_taskteam.ompt_team_info.parallel_id);
+	    }
 #else
-           void *dummy;
-           void **exit_runtime_p = &dummy;
+	    void *dummy;
+	    void **exit_runtime_p = &dummy;
 #endif
+
            __kmp_invoke_microtask( microtask, gtid, 0, argc, args, exit_runtime_p );
+
+#if OMPT_SUPPORT
+	    if ((ompt_status == ompt_status_track_callback) &&
+		ompt_callbacks.ompt_callback(ompt_event_parallel_exit)) {
+	      ompt_callbacks.ompt_callback(ompt_event_parallel_exit)
+		(&lw_taskteam.ompt_task_info.data,
+		 &lw_taskteam.ompt_task_info.frame,
+		 lw_taskteam.ompt_team_info.parallel_id);
+	    }
+	    if (ompt_status & ompt_status_track) {
+	      __ompt_lw_taskteam_fini(&lw_taskteam, master_th);
+	    }
+#endif
         }
         else {
             KMP_ASSERT2( exec_master <= 1, "__kmp_fork_call: unknown parameter exec_master" );
@@ -4498,6 +4522,7 @@ __kmp_initialize_info( kmp_info_t *this_thr, kmp_team_t *team, int tid, int gtid
     this_thr->th.ompt_thread_info.wait_id = 0;
     this_thr->th.ompt_thread_info.data.value = 0;
     this_thr->th.ompt_thread_info.next_parallel_id = 1;
+    this_thr->th.ompt_thread_info.lw_taskteam = NULL;
 #endif
 
     KMP_MB();
