@@ -28,7 +28,4 @@ ompt_state(ompt_state_wait_single, 0x55)     /* waiting for single */
 /* misc (96..127) */
 ompt_state(ompt_state_undefined, 0x60)       /* undefined thread state */
 
-/* last */
-ompt_state(ompt_state_last, 0x62)            /* final enumeration state */
-
 #undef ompt_state
