@@ -925,14 +925,10 @@ __kmpc_ordered( ident_t * loc, kmp_int32 gtid )
 
 #if 0 // this is the wrong place for this...
 #if OMPT_SUPPORT
-    kmp_info_t  *this_thr        = __kmp_threads[ gtid ];
-    kmp_team_t  *team            = this_thr -> th.th_team;
-    int  tid = __kmp_tid_from_gtid( gtid );
-    kmp_info_t *ompt_this_thr = __kmp_thread_from_gtid( gtid );
     if ((ompt_status == ompt_status_track_callback)) {
       if (ompt_callbacks.ompt_callback(ompt_event_wait_ordered)) {
-        ompt_callbacks.ompt_callback(ompt_event_wait_ordered)(
-	      ompt_this_thr->th.ompt_thread_info.wait_id);
+        ompt_callbacks.ompt_callback(ompt_event_wait_ordered)
+          (th->th.ompt_thread_info.wait_id);
       }
     }
 #endif // OMPT_SUPPORT
@@ -943,17 +939,13 @@ __kmpc_ordered( ident_t * loc, kmp_int32 gtid )
     else
         __kmp_parallel_deo( & gtid, & cid, loc );
 
-#if 0 // this is the wrong place for this...
 #if OMPT_SUPPORT
-    if ((ompt_status == ompt_status_track_callback)) {
-      if (ompt_callbacks.ompt_callback(ompt_event_acquired_ordered)) {
-        ompt_callbacks.ompt_callback(ompt_event_acquired_ordered)(
-	      ompt_this_thr->th.ompt_thread_info.wait_id);
-      }
+    if ((ompt_status == ompt_status_track_callback) &&
+        ompt_callbacks.ompt_callback(ompt_event_acquired_ordered)) {
+      ompt_callbacks.ompt_callback(ompt_event_acquired_ordered)
+        (th->th.ompt_thread_info.wait_id);
     }
 #endif // OMPT_SUPPORT
-#endif // 0
-
 }
 
 /*!
@@ -979,21 +971,14 @@ __kmpc_end_ordered( ident_t * loc, kmp_int32 gtid )
     else
         __kmp_parallel_dxo( & gtid, & cid, loc );
 
-#if 0 // this is the wrong place for this...?
 #if OMPT_SUPPORT
-    kmp_info_t  *this_thr        = __kmp_threads[ gtid ];
-    kmp_team_t  *team            = this_thr -> th.th_team;
-    kmp_info_t *ompt_this_thr = __kmp_thread_from_gtid( gtid );
     if ((ompt_status == ompt_status_track_callback)) {
       if (ompt_callbacks.ompt_callback(ompt_event_release_ordered)) {
-        int  tid = __kmp_tid_from_gtid( gtid );
-        ompt_callbacks.ompt_callback(ompt_event_release_ordered)(
-	      ompt_this_thr->th.ompt_thread_info.wait_id);
+        ompt_callbacks.ompt_callback(ompt_event_release_ordered)
+          (th->th.ompt_thread_info.wait_id);
       }
     }
 #endif // OMPT_SUPPORT
-#endif // 0
-
 }
 
 inline void
