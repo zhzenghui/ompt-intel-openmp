@@ -71,10 +71,10 @@ ompt_callbacks_t ompt_callbacks;
 _OMP_EXTERN int ompt_enumerate_state(int current_state, int *next_state, 
                                      const char **next_state_name)
 {
+  const static int len = sizeof(ompt_state_info) / sizeof(ompt_state_info_t);
   int i = 0;
-  int len = sizeof(ompt_state_info) / sizeof(ompt_state_info_t);
 
-  for (i = 0; i < len; i++) {
+  for (i = 0; i < len - 1; i++) {
     if (ompt_state_info[i].state_id == current_state) {
       *next_state = ompt_state_info[i+1].state_id;
       *next_state_name = ompt_state_info[i+1].state_name;
