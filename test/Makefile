@@ -15,7 +15,8 @@ FC = ifort
 EXEC = \
 	main \
 	atomic \
-	enumerate \
+	enumerate-states \
+	enumerate-ompd-dll \
 	lateinit \
 	level-1 \
 	level-2 \
