@@ -60,6 +60,8 @@ ompt_state_info_t ompt_state_info[] = {
 
 ompt_callbacks_t ompt_callbacks;
 
+_OMP_EXTERN char **ompd_dll_locations;
+
 
 
 /*****************************************************************************
@@ -84,22 +86,6 @@ _OMP_EXTERN int ompt_enumerate_state(int current_state, int *next_state,
 
   return 0;
 }
-
-
-#ifdef __OMPT_TEST_ENUMERATE_STATE__
-#include <stdio.h>
-main()
-{
-  int state;
-  const char *state_name;
-  int ok;
-  for (ok = ompt_enumerate_state(ompt_state_first, &state, &state_name);
-       ok; ompt_enumerate_state(state, &state, &state_name)) {
-    printf("state name = %s, id = %x\n", state_name, state);
-  }
-}
-
-#endif
 
 
 
@@ -168,6 +154,9 @@ void ompt_init()
    int ompt_env_var_is_disabled = ompt_env_var && !strcmp(ompt_env_var, "disabled");
    int ompt_env_var_is_false = ompt_env_var && !strcmp(ompt_env_var, "false");
    int ompt_env_var_is_null = ompt_env_var && !strcmp(ompt_env_var, "");
+
+   ompd_dll_locations = (char **) malloc(sizeof(char **));
+   ompd_dll_locations[0] = NULL;
 
    if (!ompt_env_var || ompt_env_var_is_null) {
       int ompt_init_val = ompt_initialize();
