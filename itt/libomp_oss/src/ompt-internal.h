@@ -34,15 +34,16 @@ typedef struct {
 
 typedef struct {
   ompt_parallel_id_t  parallel_id;
+  void                *microtask;
 } ompt_team_info_t;
 
 
 typedef struct ompt_lw_taskteam_s {
   ompt_team_info_t    ompt_team_info;
-  void                *microtask;
   ompt_task_info_t    ompt_task_info;
   struct ompt_lw_taskteam_s *parent;  
 } ompt_lw_taskteam_t;
+
 
 
 typedef struct {
