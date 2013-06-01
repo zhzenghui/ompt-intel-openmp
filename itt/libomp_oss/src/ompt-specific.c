@@ -1,7 +1,6 @@
 #include "kmp.h"
 #include "ompt-internal.h"
 
-
 inline
 kmp_info_t *ompt_get_thread_gtid(int gtid)
 {
@@ -94,7 +93,7 @@ void *__ompt_get_parallel_function_internal(int ancestor_level)
   int level = ancestor_level;
   ompt_lw_taskteam_t *lwt = __ompt_get_lw_taskteam(&level);
   if (lwt) {
-    return lwt->microtask;
+    return lwt->ompt_team_info.microtask;
   } else {
     kmp_team_t *team = ompt_team(level); /* remaining levels */
     return (void *) (team ? team->t.t_pkfn : NULL);
@@ -168,8 +167,8 @@ void __ompt_thread_assign_wait_id(void *variable)
 
 void __ompt_lw_taskteam_init(ompt_lw_taskteam_t *lwt, kmp_info_t *thr, int gtid, microtask_t microtask)
 {
-  lwt->microtask = (void *) microtask;
   lwt->ompt_team_info.parallel_id = NEXT_ID(thr, gtid);
+  lwt->ompt_team_info.microtask = (void *) microtask;
   lwt->ompt_task_info.data.value = 0;
   lwt->ompt_task_info.frame.reenter_runtime_frame = 0;
   lwt->ompt_task_info.frame.exit_runtime_frame = 0;
