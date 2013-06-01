@@ -113,7 +113,7 @@ typedef void (*ompt_callback_t) (
  ***************************************************************************/
 
 /* debugger interface */
-extern const char *ompt_debugger_plugin; /* unimplemented */
+extern char **ompd_dll_locations; 
 
 
 /****************************************************************************

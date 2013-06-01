@@ -579,7 +579,6 @@ ld-flags   += $(LDFLAGS)
 # --------------------------------------------------------------------------------------------------
 # Files.
 # --------------------------------------------------------------------------------------------------
-# ompt_items = ompt-control ompt-enumerate ompt-event-callbacks ompt-fini ompt-init ompt-initialize ompt-parallel ompt-runtime-version ompt-state ompt-thread-data ompt-task ompt-version
 ompt_items = ompt-general
 
 # Library files. These files participate in all kinds of library.
