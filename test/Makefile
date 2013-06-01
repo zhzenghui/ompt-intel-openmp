@@ -15,7 +15,7 @@ FC = ifort
 EXEC = \
 	main \
 	atomic \
-	enumerate \ 
+	enumerate \
 	lateinit \
 	level-1 \
 	level-2 \
@@ -25,7 +25,7 @@ EXEC = \
 	master \
 	matmult \
 	ordered \
-	parallelfor \ 
+	parallelfor \
 	single 
 
 # task-1 lateinitf
