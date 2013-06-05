@@ -17,6 +17,7 @@ EXEC = \
 	atomic \
 	enumerate-states \
 	enumerate-ompd-dll \
+	parloop-for-sampling \
 	lateinit \
 	level-1 \
 	level-2 \
