@@ -28,9 +28,8 @@ EXEC = \
 	matmult \
 	ordered \
 	parallelfor \
-	single 
-
-# task-1 lateinitf
+	single \
+	task-1 lateinitf
 
 all: $(EXEC)
 
@@ -41,3 +40,7 @@ $(EXEC) : $(HEADERS) Makefile $(LIB)
 
 %: %.c 
 	icc $(INCLUDES) -O0 -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
+
+
+%: %.f 
+	ifort $(INCLUDES) -O0 -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
