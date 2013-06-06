@@ -14,7 +14,7 @@ void g()
   int i, j;
 for(j = 0; j< 50000; j++) {
 #pragma omp parallel for
-  for(i = 0; i<1; i++) {
+  for(i = 0; i<5; i++) {
     fib(N+3);
   }
 }
