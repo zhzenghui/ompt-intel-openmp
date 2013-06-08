@@ -319,8 +319,9 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     kmp_info_t *master_th = __kmp_threads[ gtid ];
     kmp_team_t *parent_team = master_th->th.th_team;
     int tid = __kmp_tid_from_gtid( gtid );
-    parent_team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.reenter_runtime_frame = 
-       __builtin_frame_address(0); 
+    parent_team->t.t_implicit_task_taskdata[tid].
+      ompt_task_info.frame.reenter_runtime_frame = 
+      __builtin_frame_address(0); 
 #endif
 
     __kmp_fork_call( loc, gtid, TRUE,
@@ -334,9 +335,15 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
             ap
 #endif
             );
+
     __kmp_join_call( loc, gtid );
 
     va_end( ap );
+
+#ifdef OMPT_SUPPORT
+    parent_team->t.t_implicit_task_taskdata[tid].
+      ompt_task_info.frame.reenter_runtime_frame = 0;
+#endif
   }
 }
 
@@ -923,27 +930,45 @@ __kmpc_ordered( ident_t * loc, kmp_int32 gtid )
 
     th = __kmp_threads[ gtid ];
 
-#if 0 // this is the wrong place for this...
 #if OMPT_SUPPORT
-    if ((ompt_status == ompt_status_track_callback)) {
-      if (ompt_callbacks.ompt_callback(ompt_event_wait_ordered)) {
-        ompt_callbacks.ompt_callback(ompt_event_wait_ordered)
-          (th->th.ompt_thread_info.wait_id);
+    if (ompt_status & ompt_status_track) {
+
+      /* OMPT state update */
+      th->th.ompt_thread_info.wait_id = (uint64_t) loc;
+      th->th.ompt_thread_info.state = ompt_state_wait_ordered;
+
+
+      /* OMPT event callback */
+      if (ompt_status & ompt_status_track_callback) {
+	if (ompt_callbacks.ompt_callback(ompt_event_wait_ordered)) {
+	  ompt_callbacks.ompt_callback(ompt_event_wait_ordered)
+	    (th->th.ompt_thread_info.wait_id);
+	}
       }
+
     }
 #endif // OMPT_SUPPORT
-#endif // 0
 
     if ( th -> th.th_dispatch -> th_deo_fcn != 0 )
         (*th->th.th_dispatch->th_deo_fcn)( & gtid, & cid, loc );
     else
         __kmp_parallel_deo( & gtid, & cid, loc );
 
+
 #if OMPT_SUPPORT
-    if ((ompt_status == ompt_status_track_callback) &&
-        ompt_callbacks.ompt_callback(ompt_event_acquired_ordered)) {
-      ompt_callbacks.ompt_callback(ompt_event_acquired_ordered)
-        (th->th.ompt_thread_info.wait_id);
+    if (ompt_status & ompt_status_track) {
+
+      /* OMPT state update */
+      th->th.ompt_thread_info.state = ompt_state_work_parallel;
+      th->th.ompt_thread_info.wait_id = 0;
+
+      /* OMPT event callback */
+      if ((ompt_status & ompt_status_track_callback) &&
+	  ompt_callbacks.ompt_callback(ompt_event_acquired_ordered)) {
+	ompt_callbacks.ompt_callback(ompt_event_acquired_ordered)
+	  (th->th.ompt_thread_info.wait_id);
+      }
+
     }
 #endif // OMPT_SUPPORT
 }
@@ -972,11 +997,10 @@ __kmpc_end_ordered( ident_t * loc, kmp_int32 gtid )
         __kmp_parallel_dxo( & gtid, & cid, loc );
 
 #if OMPT_SUPPORT
-    if ((ompt_status == ompt_status_track_callback)) {
-      if (ompt_callbacks.ompt_callback(ompt_event_release_ordered)) {
-        ompt_callbacks.ompt_callback(ompt_event_release_ordered)
-          (th->th.ompt_thread_info.wait_id);
-      }
+    if ((ompt_status == ompt_status_track_callback) &&
+	ompt_callbacks.ompt_callback(ompt_event_release_ordered)) {
+      ompt_callbacks.ompt_callback(ompt_event_release_ordered)
+	(th->th.ompt_thread_info.wait_id);
     }
 #endif // OMPT_SUPPORT
 }

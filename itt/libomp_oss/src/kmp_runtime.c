@@ -2407,6 +2407,10 @@ __kmp_fork_call(
     int             master_set_numthreads;
     int             level;
 
+#if OMPT_SUPPORT
+    ompt_state_t prev_state;
+#endif
+
     KA_TRACE( 20, ("__kmp_fork_call: enter T#%d\n", gtid ));
 
     /* initialize if needed */
@@ -2416,6 +2420,14 @@ __kmp_fork_call(
 
     /* setup current data */
     master_th     = __kmp_threads[ gtid ];
+
+#if OMPT_SUPPORT
+    if (ompt_status & ompt_status_track) {
+      prev_state = master_th->th.ompt_thread_info.state;
+      master_th->th.ompt_thread_info.state = ompt_state_overhead;
+    }
+#endif
+
     parent_team   = master_th -> th.th_team;
     master_tid    = master_th -> th.th_info.ds.ds_tid;
     master_this_cons = master_th -> th.th_local.this_construct;
@@ -2492,17 +2504,22 @@ __kmp_fork_call(
 
 #if OMPT_SUPPORT
 	    ompt_lw_taskteam_t lw_taskteam;
-	    void **exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
+	    void **exit_runtime_p = 
+	      &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 	    if (ompt_status & ompt_status_track) {
-	      __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, microtask); 
-	    }
+	      __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, microtask);
 
-	    if ((ompt_status == ompt_status_track_callback) &&
-		ompt_callbacks.ompt_callback(ompt_event_parallel_create)) {
-	      ompt_callbacks.ompt_callback(ompt_event_parallel_create)
-		(&lw_taskteam.ompt_task_info.data,
-		 &lw_taskteam.ompt_task_info.frame,
-		 lw_taskteam.ompt_team_info.parallel_id);
+	      /* OMPT state */
+	      master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
+
+	      /* OMPT event */
+	      if ((ompt_status & ompt_status_track_callback) &&
+		  ompt_callbacks.ompt_callback(ompt_event_parallel_create)) {
+		ompt_callbacks.ompt_callback(ompt_event_parallel_create)
+		  (&lw_taskteam.ompt_task_info.data,
+		   &lw_taskteam.ompt_task_info.frame,
+		   lw_taskteam.ompt_team_info.parallel_id);
+	      }
 	    }
 #else
 	    void *dummy;
@@ -2512,15 +2529,17 @@ __kmp_fork_call(
            __kmp_invoke_microtask( microtask, gtid, 0, argc, args, exit_runtime_p );
 
 #if OMPT_SUPPORT
-	    if ((ompt_status == ompt_status_track_callback) &&
-		ompt_callbacks.ompt_callback(ompt_event_parallel_exit)) {
-	      ompt_callbacks.ompt_callback(ompt_event_parallel_exit)
-		(&lw_taskteam.ompt_task_info.data,
-		 &lw_taskteam.ompt_task_info.frame,
-		 lw_taskteam.ompt_team_info.parallel_id);
-	    }
 	    if (ompt_status & ompt_status_track) {
+	      lw_taskteam.ompt_task_info.frame.exit_runtime_frame = 0;
+	      if ((ompt_status & ompt_status_track_callback) &&
+		  ompt_callbacks.ompt_callback(ompt_event_parallel_exit)) {
+		ompt_callbacks.ompt_callback(ompt_event_parallel_exit)
+		  (&lw_taskteam.ompt_task_info.data,
+		   &lw_taskteam.ompt_task_info.frame,
+		   lw_taskteam.ompt_team_info.parallel_id);
+	      }
 	      __ompt_lw_taskteam_fini(&lw_taskteam, master_th);
+	      master_th->th.ompt_thread_info.state = prev_state;
 	    }
 #endif
         }
@@ -2725,14 +2744,17 @@ __kmp_fork_call(
         root -> r.r_active = TRUE;
 
 #if OMPT_SUPPORT
-   if ((ompt_status == ompt_status_track_callback) &&
-       ompt_callbacks.ompt_callback(ompt_event_parallel_create)) {
-     int  tid = __kmp_tid_from_gtid( gtid );
-     ompt_callbacks.ompt_callback(ompt_event_parallel_create)
-       (&(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
-	&(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame),
-	team->t.ompt_team_info.parallel_id);
-   }
+    if (ompt_status & ompt_status_track) {
+      master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
+      if ((ompt_status == ompt_status_track_callback) &&
+	  ompt_callbacks.ompt_callback(ompt_event_parallel_create)) {
+	int  tid = __kmp_tid_from_gtid( gtid );
+	ompt_callbacks.ompt_callback(ompt_event_parallel_create)
+	  (&(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
+	   &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame),
+	   team->t.ompt_team_info.parallel_id);
+      }
+    }
 #endif
 
     __kmp_fork_team_threads( root, team, master_th, gtid );
@@ -2770,6 +2792,12 @@ __kmp_fork_call(
 
     KA_TRACE( 20, ("__kmp_fork_call: parallel exit T#%d\n", gtid ));
 
+#if OMPT_SUPPORT
+    if (ompt_status & ompt_status_track) {
+      master_th->th.ompt_thread_info.state = prev_state;
+    }
+#endif
+
     return TRUE;
 }
 
@@ -2788,6 +2816,14 @@ __kmp_join_call(ident_t *loc, int gtid)
 
     /* setup current data */
     master_th     = __kmp_threads[ gtid ];
+
+
+#if OMPT_SUPPORT
+    if (ompt_status & ompt_status_track) {
+      master_th->th.ompt_thread_info.state = ompt_state_overhead;
+    }
+#endif
+
     root          = master_th -> th.th_root;
     team          = master_th -> th.th_team;
     parent_team   = team->t.t_parent;
@@ -2814,7 +2850,7 @@ __kmp_join_call(ident_t *loc, int gtid)
     KMP_MB();
 
 #if OMPT_SUPPORT
-   if ((ompt_status == ompt_status_track_callback) &&
+   if ((ompt_status & ompt_status_track_callback) &&
        ompt_callbacks.ompt_callback(ompt_event_parallel_exit)) {
      int  tid = __kmp_tid_from_gtid( gtid );
      ompt_callbacks.ompt_callback(ompt_event_parallel_exit)
@@ -6249,7 +6285,8 @@ __kmp_launch_thread( kmp_info_t *this_thr )
 #if OMPT_SUPPORT
                 /* no frame set while outside task */
 	        int tid = __kmp_tid_from_gtid(gtid); 
-                (*pteam)->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.exit_runtime_frame = 0;
+                (*pteam)->t.t_implicit_task_taskdata[tid].
+		  ompt_task_info.frame.exit_runtime_frame = 0;
 #endif
                 KMP_MB();
                 KA_TRACE( 20, ("__kmp_launch_thread: T#%d(%d:%d) done microtask = %p\n",
@@ -7501,7 +7538,9 @@ __kmp_invoke_task_func( int gtid )
 
      
 #if OMPT_SUPPORT
-    void **exit_runtime_p = &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.exit_runtime_frame);
+    void **exit_runtime_p = 
+      &(team->t.t_implicit_task_taskdata[tid].
+	ompt_task_info.frame.exit_runtime_frame);
 #else
     void *dummy;
     void **exit_runtime_p = &dummy;
@@ -7509,7 +7548,13 @@ __kmp_invoke_task_func( int gtid )
 
     __kmp_run_before_invoked_task( gtid, tid, this_thr, team );
     rc = __kmp_invoke_microtask( (microtask_t) TCR_SYNC_PTR(team->t.t_pkfn),
-				 gtid, tid, (int) team->t.t_argc, (void **) team->t.t_argv, exit_runtime_p );
+				 gtid, tid, (int) team->t.t_argc, 
+				 (void **) team->t.t_argv, exit_runtime_p );
+
+#if OMPT_SUPPORT
+    team->t.t_implicit_task_taskdata[tid].
+      ompt_task_info.frame.exit_runtime_frame = 0;
+#endif
 
     __kmp_run_after_invoked_task( gtid, tid, this_thr, team );
 

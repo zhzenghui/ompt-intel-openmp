@@ -24,11 +24,11 @@
  * macros
  ****************************************************************************/
 
-#define set_success 0
+#define set_success 3
 #define set_failure -1
 
-#define get_success 0
-#define get_failure -1
+#define get_success 1
+#define get_failure 0
 
 #define no_tool_present 0
 

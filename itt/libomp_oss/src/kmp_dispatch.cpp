@@ -2324,11 +2324,6 @@ __kmp_wait_yield_4(volatile kmp_uint32 * spinner,
     register          kmp_uint32 (*f) ( kmp_uint32, kmp_uint32 ) = pred;
     register          kmp_uint32           r;
 
-#if OMPT_SUPPORT
-    kmp_info_t *this_thread = NULL;
-    ompt_state_t prev_state = ompt_state_undefined;
-#endif 
-    
     KMP_INIT_YIELD( spins );
     // main wait spin loop
     while(!f(r = TCR_4(*spin), check)) {
@@ -2336,15 +2331,6 @@ __kmp_wait_yield_4(volatile kmp_uint32 * spinner,
            It causes problems with infinite recursion because of exit lock */
         /* if ( TCR_4(__kmp_global.g.g_done) && __kmp_global.g.g_abort)
             __kmp_abort_thread(); */
-
-#if OMPT_SUPPORT
-      if ((ompt_status & ompt_status_track) && (prev_state == ompt_state_undefined)) {
-	this_thread = __kmp_thread_from_gtid(__kmp_get_gtid());
-	this_thread->th.ompt_thread_info.wait_id = (uint64_t) spinner;
-	prev_state = this_thread->th.ompt_thread_info.state;
-	this_thread->th.ompt_thread_info.state = ompt_state_wait_ordered;
-      }
-#endif 
 
         __kmp_static_delay(TRUE);
 
@@ -2354,13 +2340,6 @@ __kmp_wait_yield_4(volatile kmp_uint32 * spinner,
         KMP_YIELD_SPIN( spins );
     }
     
-#if OMPT_SUPPORT
-    if (prev_state != ompt_state_undefined) {
-      this_thread->th.ompt_thread_info.state = prev_state;
-      this_thread->th.ompt_thread_info.wait_id = 0;
-    }
-#endif 
-
     return r;
 }
 
@@ -2378,11 +2357,6 @@ __kmp_wait_yield_8( volatile kmp_uint64 * spinner,
     register          kmp_uint32 (*f) ( kmp_uint64, kmp_uint64 ) = pred;
     register          kmp_uint64           r;
 
-#if OMPT_SUPPORT
-    kmp_info_t *this_thread = NULL;
-    ompt_state_t prev_state = ompt_state_undefined;
-#endif 
-
     KMP_INIT_YIELD( spins );
     // main wait spin loop
     while(!f(r = *spin, check))
@@ -2391,16 +2365,6 @@ __kmp_wait_yield_8( volatile kmp_uint64 * spinner,
            It causes problems with infinite recursion because of exit lock */
         /* if ( TCR_4(__kmp_global.g.g_done) && __kmp_global.g.g_abort)
             __kmp_abort_thread(); */
-
-#if OMPT_SUPPORT
-      if ((ompt_status & ompt_status_track) && (prev_state == ompt_state_undefined)) {
-	this_thread = __kmp_thread_from_gtid(__kmp_get_gtid());
-	prev_state = this_thread->th.ompt_thread_info.state;
-	this_thread->th.ompt_thread_info.wait_id = (uint64_t) spinner;
-	this_thread->th.ompt_thread_info.state = ompt_state_wait_ordered;
-      }
-#endif 
-
         __kmp_static_delay(TRUE);
 
         // if we are oversubscribed,
@@ -2409,13 +2373,6 @@ __kmp_wait_yield_8( volatile kmp_uint64 * spinner,
         KMP_YIELD( TCR_4(__kmp_nth) > __kmp_avail_proc );
         KMP_YIELD_SPIN( spins );
     }
-
-#if OMPT_SUPPORT
-    if (prev_state != ompt_state_undefined) {
-      this_thread->th.ompt_thread_info.state = prev_state;
-      this_thread->th.ompt_thread_info.wait_id = 0;
-    }
-#endif 
 
     return r;
 }
