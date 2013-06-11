@@ -1,6 +1,6 @@
 #include <omp.h>
 
-#define N 18
+#define N 42
 
 int fib(int n)
 {
@@ -11,12 +11,9 @@ int fib(int n)
 
 void g()
 {
-  int i, j;
-for(j = 0; j< 50000; j++) {
-#pragma omp parallel for
-  for(i = 0; i<5; i++) {
+#pragma omp parallel 
+{
     fib(N);
-  }
 }
 }
 
