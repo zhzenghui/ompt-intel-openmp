@@ -2,10 +2,13 @@
 #define __OMPT_INTERNAL_H__
 
 #include "ompt.h"
+#include "ompt-event-specific.h"
 
 #define OMPT_VERSION 1
 
 #define _OMP_EXTERN
+
+
 
 #define ompt_callback(e) e ## _callback
 
