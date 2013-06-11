@@ -18,6 +18,9 @@ EXEC = \
 	enumerate-states \
 	enumerate-ompd-dll \
 	parloop-for-sampling \
+	parregion-for-sampling \
+	parregion2-for-sampling \
+	parregion3-for-sampling-uneven-waiting \
 	lateinit \
 	level-1 \
 	level-2 \
