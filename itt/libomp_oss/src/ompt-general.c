@@ -24,8 +24,10 @@
  * macros
  ****************************************************************************/
 
+// these return codes and the event macros still need some work
+//
 #define set_success 3
-#define set_failure -1
+#define set_failure 0
 
 #define get_success 1
 #define get_failure 0
