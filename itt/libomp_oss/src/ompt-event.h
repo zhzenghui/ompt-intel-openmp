@@ -1,11 +1,5 @@
 /* -------------- OMPT events -------------- */
 
-/*
- * As events are supported in the runtime, update the specific header
- * to enable the callback functions.
- */
-#include "ompt-event-specific.h"
-
   /*--- Mandatory Events ---*/
 ompt_event(ompt_event_parallel_create, ompt_new_parallel_callback_t, 1, ompt_event_parallel_create_implemented) /* parallel create */
 ompt_event(ompt_event_parallel_exit, ompt_new_parallel_callback_t, 2, ompt_event_parallel_exit_implemented) /* parallel exit */
