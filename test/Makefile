@@ -1,11 +1,20 @@
 VER=deb
 HOST:= $(shell hostname -s)
 
-ifeq ($(HOST),manticore)
+ifeq ($(type),rel)
 VER=rel
 endif
 
-LIBDIR =../itt/libomp_oss/tmp/lin_32e-rtl_5_nor_dyn.12.$(VER).40.c0.t0-$(HOST)/unstripped
+ifeq ($(arch),mic)
+ARCH=.knc.lin.off
+OPT=-mmic
+PREF=lrb
+else
+PREF=lin
+endif
+
+LIBDIR =../itt/libomp_oss/tmp/$(PREF)_32e-rtl_5_nor_dyn.12.$(VER).40.c0.t0$(ARCH)-$(HOST)/unstripped
+
 LIB =$(LIBDIR)/libiomp5.so
 
 INCLUDES=-I../itt/libomp_oss/src
@@ -13,6 +22,7 @@ HEADERS=${wildcard *.h}
 
 FC = ifort
 EXEC = \
+	LULESH_OMP \
 	main \
 	atomic \
 	enumerate-states \
@@ -21,6 +31,7 @@ EXEC = \
 	parregion-for-sampling \
 	parregion2-for-sampling \
 	parregion3-for-sampling-uneven-waiting \
+	imbalance \
 	lateinit \
 	level-1 \
 	level-2 \
@@ -42,8 +53,10 @@ clean:
 $(EXEC) : $(HEADERS) Makefile $(LIB)
 
 %: %.c 
-	icc $(INCLUDES) -O0 -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
+	icc $(INCLUDES) $(OPT) -O0 -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
 
+%: %.cpp 
+	icpc $(INCLUDES) $(OPT) -O0 -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
 
 %: %.f 
-	ifort $(INCLUDES) -O0 -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
+	ifort $(INCLUDES) $(OPT) -O0 -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
