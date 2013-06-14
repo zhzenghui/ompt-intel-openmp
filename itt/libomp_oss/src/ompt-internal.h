@@ -50,6 +50,7 @@ typedef struct ompt_lw_taskteam_s {
 
 
 typedef struct {
+  ompt_state_t        prev_state;
   ompt_state_t        state;
   ompt_wait_id_t      wait_id;
   ompt_data_t         data;             /* OMPT tool data */
