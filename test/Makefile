@@ -1,8 +1,16 @@
-VER=deb
 HOST:= $(shell hostname -s)
+
+ifeq ($(opt),2)
+LEVEL=2
+else
+LEVEL=0
+endif
+
 
 ifeq ($(type),rel)
 VER=rel
+else
+VER=deb
 endif
 
 ifeq ($(arch),mic)
@@ -53,10 +61,10 @@ clean:
 $(EXEC) : $(HEADERS) Makefile $(LIB)
 
 %: %.c 
-	icc $(INCLUDES) $(OPT) -O0 -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
+	icc $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
 
 %: %.cpp 
-	icpc $(INCLUDES) $(OPT) -O0 -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
+	icpc $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
 
 %: %.f 
-	ifort $(INCLUDES) $(OPT) -O0 -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
+	ifort $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
