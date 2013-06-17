@@ -17,8 +17,10 @@ ifeq ($(arch),mic)
 ARCH=.knc.lin.off
 OPT=-mmic
 PREF=lrb
+SUFFIX=mic
 else
 PREF=lin
+SUFFIX=host
 endif
 
 LIBDIR =../itt/libomp_oss/tmp/$(PREF)_32e-rtl_5_nor_dyn.12.$(VER).40.c0.t0$(ARCH)-$(HOST)/unstripped
@@ -39,6 +41,7 @@ EXEC = \
 	parregion-for-sampling \
 	parregion2-for-sampling \
 	parregion3-for-sampling-uneven-waiting \
+	fib \
 	imbalance \
 	lateinit \
 	level-1 \
@@ -53,18 +56,23 @@ EXEC = \
 	single \
 	task-1 lateinitf
 
-all: $(EXEC)
+EXECS=$(addsuffix .$(SUFFIX),$(EXEC))
+
+all: $(EXECS)
 
 clean:
-	/bin/rm -f $(EXEC)
+	/bin/rm -f $(EXECS)
 
-$(EXEC) : $(HEADERS) Makefile $(LIB)
+$(EXECS) : $(HEADERS) Makefile $(LIB)
 
-%: %.c 
+fib.$(SUFFIX): fib.c 
+	icc $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ $<
+
+%.$(SUFFIX): %.c 
 	icc $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
 
-%: %.cpp 
+%.$(SUFFIX): %.cpp 
 	icpc $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
 
-%: %.f 
+%.$(SUFFIX): %.f 
 	ifort $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
