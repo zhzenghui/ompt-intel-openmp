@@ -353,7 +353,7 @@ __kmp_test_nested_tas_lock_with_checks( kmp_tas_lock_t *lck, kmp_int32 gtid )
     return __kmp_test_nested_tas_lock( lck, gtid );
 }
 
-void
+int
 __kmp_release_nested_tas_lock( kmp_tas_lock_t *lck, kmp_int32 gtid )
 {
     KMP_DEBUG_ASSERT( gtid >= 0 );
@@ -361,10 +361,12 @@ __kmp_release_nested_tas_lock( kmp_tas_lock_t *lck, kmp_int32 gtid )
     KMP_MB();
     if ( --(lck->lk.depth_locked) == 0 ) {
         __kmp_release_tas_lock( lck, gtid );
+	return KMP_NESTED_LOCK_RELEASED;
     }
+    return KMP_NESTED_LOCK_HELD;
 }
 
-static void
+static int
 __kmp_release_nested_tas_lock_with_checks( kmp_tas_lock_t *lck, kmp_int32 gtid )
 {
     if ( __kmp_env_consistency_check ) {
@@ -380,7 +382,7 @@ __kmp_release_nested_tas_lock_with_checks( kmp_tas_lock_t *lck, kmp_int32 gtid )
             KMP_FATAL( LockUnsettingSetByAnother, func );
         }
     }
-    __kmp_release_nested_tas_lock( lck, gtid );
+    return __kmp_release_nested_tas_lock( lck, gtid );
 }
 
 void
@@ -706,7 +708,7 @@ __kmp_test_nested_futex_lock_with_checks( kmp_futex_lock_t *lck, kmp_int32 gtid 
     return __kmp_test_nested_futex_lock( lck, gtid );
 }
 
-void
+int
 __kmp_release_nested_futex_lock( kmp_futex_lock_t *lck, kmp_int32 gtid )
 {
     KMP_DEBUG_ASSERT( gtid >= 0 );
@@ -714,10 +716,12 @@ __kmp_release_nested_futex_lock( kmp_futex_lock_t *lck, kmp_int32 gtid )
     KMP_MB();
     if ( --(lck->lk.depth_locked) == 0 ) {
         __kmp_release_futex_lock( lck, gtid );
+	return KMP_NESTED_LOCK_RELEASED;
     }
+    return KMP_NESTED_LOCK_HELD;
 }
 
-static void
+static int
 __kmp_release_nested_futex_lock_with_checks( kmp_futex_lock_t *lck, kmp_int32 gtid )
 {
     if ( __kmp_env_consistency_check ) {
@@ -733,7 +737,7 @@ __kmp_release_nested_futex_lock_with_checks( kmp_futex_lock_t *lck, kmp_int32 gt
             KMP_FATAL( LockUnsettingSetByAnother, func );
         }
     }
-    __kmp_release_nested_futex_lock( lck, gtid );
+    return __kmp_release_nested_futex_lock( lck, gtid );
 }
 
 void
@@ -1049,7 +1053,7 @@ __kmp_test_nested_ticket_lock_with_checks( kmp_ticket_lock_t *lck,
     return __kmp_test_nested_ticket_lock( lck, gtid );
 }
 
-void
+int
 __kmp_release_nested_ticket_lock( kmp_ticket_lock_t *lck, kmp_int32 gtid )
 {
     KMP_DEBUG_ASSERT( gtid >= 0 );
@@ -1059,10 +1063,12 @@ __kmp_release_nested_ticket_lock( kmp_ticket_lock_t *lck, kmp_int32 gtid )
         KMP_MB();
         lck->lk.owner_id = 0;
         __kmp_release_ticket_lock( lck, gtid );
+	return KMP_NESTED_LOCK_RELEASED;
     }
+    return KMP_NESTED_LOCK_HELD;
 }
 
-static void
+static int
 __kmp_release_nested_ticket_lock_with_checks( kmp_ticket_lock_t *lck, kmp_int32 gtid )
 {
     if ( __kmp_env_consistency_check ) {
@@ -1081,7 +1087,7 @@ __kmp_release_nested_ticket_lock_with_checks( kmp_ticket_lock_t *lck, kmp_int32 
             KMP_FATAL( LockUnsettingSetByAnother, func );
         }
     }
-    __kmp_release_nested_ticket_lock( lck, gtid );
+    return __kmp_release_nested_ticket_lock( lck, gtid );
 }
 
 void
@@ -1409,7 +1415,7 @@ __kmp_acquire_queuing_lock_timed_template( kmp_queuing_lock_t *lck,
         }
 
 #if OMPT_SUPPORT
-        if (ompt_status & ompt_status_track && prev_state != ompt_state_undefined) {
+        if (ompt_status & ompt_status_track && prev_state == ompt_state_undefined) {
 	  /* this thread will spin; set wait_id before entering wait state */
 	   prev_state = this_thr->th.ompt_thread_info.state;
 	   this_thr->th.ompt_thread_info.wait_id = (uint64_t) lck;
@@ -1680,20 +1686,6 @@ __kmp_release_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid )
 #ifdef DEBUG_QUEUING_LOCKS
             TRACE_LOCK( gtid+1, "rel exit 2" );
 #endif
-
-#if OMPT_SUPPORT
-	    if (ompt_status == ompt_status_track_callback) {
-	      if ((lck->lk.flags == kmp_lf_critical_section) &&
-		  ompt_callbacks.ompt_callback(ompt_event_release_critical)) {
-		ompt_callbacks.ompt_callback(ompt_event_release_critical)((uint64_t) lck);
-	      } else if ((lck->lk.flags == kmp_lf_atomic) &&
-			 ompt_callbacks.ompt_callback(ompt_event_release_atomic)) {
-		ompt_callbacks.ompt_callback(ompt_event_release_atomic)((uint64_t) lck);
-	      } else if (ompt_callbacks.ompt_callback(ompt_event_release_lock)) {
-		ompt_callbacks.ompt_callback(ompt_event_release_lock)((uint64_t) lck);
-	      }
-	    }
-#endif
             return;
         }
         /* KMP_CPU_PAUSE( );  don't want to make releasing thread hold up acquiring threads */
@@ -1857,7 +1849,7 @@ __kmp_test_nested_queuing_lock_with_checks( kmp_queuing_lock_t *lck,
     return __kmp_test_nested_queuing_lock( lck, gtid );
 }
 
-void
+int
 __kmp_release_nested_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid )
 {
     KMP_DEBUG_ASSERT( gtid >= 0 );
@@ -1867,10 +1859,12 @@ __kmp_release_nested_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid )
         KMP_MB();
         lck->lk.owner_id = 0;
         __kmp_release_queuing_lock( lck, gtid );
+	return KMP_NESTED_LOCK_RELEASED;
     }
+    return KMP_NESTED_LOCK_HELD;
 }
 
-static void
+static int
 __kmp_release_nested_queuing_lock_with_checks( kmp_queuing_lock_t *lck, kmp_int32 gtid )
 {
     if ( __kmp_env_consistency_check ) {
@@ -1889,7 +1883,7 @@ __kmp_release_nested_queuing_lock_with_checks( kmp_queuing_lock_t *lck, kmp_int3
             KMP_FATAL( LockUnsettingSetByAnother, func );
         }
     }
-    __kmp_release_nested_queuing_lock( lck, gtid );
+    return __kmp_release_nested_queuing_lock( lck, gtid );
 }
 
 void
@@ -2412,7 +2406,7 @@ __kmp_test_nested_drdpa_lock_with_checks( kmp_drdpa_lock_t *lck, kmp_int32 gtid 
     return __kmp_test_nested_drdpa_lock( lck, gtid );
 }
 
-void
+int
 __kmp_release_nested_drdpa_lock( kmp_drdpa_lock_t *lck, kmp_int32 gtid )
 {
     KMP_DEBUG_ASSERT( gtid >= 0 );
@@ -2422,10 +2416,12 @@ __kmp_release_nested_drdpa_lock( kmp_drdpa_lock_t *lck, kmp_int32 gtid )
         KMP_MB();
         lck->lk.owner_id = 0;
         __kmp_release_drdpa_lock( lck, gtid );
+	return KMP_NESTED_LOCK_RELEASED;
     }
+    return KMP_NESTED_LOCK_HELD;
 }
 
-static void
+static int
 __kmp_release_nested_drdpa_lock_with_checks( kmp_drdpa_lock_t *lck, kmp_int32 gtid )
 {
     if ( __kmp_env_consistency_check ) {
@@ -2444,7 +2440,7 @@ __kmp_release_nested_drdpa_lock_with_checks( kmp_drdpa_lock_t *lck, kmp_int32 gt
             KMP_FATAL( LockUnsettingSetByAnother, func );
         }
     }
-    __kmp_release_nested_drdpa_lock( lck, gtid );
+    return __kmp_release_nested_drdpa_lock( lck, gtid );
 }
 
 void
@@ -2543,7 +2539,7 @@ void ( *__kmp_destroy_user_lock_with_checks_ )( kmp_user_lock_p lck ) = NULL;
 void ( *__kmp_acquire_nested_user_lock_with_checks_ )( kmp_user_lock_p lck, kmp_int32 gtid ) = NULL;
 
 int ( *__kmp_test_nested_user_lock_with_checks_ )( kmp_user_lock_p lck, kmp_int32 gtid ) = NULL;
-void ( *__kmp_release_nested_user_lock_with_checks_ )( kmp_user_lock_p lck, kmp_int32 gtid ) = NULL;
+int ( *__kmp_release_nested_user_lock_with_checks_ )( kmp_user_lock_p lck, kmp_int32 gtid ) = NULL;
 void ( *__kmp_init_nested_user_lock_with_checks_ )( kmp_user_lock_p lck ) = NULL;
 void ( *__kmp_destroy_nested_user_lock_with_checks_ )( kmp_user_lock_p lck ) = NULL;
 
@@ -2601,7 +2597,7 @@ void __kmp_set_user_lock_vptrs( kmp_lock_kind_t user_lock_kind )
               ( &__kmp_test_nested_tas_lock_with_checks );
 
             __kmp_release_nested_user_lock_with_checks_ =
-              ( void ( * )( kmp_user_lock_p, kmp_int32 ) )
+              ( int ( * )( kmp_user_lock_p, kmp_int32 ) )
               ( &__kmp_release_nested_tas_lock_with_checks );
 
             __kmp_init_nested_user_lock_with_checks_ =
@@ -2672,7 +2668,7 @@ void __kmp_set_user_lock_vptrs( kmp_lock_kind_t user_lock_kind )
               ( &__kmp_test_nested_futex_lock_with_checks );
 
             __kmp_release_nested_user_lock_with_checks_ =
-              ( void ( * )( kmp_user_lock_p, kmp_int32 ) )
+              ( int ( * )( kmp_user_lock_p, kmp_int32 ) )
               ( &__kmp_release_nested_futex_lock_with_checks );
 
             __kmp_init_nested_user_lock_with_checks_ =
@@ -2743,7 +2739,7 @@ void __kmp_set_user_lock_vptrs( kmp_lock_kind_t user_lock_kind )
               ( &__kmp_test_nested_ticket_lock_with_checks );
 
             __kmp_release_nested_user_lock_with_checks_ =
-              ( void ( * )( kmp_user_lock_p, kmp_int32 ) )
+              ( int ( * )( kmp_user_lock_p, kmp_int32 ) )
               ( &__kmp_release_nested_ticket_lock_with_checks );
 
             __kmp_init_nested_user_lock_with_checks_ =
@@ -2817,7 +2813,7 @@ void __kmp_set_user_lock_vptrs( kmp_lock_kind_t user_lock_kind )
               ( &__kmp_test_nested_queuing_lock_with_checks );
 
             __kmp_release_nested_user_lock_with_checks_ =
-              ( void ( * )( kmp_user_lock_p, kmp_int32 ) )
+              ( int ( * )( kmp_user_lock_p, kmp_int32 ) )
               ( &__kmp_release_nested_queuing_lock_with_checks );
 
             __kmp_init_nested_user_lock_with_checks_ =
@@ -2891,7 +2887,7 @@ void __kmp_set_user_lock_vptrs( kmp_lock_kind_t user_lock_kind )
               ( &__kmp_test_nested_drdpa_lock_with_checks );
 
             __kmp_release_nested_user_lock_with_checks_ =
-              ( void ( * )( kmp_user_lock_p, kmp_int32 ) )
+              ( int ( * )( kmp_user_lock_p, kmp_int32 ) )
               ( &__kmp_release_nested_drdpa_lock_with_checks );
 
             __kmp_init_nested_user_lock_with_checks_ =

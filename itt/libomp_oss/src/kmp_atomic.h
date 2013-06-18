@@ -430,7 +430,10 @@ __kmp_release_atomic_lock( kmp_atomic_lock_t *lck, kmp_int32 gtid )
 {
     __kmp_release_queuing_lock( lck, gtid );
 #if OMPT_SUPPORT
-    /* support for release integrated into queueing lock */
+    if ((ompt_status == ompt_status_track_callback) && 
+	ompt_callbacks.ompt_callback(ompt_event_release_atomic)) {
+      ompt_callbacks.ompt_callback(ompt_event_release_atomic)((uint64_t) lck);
+    }
 #endif
 }
 
