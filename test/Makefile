@@ -13,6 +13,12 @@ else
 VER=deb
 endif
 
+ifeq ($(strip),yes)
+STRIP=stripped
+else
+STRIP=unstripped
+endif
+
 ifeq ($(arch),mic)
 ARCH=.knc.lin.off
 OPT=-mmic
@@ -23,7 +29,7 @@ PREF=lin
 SUFFIX=host
 endif
 
-LIBDIR =../itt/libomp_oss/tmp/$(PREF)_32e-rtl_5_nor_dyn.12.$(VER).40.c0.t0$(ARCH)-$(HOST)/unstripped
+LIBDIR =../itt/libomp_oss/tmp/$(PREF)_32e-rtl_5_nor_dyn.12.$(VER).40.c0.t0$(ARCH)-$(HOST)/$(STRIP)
 
 LIB =$(LIBDIR)/libiomp5.so
 
@@ -35,6 +41,10 @@ EXEC = \
 	LULESH_OMP \
 	main \
 	atomic \
+	atomic-2 \
+	atomic-3 \
+	critical \
+	critical-cpp \
 	enumerate-states \
 	enumerate-ompd-dll \
 	parloop-for-sampling \
@@ -44,6 +54,8 @@ EXEC = \
 	fib \
 	imbalance \
 	lateinit \
+	locktest \
+	locktest-2 \
 	level-1 \
 	level-2 \
 	level-3 \
