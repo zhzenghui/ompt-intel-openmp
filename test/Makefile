@@ -59,6 +59,7 @@ EXEC = \
 	level-1 \
 	level-2 \
 	level-3 \
+	level-2-sampling \
 	level-4 \
 	level-5 \
 	master \
@@ -79,6 +80,9 @@ $(EXECS) : $(HEADERS) Makefile $(LIB)
 
 fib.$(SUFFIX): fib.c 
 	icc $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ $<
+
+luleshMPI_OMP.host: luleshMPI_OMP.cc
+	mpicxx $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
 
 %.$(SUFFIX): %.c 
 	icc $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
