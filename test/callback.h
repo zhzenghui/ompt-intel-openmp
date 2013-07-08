@@ -156,7 +156,7 @@ TEST_THREAD_CALLBACK(ompt_event_flush);
  *******************************************************************/
 
 #define CHECK(EVENT) \
-if (ompt_set_callback(EVENT, my_##EVENT) != 0) { \
+if (ompt_set_callback(EVENT, my_##EVENT) == 0) { \
   fprintf(stderr,"Failed to register OMPT callback %s!\n",#EVENT); return 0; \
 }
 
