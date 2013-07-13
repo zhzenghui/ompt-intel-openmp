@@ -1953,27 +1953,30 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
     register kmp_info_t  *this_thr        = __kmp_threads[ gtid ];
     register kmp_team_t  *team            = this_thr -> th.th_team;
     register int status = 0;
+    ompt_data_t *my_data;
+    ompt_parallel_id_t my_parallel_id;
 
     KA_TRACE( 15, ( "__kmp_barrier: T#%d(%d:%d) has arrived\n",
                     gtid, __kmp_team_from_gtid(gtid)->t.t_id, __kmp_tid_from_gtid(gtid) ) );
 #if OMPT_SUPPORT
     if ((ompt_status & ompt_status_track)) {
+     my_data = &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data);
+     my_parallel_id = team->t.ompt_team_info.parallel_id;
+      
       this_thr->th.ompt_thread_info.prev_state = this_thr->th.ompt_thread_info.state;
       this_thr->th.ompt_thread_info.state = ompt_state_wait_barrier;
       if (this_thr->th.ompt_thread_info.state == ompt_state_wait_single) {
 	if ((ompt_status == ompt_status_track_callback)) {
 	  if (ompt_callbacks.ompt_callback(ompt_event_single_others_end)) {
 	    ompt_callbacks.ompt_callback(ompt_event_single_others_end)
-	      (&(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
-	       team->t.ompt_team_info.parallel_id);
+              (my_data, my_parallel_id);
 	  }
 	}
       }
       if ((ompt_status == ompt_status_track_callback) &&
 	  ompt_callbacks.ompt_callback(ompt_event_barrier_begin)) {
 	ompt_callbacks.ompt_callback(ompt_event_barrier_begin)
-	  (&(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
-	   team->t.ompt_team_info.parallel_id);
+          (my_data, my_parallel_id);
       }
     }
 #endif
@@ -2080,10 +2083,8 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
       this_thr->th.ompt_thread_info.state = this_thr->th.ompt_thread_info.prev_state;
       if ((ompt_status == ompt_status_track_callback) &&
 	  ompt_callbacks.ompt_callback(ompt_event_barrier_end)) {
-	int  tid = __kmp_tid_from_gtid( gtid );
 	ompt_callbacks.ompt_callback(ompt_event_barrier_end)
-	  (&(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
-	   team->t.ompt_team_info.parallel_id);
+          (my_data, my_parallel_id);
       }
     }
 #endif
