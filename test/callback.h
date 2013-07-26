@@ -13,38 +13,31 @@
  * Macros to help generate test functions for each event
  */
 
-#define TEST_THREAD_CALLBACK(EVENT) \
-void my_##EVENT ( \
-ompt_data_t *thread_data)  /* tool data for thread       */ \
-{ \
-  printf("%d: %s: %llx\n", omp_get_thread_num(), #EVENT, thread_data); \
-  fflush(stdout);\
-}
-
 #define TEST_PARALLEL_CALLBACK(EVENT) \
 void my_##EVENT ( \
-ompt_data_t  *parent_task_data,   /* tool data for parent task   */ \
-ompt_parallel_id_t parallel_id)   /* id of parallel region       */ \
+ompt_parallel_id_t parallel_id,   /* id of parallel region       */ \
+ompt_task_id_t task_id)           /* id for task                 */ \
 { \
-  printf("%d: %s: %llx\n", omp_get_thread_num(), #EVENT, parallel_id); \
+  printf("%d: %s: par_id=0x%llx task_id=0x%llx\n", omp_get_thread_num(), #EVENT, parallel_id, task_id); \
   fflush(stdout); \
 }
 
 #define TEST_NEW_PARALLEL_CALLBACK(EVENT) \
 void my_##EVENT ( \
-  ompt_data_t  *parent_task_data,   /* tool data for parent task   */ \
+  ompt_task_id_t  parent_task_id,   /* tool data for parent task   */ \
   ompt_frame_t *parent_task_frame,  /* frame data of parent task   */ \
-  ompt_parallel_id_t parallel_id)   /* id of parallel region       */ \
+  ompt_parallel_id_t parallel_id,   /* id of parallel region       */ \
+  void *parallel_function)          /* outlined function           */ \
 { \
-  printf("%d: %s: %llx\n", omp_get_thread_num(), #EVENT, parallel_id); \
+  printf("%d: %s: par_id=0x%llx task_id=0x%llx par_fn=%p\n", omp_get_thread_num(), #EVENT, parallel_id, parent_task_id, parallel_function); \
   fflush(stdout); \
 }
 
 #define TEST_TASK_CALLBACK(EVENT) \
 void my_##EVENT ( \
-ompt_data_t *task_data)            /* tool data for task          */ \
+ompt_task_id_t task_id)            /* tool data for task          */ \
 { \
-  printf("%d: %s: %llx\n", omp_get_thread_num(), #EVENT, task_data); \
+  printf("%d: %s: task_id=0x%llx\n", omp_get_thread_num(), #EVENT, task_id); \
   fflush(stdout); \
 } \
 
@@ -53,31 +46,31 @@ void my_##EVENT( \
 uint64_t command,                /* command of control call      */ \
 uint64_t modifier)                /* modifier of control call     */ \
 { \
-  printf("%d: %s: %llx, %llx\n", omp_get_thread_num(), #EVENT, command, modifier); \
+  printf("%d: %s: cmd=0x%llx, mod=0x%llx\n", omp_get_thread_num(), #EVENT, command, modifier); \
   fflush(stdout); \
 }
 
 #define TEST_CALLBACK(EVENT) \
 void my_##EVENT() \
 { \
-  printf("%d: %s.\n", omp_get_thread_num(), #EVENT); \
+  printf("%d: %s\n", omp_get_thread_num(), #EVENT); \
   fflush(stdout); \
 }
 
 #define TEST_WAIT_CALLBACK(EVENT) \
 void my_##EVENT ( \
-  ompt_wait_id_t *waitid)            /* address of atomic variable          */ \
+  ompt_wait_id_t waitid)            /* address of wait obj */ \
 { \
-  printf("%d: %s: %llx\n", omp_get_thread_num(), #EVENT, waitid); \
+  printf("%d: %s: waid_id=0x%llx\n", omp_get_thread_num(), #EVENT, waitid); \
   fflush(stdout); \
 }
 
 #define TEST_TASK_SWITCH_CALLBACK(EVENT) \
 void my_##EVENT ( \
-  ompt_data_t *suspended_task_data, /* tool data for suspended task */ \
-  ompt_data_t *resumed_task_data)   /* tool data for resumed task   */ \
+  ompt_task_id_t suspended_task_id, /* tool data for suspended task */ \
+  ompt_task_id_t resumed_task_id)   /* tool data for resumed task   */ \
 { \
-  printf("%d: %s: \n", omp_get_thread_num(), #EVENT); \
+  printf("%d: %s: susp_task=0x%llx res_task=0x%llx\n", omp_get_thread_num(), #EVENT, suspended_task_id, resumed_task_id); \
   fflush(stdout); \
 }
 
@@ -86,11 +79,11 @@ void my_##EVENT ( \
  *******************************************************************/
 
 TEST_NEW_PARALLEL_CALLBACK(ompt_event_parallel_create)
-TEST_NEW_PARALLEL_CALLBACK(ompt_event_parallel_exit)
+TEST_PARALLEL_CALLBACK(ompt_event_parallel_exit)
 TEST_TASK_CALLBACK(ompt_event_task_create)
 TEST_TASK_CALLBACK(ompt_event_task_exit)
-TEST_THREAD_CALLBACK(ompt_event_thread_create)
-TEST_THREAD_CALLBACK(ompt_event_thread_exit)
+TEST_CALLBACK(ompt_event_thread_create)
+TEST_CALLBACK(ompt_event_thread_exit)
 TEST_CONTROL_CALLBACK(ompt_event_control)
 TEST_CALLBACK(ompt_event_runtime_shutdown)
 
@@ -99,8 +92,8 @@ TEST_CALLBACK(ompt_event_runtime_shutdown)
  *******************************************************************/
 
 /* Blameshifting events */
-TEST_PARALLEL_CALLBACK(ompt_event_idle_begin)
-TEST_PARALLEL_CALLBACK(ompt_event_idle_end)
+TEST_CALLBACK(ompt_event_idle_begin)
+TEST_CALLBACK(ompt_event_idle_end)
 TEST_PARALLEL_CALLBACK(ompt_event_wait_barrier_begin);
 TEST_PARALLEL_CALLBACK(ompt_event_wait_barrier_end);
 TEST_PARALLEL_CALLBACK(ompt_event_wait_taskwait_begin);
@@ -149,14 +142,14 @@ TEST_WAIT_CALLBACK(ompt_event_init_lock);
 TEST_WAIT_CALLBACK(ompt_event_init_nest_lock);
 TEST_WAIT_CALLBACK(ompt_event_destroy_lock);
 TEST_WAIT_CALLBACK(ompt_event_destroy_nest_lock);
-TEST_THREAD_CALLBACK(ompt_event_flush);
+TEST_CALLBACK(ompt_event_flush);
 
 /*******************************************************************
  * Register the events
  *******************************************************************/
 
 #define CHECK(EVENT) \
-if (ompt_set_callback(EVENT, my_##EVENT) == 0) { \
+if (ompt_set_callback(EVENT, (ompt_callback_t) my_##EVENT) == 0) { \
   fprintf(stderr,"Failed to register OMPT callback %s!\n",#EVENT); return 0; \
 }
 

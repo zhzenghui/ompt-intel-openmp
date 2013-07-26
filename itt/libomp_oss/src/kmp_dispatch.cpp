@@ -1150,9 +1150,9 @@ __kmp_dispatch_init(
 	int  tid = __kmp_tid_from_gtid( gtid );
     if ((ompt_status == ompt_status_track_callback)) {
       if (ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
-        ompt_callbacks.ompt_callback(ompt_event_loop_begin)(
-          &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
-          team->t.ompt_team_info.parallel_id);
+        ompt_callbacks.ompt_callback(ompt_event_loop_begin)
+          (team->t.ompt_team_info.parallel_id,
+	   team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id);
       }
     }
 #endif
@@ -1230,9 +1230,9 @@ __kmp_dispatch_finish( int gtid, ident_t *loc )
 	int  tid = __kmp_tid_from_gtid( gtid );
     if ((ompt_status == ompt_status_track_callback)) {
       if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) {
-        ompt_callbacks.ompt_callback(ompt_event_loop_end)(
-          &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data),
-          team->t.ompt_team_info.parallel_id);
+        ompt_callbacks.ompt_callback(ompt_event_loop_end)
+	  (team->t.ompt_team_info.parallel_id,
+	   team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id);
       }
     }
 #endif
@@ -1327,9 +1327,9 @@ __kmp_dispatch_finish_chunk( int gtid, ident_t *loc )
 	  int  tid = __kmp_tid_from_gtid( gtid ); \
       if ((ompt_status == ompt_status_track_callback)) { \
         if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) { \
-          ompt_callbacks.ompt_callback(ompt_event_loop_end)( \
-            &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.data), \
-            team->t.ompt_team_info.parallel_id); \
+          ompt_callbacks.ompt_callback(ompt_event_loop_end) \
+	    (team->t.ompt_team_info.parallel_id,			\
+	     team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id); \
         } \
       }\ 
     }

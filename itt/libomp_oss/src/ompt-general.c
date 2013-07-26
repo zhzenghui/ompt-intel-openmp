@@ -224,9 +224,10 @@ _OMP_EXTERN ompt_state_t ompt_get_state(ompt_wait_id_t *ompt_wait_id)
  * threads
  ****************************************************************************/
 
-_OMP_EXTERN ompt_data_t *ompt_get_thread_data()
+
+_OMP_EXTERN void *ompt_get_idle_frame()
 {
-   return __ompt_get_thread_data_internal();
+   return __ompt_get_idle_frame_internal();
 }
 
 
@@ -235,9 +236,9 @@ _OMP_EXTERN ompt_data_t *ompt_get_thread_data()
  * tasks
  ****************************************************************************/
 
-_OMP_EXTERN ompt_data_t *ompt_get_task_data(int ancestor_level)
+_OMP_EXTERN ompt_task_id_t ompt_get_task_id(int ancestor_level)
 {
-  return __ompt_get_task_data_internal(ancestor_level); 
+  return __ompt_get_task_id_internal(ancestor_level); 
 }
 
 

@@ -50,6 +50,8 @@ EXEC = \
 	parloop-for-sampling \
 	parregion-for-sampling \
 	parregion2-for-sampling \
+	parregion4-for-sampling \
+	parregion5-for-sampling \
 	parregion3-for-sampling-uneven-waiting \
 	fib \
 	imbalance \
