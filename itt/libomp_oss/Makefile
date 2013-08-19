@@ -39,6 +39,8 @@
 # </copyright>
 
 omp_root?=.
+compver?=12
+linktype?=dynamic
 include $(omp_root)/tools/common.inc
 .PHONY: default all omp
 
@@ -47,12 +49,12 @@ default: omp
 all: omp stubs
 
 omp: info mkdir
-	@echo $(omp_root)/tools/build.pl $(build_args) --arch=$(arch) --mode=$(mode) lib inc common
-	$(omp_root)/tools/build.pl $(build_args) --arch=$(arch) --mode=$(mode) lib inc common
+	@echo $(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) lib inc common
+	$(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) lib inc common
 
 stubs: mkdir
-	@echo $(omp_root)/tools/build.pl $(build_args) --arch=$(arch) --mode=$(mode) --stubs lib inc common 
-	$(omp_root)/tools/build.pl $(build_args) --arch=$(arch) --mode=$(mode) --stubs lib inc common
+	@echo $(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --stubs lib inc common 
+	$(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --stubs lib inc common
 
 .PHONY: clean info
 
