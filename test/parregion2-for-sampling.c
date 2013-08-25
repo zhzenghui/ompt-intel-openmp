@@ -1,14 +1,18 @@
 #include <omp.h>
 
-#define MAX (1LL << 30)
+#define MAX (1LL << 22)
 
 void g()
 {
+    long long j = 0;
 #pragma omp parallel 
 {
     long long i;
-    for(i = 0; i < MAX; i++);
+    for(i = 0; i < MAX; i++) 
+#pragma omp atomic 
+	j+=1;
 }
+    printf("j = %lld\n", j);
 }
 
 void f()

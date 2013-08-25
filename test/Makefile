@@ -38,6 +38,9 @@ HEADERS=${wildcard *.h}
 
 FC = ifort
 EXEC = \
+	nest1 \
+	nest1-unit \
+	level1-unit \
 	LULESH_OMP \
 	main \
 	atomic \
@@ -70,6 +73,8 @@ EXEC = \
 	parallelfor \
 	single \
 	task-1 lateinitf
+
+# EXEC = nest1-unit
 
 EXECS=$(addsuffix .$(SUFFIX),$(EXEC))
 
