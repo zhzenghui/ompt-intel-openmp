@@ -355,7 +355,7 @@ int locktest(void) {
 
 int main (int argc, char *argv[]) 
 {
-  printf("Main...\n"); fflush(stdout);
+  printf("Running with OMP_NUM_THREADS=%s threads\n", getenv("OMP_NUM_THREADS")); fflush(stdout);
 #ifdef ATOMIC
   printf ("\n\nDoing atomic: %d\n\n", atomic()); fflush(stdout);
 #endif
