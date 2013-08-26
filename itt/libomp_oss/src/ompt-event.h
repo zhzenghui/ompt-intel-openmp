@@ -2,7 +2,7 @@
 
   /*--- Mandatory Events ---*/
 ompt_event(ompt_event_parallel_create, ompt_new_parallel_callback_t, 1, ompt_event_parallel_create_implemented) /* parallel create */
-ompt_event(ompt_event_parallel_exit, ompt_parallel_callback_t, 2, ompt_event_parallel_exit_implemented) /* parallel exit */
+ompt_event(ompt_event_parallel_exit, ompt_new_parallel_callback_t, 2, ompt_event_parallel_exit_implemented) /* parallel exit */
 
 ompt_event(ompt_event_task_create, ompt_new_task_callback_t, 3, ompt_event_task_create_implemented) /* task create */
 ompt_event(ompt_event_task_exit, ompt_task_callback_t, 4, ompt_event_task_exit_implemented) /* task destroy */
