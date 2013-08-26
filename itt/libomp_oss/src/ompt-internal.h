@@ -48,15 +48,25 @@ typedef struct ompt_lw_taskteam_s {
 } ompt_lw_taskteam_t;
 
 
+typedef struct ompt_parallel_info_s {
+  ompt_task_id_t parent_task_id;    /* id of parent task            */
+  ompt_parallel_id_t parallel_id;   /* id of parallel region        */
+  ompt_frame_t *parent_task_frame;  /* frame data of parent task    */
+  void *parallel_function;          /* pointer to outlined function */
+} ompt_parallel_info_t;
+
 
 typedef struct {
-  ompt_state_t        prev_state;
   ompt_state_t        state;
   ompt_wait_id_t      wait_id;
-  uint64_t            next_parallel_id;
-  uint64_t            next_task_id;
   void                *idle_frame;
   ompt_lw_taskteam_t  *lw_taskteam;  
+#if 0
+  // use shared variables instead of these. repeated initializations of thread 
+  // data structures make it hard to maintain persistent thread-private data.
+  uint64_t            next_parallel_id;
+  uint64_t            next_task_id;
+#endif
 } ompt_thread_info_t;
 
 

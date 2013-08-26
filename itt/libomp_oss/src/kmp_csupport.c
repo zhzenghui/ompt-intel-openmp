@@ -50,6 +50,7 @@
 #include "kmp_error.h"
 
 #include "ompt-internal.h"
+#include "ompt-specific.h"
 
 #define MAX_MESSAGE 512
 
@@ -431,7 +432,12 @@ __kmpc_serialized_parallel(ident_t *loc, kmp_int32 global_tid)
 
                 __kmp_acquire_bootstrap_lock( &__kmp_forkjoin_lock );
 
+
+		ompt_parallel_id_t ompt_parallel_id = __ompt_parallel_id_new(global_tid);
                 new_team = __kmp_allocate_team(this_thr->th.th_root, 1, 1,
+#if OMPT_SUPPORT
+          ompt_parallel_id,
+#endif
 #if OMP_40_ENABLED
                                                proc_bind,
 #endif

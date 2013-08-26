@@ -1,6 +1,8 @@
 #include "kmp.h"
 #include "ompt-internal.h"
+#include "ompt-specific.h"
 
+#if 0
 inline
 kmp_info_t *ompt_get_thread_gtid(int gtid)
 {
@@ -14,6 +16,7 @@ kmp_info_t *ompt_get_thread()
   int gtid = __kmp_gtid_get_specific();
   return ompt_get_thread_gtid(gtid);
 }
+#endif
 
 
 /* safely extract team from a thread. 
@@ -145,15 +148,39 @@ ompt_frame_t *__ompt_get_task_frame_internal(int ancestor_level)
 }
 
 
-#define OMPT_THREAD_ID_BITS 20
-#define NEXT_ID(ti,tid) (((ti)->th.ompt_thread_info.next_parallel_id++ << OMPT_THREAD_ID_BITS) | (tid))
 
-void __ompt_team_assign_id(kmp_team_t *team)
+#define OMPT_THREAD_ID_BITS 16
+
+// 2013 08 24 - John Mellor-Crummey
+//   ideally, a thread should assign its own ids based on thread private data. however, the way the intel 
+//   runtime reinitializes thread data structures when it creates teams makes it difficult to maintain 
+//   persistent thread data. using a shared variable instead is simple. I leave it to intel to sort 
+//   out how to implement a higher performance version in their runtime.  
+
+// when using fetch_and_add to generate the IDs, there isn't any reason to waste bits for thread id.
+#if 0
+#define NEXT_ID(id_ptr,tid) ((__sync_fetch_and_add(id_ptr, 1) << OMPT_THREAD_ID_BITS) | (tid))
+#else
+#define NEXT_ID(id_ptr,tid) (__sync_fetch_and_add(id_ptr, 1)) 
+#endif
+
+ompt_parallel_id_t __ompt_parallel_id_new(int gtid)
 {
-  int gtid = __kmp_gtid_get_specific();
-  kmp_info_t *ti = ompt_get_thread_gtid(gtid);
+  static uint64_t ompt_parallel_id = 1;
+  return gtid >= 0 ? NEXT_ID(&ompt_parallel_id, gtid) : 0;
+}
 
-  team->t.ompt_team_info.parallel_id = ti ? NEXT_ID(ti, gtid) : 0;
+
+ompt_task_id_t __ompt_task_id_new(int gtid)
+{
+  static uint64_t ompt_task_id = 1;
+  return NEXT_ID(&ompt_task_id, gtid);
+}
+
+
+void __ompt_team_assign_id(kmp_team_t *team, ompt_parallel_id_t ompt_pid)
+{
+  team->t.ompt_team_info.parallel_id = ompt_pid;
 }
 
 
@@ -166,19 +193,28 @@ void __ompt_thread_assign_wait_id(void *variable)
 }
 
 
-void __ompt_lw_taskteam_init(ompt_lw_taskteam_t *lwt, kmp_info_t *thr, int gtid, microtask_t microtask)
+void __ompt_lw_taskteam_init(ompt_lw_taskteam_t *lwt, kmp_info_t *thr, 
+                             int gtid, microtask_t microtask, 
+			     ompt_parallel_id_t ompt_pid)
 {
-  lwt->ompt_team_info.parallel_id = NEXT_ID(thr, gtid);
+  lwt->ompt_team_info.parallel_id = ompt_pid;
   lwt->ompt_team_info.microtask = (void *) microtask;
   lwt->ompt_task_info.task_id = 0;
   lwt->ompt_task_info.frame.reenter_runtime_frame = 0;
   lwt->ompt_task_info.frame.exit_runtime_frame = 0;
-  ompt_lw_taskteam_t *my_parent = thr->th.ompt_thread_info.lw_taskteam;
-  lwt->parent = my_parent;
+  lwt->parent = 0;
 }
 
 
-void __ompt_lw_taskteam_fini(ompt_lw_taskteam_t *lwt, kmp_info_t *thr)
+void __ompt_lw_taskteam_link(ompt_lw_taskteam_t *lwt,  kmp_info_t *thr)
+{
+  ompt_lw_taskteam_t *my_parent = thr->th.ompt_thread_info.lw_taskteam;
+  lwt->parent = my_parent;
+  thr->th.ompt_thread_info.lw_taskteam = lwt;
+}
+
+
+void __ompt_lw_taskteam_unlink(ompt_lw_taskteam_t *lwt, kmp_info_t *thr)
 {
   thr->th.ompt_thread_info.lw_taskteam = lwt->parent;
 }

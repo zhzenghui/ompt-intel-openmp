@@ -2970,15 +2970,24 @@ extern kmp_info_t * __kmp_allocate_thread( kmp_root_t *root,
                                            kmp_team_t *team, int tid);
 #if OMP_40_ENABLED
 extern kmp_team_t * __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
+#if OMPT_SUPPORT
+                                         ompt_parallel_id_t ompt_parallel_id,
+#endif
                                          kmp_proc_bind_t proc_bind,
                                          kmp_internal_control_t *new_icvs,
                                          int argc );
 #elif OMP_30_ENABLED
 extern kmp_team_t * __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
+#if OMPT_SUPPORT
+                                         ompt_parallel_id_t ompt_parallel_id,
+#endif
                                          kmp_internal_control_t *new_icvs,
                                          int argc );
 #else
 extern kmp_team_t * __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
+#if OMPT_SUPPORT
+                                         ompt_parallel_id_t ompt_parallel_id,
+#endif
                                          int new_set_nproc, int new_set_dynamic, int new_set_nested,
                                          int new_set_blocktime, int new_bt_intervals, int new_bt_set,
                                          int argc );

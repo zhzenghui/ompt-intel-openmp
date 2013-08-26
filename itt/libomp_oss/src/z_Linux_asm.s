@@ -1576,6 +1576,10 @@ __tid = -24
 
 	pushq 	%rbp		// save base pointer
 	movq 	%rsp,%rbp	// establish the base pointer for this routine.
+// begin OMPT SUPPORT
+	movq	%rbp, (%r9)	// save exit_frame
+// end OMPT SUPPORT
+
 	pushq 	%rbx		// %rbx is callee-saved register
 
 	pushq	%rsi		// Put gtid on stack so can pass &tgid to pkfn
@@ -1637,8 +1641,9 @@ L_kmp_invoke_pass_parms:	// put 1st - 6th parms to pkfn in registers.
 				// registers used for both input and output parms!
 
 // begin OMPT SUPPORT
-	leaq    -8(%rsp),%r11   // Address after the return address has been pushed (r11 unused here)
-	movq	%r11, (%r9)	// save exit_frame
+//	leaq    -8(%rsp),%r11   // Address after the return address has been pushed (r11 unused here)
+//	movq	%r11, (%r9)	// save exit_frame
+	movq	%rsp, (%r9)	// save exit_frame
 // end OMPT SUPPORT
 
 	movq	%rdi, %rbx	// pkfn -> %rbx
