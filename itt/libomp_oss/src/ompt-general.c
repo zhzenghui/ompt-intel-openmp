@@ -34,6 +34,8 @@
 
 #define no_tool_present 0
 
+#define OMPT_API_ROUTINE static
+
 
 
 /*****************************************************************************
@@ -67,13 +69,18 @@ _OMP_EXTERN char **ompd_dll_locations;
 
 
 /*****************************************************************************
+ * forward declarations
+ ****************************************************************************/
+
+static ompt_interface_fn_t ompt_fn_lookup(const char *s);
+
+
+/*****************************************************************************
  * state
  ****************************************************************************/
 
-
-
-_OMP_EXTERN int ompt_enumerate_state(int current_state, int *next_state, 
-                                     const char **next_state_name)
+OMPT_API_ROUTINE int ompt_enumerate_state(int current_state, int *next_state, 
+                                          const char **next_state_name)
 {
   const static int len = sizeof(ompt_state_info) / sizeof(ompt_state_info_t);
   int i = 0;
@@ -95,7 +102,7 @@ _OMP_EXTERN int ompt_enumerate_state(int current_state, int *next_state,
  * callbacks 
  ****************************************************************************/
 
-_OMP_EXTERN int ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
+OMPT_API_ROUTINE int ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
 {
   switch (evid) {
 
@@ -114,7 +121,7 @@ _OMP_EXTERN int ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
 }
 
 
-_OMP_EXTERN int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
+OMPT_API_ROUTINE int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
 {
   switch (evid) {
 
@@ -142,7 +149,8 @@ _OMP_EXTERN int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
  * intialization/finalization
  ****************************************************************************/
 
-_OMP_EXTERN __attribute__ (( weak )) int ompt_initialize()
+_OMP_EXTERN __attribute__ (( weak )) 
+int ompt_initialize(ompt_function_lookup_t ompt_fn_lookup)
 {
   return no_tool_present;
 }
@@ -161,11 +169,11 @@ void ompt_init()
    ompd_dll_locations[0] = NULL;
 
    if (!ompt_env_var || ompt_env_var_is_null) {
-      int ompt_init_val = ompt_initialize();
+      int ompt_init_val = ompt_initialize(ompt_fn_lookup);
       if (ompt_init_val) ompt_status = ompt_status_track_callback;
       // else remain in ready
    } else if (ompt_env_var_is_true) {
-      int ompt_init_val = ompt_initialize();
+      int ompt_init_val = ompt_initialize(ompt_fn_lookup);
       ompt_status = (ompt_init_val ? ompt_status_track_callback : ompt_status_track);
    } else if (ompt_env_var_is_false) {
       // no-op: remain in ready
@@ -195,19 +203,19 @@ void ompt_fini()
  * parallel regions
  ****************************************************************************/
 
-_OMP_EXTERN ompt_parallel_id_t ompt_get_parallel_id(int ancestor_level)
+OMPT_API_ROUTINE ompt_parallel_id_t ompt_get_parallel_id(int ancestor_level)
 {
    return __ompt_get_parallel_id_internal(ancestor_level);
 }
 
 
-_OMP_EXTERN void *ompt_get_parallel_function(int ancestor_level) 
+OMPT_API_ROUTINE void *ompt_get_parallel_function(int ancestor_level) 
 {
    return __ompt_get_parallel_function_internal(ancestor_level);
 }
 
 
-_OMP_EXTERN ompt_state_t ompt_get_state(ompt_wait_id_t *ompt_wait_id)
+OMPT_API_ROUTINE ompt_state_t ompt_get_state(ompt_wait_id_t *ompt_wait_id)
 {
    ompt_state_t thread_state = __ompt_get_state_internal(ompt_wait_id);
 
@@ -225,7 +233,7 @@ _OMP_EXTERN ompt_state_t ompt_get_state(ompt_wait_id_t *ompt_wait_id)
  ****************************************************************************/
 
 
-_OMP_EXTERN void *ompt_get_idle_frame()
+OMPT_API_ROUTINE void *ompt_get_idle_frame()
 {
    return __ompt_get_idle_frame_internal();
 }
@@ -236,19 +244,19 @@ _OMP_EXTERN void *ompt_get_idle_frame()
  * tasks
  ****************************************************************************/
 
-_OMP_EXTERN ompt_task_id_t ompt_get_task_id(int ancestor_level)
+OMPT_API_ROUTINE ompt_task_id_t ompt_get_task_id(int ancestor_level)
 {
   return __ompt_get_task_id_internal(ancestor_level); 
 }
 
 
-_OMP_EXTERN ompt_frame_t *ompt_get_task_frame(int ancestor_level)
+OMPT_API_ROUTINE ompt_frame_t *ompt_get_task_frame(int ancestor_level)
 {
   return __ompt_get_task_frame_internal(ancestor_level); 
 }
 
 
-_OMP_EXTERN void *ompt_get_task_function(int ancestor_level)
+OMPT_API_ROUTINE void *ompt_get_task_function(int ancestor_level)
 {
   return __ompt_get_task_function_internal(ancestor_level); 
 }
@@ -259,7 +267,7 @@ _OMP_EXTERN void *ompt_get_task_function(int ancestor_level)
  * compatability
  ****************************************************************************/
 
-_OMP_EXTERN int ompt_get_ompt_version()
+OMPT_API_ROUTINE int ompt_get_ompt_version()
 {
   return OMPT_VERSION;
 }
@@ -293,3 +301,16 @@ _OMP_EXTERN int ompt_get_runtime_version(char *buffer, int length)
   return __ompt_get_runtime_version_internal(buffer,length);
 }
 
+
+
+/*****************************************************************************
+ * API inquiry for tool
+ ****************************************************************************/
+
+static ompt_interface_fn_t ompt_fn_lookup(const char *s) 
+{
+#define ompt_interface_fn(fn) \
+  if (strcmp(s, #fn) == 0) return (ompt_interface_fn_t) fn; 
+#include "ompt-fns.h"
+  return (ompt_interface_fn_t) 0;
+}
