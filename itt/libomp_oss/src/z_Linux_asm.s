@@ -1643,7 +1643,7 @@ L_kmp_invoke_pass_parms:	// put 1st - 6th parms to pkfn in registers.
 // begin OMPT SUPPORT
 //	leaq    -8(%rsp),%r11   // Address after the return address has been pushed (r11 unused here)
 //	movq	%r11, (%r9)	// save exit_frame
-	movq	%rsp, (%r9)	// save exit_frame
+//	movq	%rsp, (%r9)	// save exit_frame
 // end OMPT SUPPORT
 
 	movq	%rdi, %rbx	// pkfn -> %rbx
