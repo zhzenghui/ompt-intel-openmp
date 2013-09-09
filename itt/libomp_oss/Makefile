@@ -73,4 +73,6 @@ info:
 	@echo compiler=$(compiler)	
 	@echo mic=$(mic)
 	@echo mode=$(mode)
+	@echo compver=$(compver)
+	@echo linktype=$(linktype)
 

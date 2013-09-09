@@ -34,7 +34,7 @@
 
 #define no_tool_present 0
 
-#define OMPT_API_ROUTINE static
+#define OMPT_API_ROUTINE extern "C"
 
 
 
