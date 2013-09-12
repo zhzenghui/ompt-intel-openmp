@@ -1148,7 +1148,7 @@ __kmp_dispatch_init(
     #endif // ( KMP_STATIC_STEAL_ENABLED && USE_STEALING )
 #if OMPT_SUPPORT
 	int  tid = __kmp_tid_from_gtid( gtid );
-    if ((ompt_status == ompt_status_track_callback)) {
+    if ((ompt_status & ompt_status_track_callback)) {
       if (ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
         ompt_callbacks.ompt_callback(ompt_event_loop_begin)
           (team->t.ompt_team_info.parallel_id,
@@ -1228,7 +1228,7 @@ __kmp_dispatch_finish( int gtid, ident_t *loc )
     kmp_info_t  *this_thr        = __kmp_threads[ gtid ];
 	kmp_team_t  *team            = this_thr -> th.th_team;
 	int  tid = __kmp_tid_from_gtid( gtid );
-    if ((ompt_status == ompt_status_track_callback)) {
+    if ((ompt_status & ompt_status_track_callback)) {
       if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) {
         ompt_callbacks.ompt_callback(ompt_event_loop_end)
 	  (team->t.ompt_team_info.parallel_id,
@@ -1325,7 +1325,7 @@ __kmp_dispatch_finish_chunk( int gtid, ident_t *loc )
       kmp_info_t  *this_thr        = __kmp_threads[ gtid ]; \
 	  kmp_team_t  *team            = this_thr -> th.th_team; \
 	  int  tid = __kmp_tid_from_gtid( gtid ); \
-      if ((ompt_status == ompt_status_track_callback)) { \
+      if ((ompt_status & ompt_status_track_callback)) { \
         if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) { \
           ompt_callbacks.ompt_callback(ompt_event_loop_end) \
 	    (team->t.ompt_team_info.parallel_id,			\
