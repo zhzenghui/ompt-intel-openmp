@@ -133,7 +133,14 @@ typedef ompt_interface_fn_t (*ompt_function_lookup_t)(const char *);
 extern "C" {
 #endif 
 
-#define OMPT_API_ENTRY(t, fn, args) typedef t (*fn##_t) args
+#define OMPT_API_FNTYPE(fn) fn##_t
+
+#define OMPT_API_FNDECL(return_type, fn, args) \
+  typedef return_type (*OMPT_API_FNTYPE(fn)) args
+
+#define OMPT_API_FUNCTION(return_type, fn, args)  \
+  OMPT_API_FNDECL(return_type, fn, args); \
+  return_type fn args
 
 
 
@@ -143,24 +150,24 @@ extern "C" {
 
 
 /* state */
-OMPT_API_ENTRY(ompt_state_t , ompt_get_state, (
+OMPT_API_FUNCTION(ompt_state_t , ompt_get_state, (
   ompt_wait_id_t *ompt_wait_id
 ));
 
 /* thread */
-OMPT_API_ENTRY(void *, ompt_get_idle_frame, (void));
+OMPT_API_FUNCTION(void *, ompt_get_idle_frame, (void));
 
 /* parallel region */
-OMPT_API_ENTRY(ompt_parallel_id_t, ompt_get_parallel_id, (
+OMPT_API_FUNCTION(ompt_parallel_id_t, ompt_get_parallel_id, (
   int ancestor_level
 ));
 
 /* task */
-OMPT_API_ENTRY(ompt_task_id_t, ompt_get_task_id, (
+OMPT_API_FUNCTION(ompt_task_id_t, ompt_get_task_id, (
   int ancestor_level
 ));
 
-OMPT_API_ENTRY(ompt_frame_t *, ompt_get_task_frame, (
+OMPT_API_FUNCTION(ompt_frame_t *, ompt_get_task_frame, (
   int ancestor_level
 ));
 
@@ -178,7 +185,7 @@ typedef enum opt_init_mode_e {
   ompt_init_mode_always = 3
 } ompt_init_mode_t;
 
-OMPT_API_ENTRY(int, ompt_set_callback, (
+OMPT_API_FUNCTION(int, ompt_set_callback, (
   ompt_event_t event, 
   ompt_callback_t callback
 ));
@@ -192,7 +199,7 @@ typedef enum ompt_set_callback_rc_e {  /* non-standard */
 } ompt_set_callback_rc_t;
 
 
-OMPT_API_ENTRY(int, ompt_get_callback, (
+OMPT_API_FUNCTION(int, ompt_get_callback, (
   ompt_event_t event, 
   ompt_callback_t *callback
 ));
@@ -202,22 +209,22 @@ OMPT_API_ENTRY(int, ompt_get_callback, (
  ***************************************************************************/
 
 /* control */
-OMPT_API_ENTRY(void, ompt_control, (
+OMPT_API_FUNCTION(void, ompt_control, (
   uint64_t command, 
   uint64_t modifier
 ));
 
 /* library inquiry */
-OMPT_API_ENTRY(int, ompt_get_ompt_version, (
+OMPT_API_FUNCTION(int, ompt_get_ompt_version, (
   void
 ));
 
-OMPT_API_ENTRY( int, ompt_get_runtime_version, (
+OMPT_API_FUNCTION( int, ompt_get_runtime_version, (
   char *buffer, 
   int length
 ));
 
-OMPT_API_ENTRY(int, ompt_enumerate_state, (
+OMPT_API_FUNCTION(int, ompt_enumerate_state, (
   int current_state, 
   int *next_state, 
   const char **next_state_name
