@@ -2431,7 +2431,7 @@ __kmp_fork_call(
     ompt_frame_t  *ompt_frame = 0; // FIXME -- johnmc
     if (ompt_status & ompt_status_track) {
       master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
-      if ((ompt_status == ompt_status_track_callback) &&
+      if ((ompt_status & ompt_status_track_callback) &&
 	  ompt_callbacks.ompt_callback(ompt_event_parallel_create)) {
 	ompt_callbacks.ompt_callback(ompt_event_parallel_create)
 	  (ompt_task_id, ompt_frame,
