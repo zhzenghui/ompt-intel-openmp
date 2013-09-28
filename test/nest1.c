@@ -1,6 +1,7 @@
 #include <omp.h>
 #include <stdio.h>
 
+int region=0;
 #define N 37
 long
 fib(int n)
@@ -22,6 +23,7 @@ int main()
 printf("max thread num is %d\n", omp_get_max_threads());
     omp_set_nested(1);
     omp_set_dynamic(0);
+    region=1;
     #pragma omp parallel num_threads(2)
     {
         fib(N+3);
@@ -49,6 +51,7 @@ printf("max thread num is %d\n", omp_get_max_threads());
                 report_num_threads(omp_get_level());
         }
     }
+    region=2;
     #pragma omp parallel num_threads(2)
     {
         fib(N+3);

@@ -153,7 +153,7 @@ if (ompt_set_callback(EVENT, (ompt_callback_t) my_##EVENT) == 0) { \
   fprintf(stderr,"Failed to register OMPT callback %s!\n",#EVENT); return 0; \
 }
 
-int ompt_initialize() {
+int ompt_initialize(ompt_function_lookup_t lookup) {
 
   /* required events */
 

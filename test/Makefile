@@ -33,6 +33,8 @@ LIBDIR =../itt/libomp_oss/tmp/$(PREF)_32e-rtl_5_nor_dyn.12.$(VER).40.c0.t0$(ARCH
 
 LIB =$(LIBDIR)/libiomp5.so
 
+LIBS=-Wl,-rpath=$(LIBDIR) $(LIB)
+
 INCLUDES=-I../itt/libomp_oss/src
 HEADERS=${wildcard *.h}
 
@@ -89,13 +91,13 @@ fib.$(SUFFIX): fib.c
 	icc $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ $<
 
 luleshMPI_OMP.host: luleshMPI_OMP.cc
-	mpicxx $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
+	mpicxx $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< $(LIBS)
 
 %.$(SUFFIX): %.c 
-	icc $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
+	icc $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< $(LIBS)
 
 %.$(SUFFIX): %.cpp 
-	icpc $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
+	icpc $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< $(LIBS)
 
 %.$(SUFFIX): %.f 
-	ifort $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< -Wl,-rpath=$(LIBDIR) $(LIB)
+	ifort $(INCLUDES) $(OPT) -O$(LEVEL) -g -o $@ -openmp $< $(LIBS)
