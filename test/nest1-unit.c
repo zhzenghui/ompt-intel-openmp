@@ -104,7 +104,7 @@ void ompt_event_parallel_create_fn (
           parallel_function);
 #else
   printf("%d region %8lx: create %*s[level=%d, parent_parallel_id=%8lx]\n",
-          omp_get_thread_num(), parallel_id, level+1, " ", level, ompt_get_parallel_id(0));
+          omp_get_thread_num(), parallel_id, level << 1, "", level, ompt_get_parallel_id(0));
 #endif
 
   fflush(stdout); 
@@ -128,7 +128,7 @@ void ompt_event_parallel_exit_fn (
           parallel_function);
 #else
   printf("%d region %8lx: end    %*s[level=%d, parent_parallel_id=%8lx]\n",
-          omp_get_thread_num(), parallel_id, level+1, " ", level,  ompt_get_parallel_id(0));
+          omp_get_thread_num(), parallel_id, level << 1, "", level,  ompt_get_parallel_id(0));
 #endif
 
   fflush(stdout); 
@@ -140,7 +140,7 @@ if (ompt_set_callback(EVENT, (ompt_callback_t) EVENT ## _fn) == 0) { \
 }
 
 
-int ompt_initialize() {
+int ompt_initialize(ompt_function_lookup_t lookup) {
   REGISTER(ompt_event_parallel_create);
   REGISTER(ompt_event_parallel_exit);
   return 1;

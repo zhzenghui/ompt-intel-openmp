@@ -96,7 +96,7 @@ if (ompt_set_callback(EVENT, (ompt_callback_t) EVENT ## _fn) == 0) { \
 }
 
 
-int ompt_initialize() {
+int ompt_initialize(ompt_function_lookup_t lookup) {
   REGISTER(ompt_event_parallel_create);
   REGISTER(ompt_event_parallel_exit);
   return 1;
