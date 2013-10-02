@@ -11,7 +11,8 @@ main()
 {
 	int rank = omp_get_thread_num();
 	printf("hello world from %d (level 1)\n", rank);
-	dump_frames(rank, 1);
+//	dump_frames(rank, 1);
+	dump_tasks(rank, 1);
 }
 }
 }
