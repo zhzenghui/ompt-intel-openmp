@@ -1957,22 +1957,22 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
                     gtid, __kmp_team_from_gtid(gtid)->t.t_id, __kmp_tid_from_gtid(gtid) ) );
 #if OMPT_SUPPORT
     if ((ompt_status & ompt_status_track)) {
-      my_task_id = team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id;
-      my_parallel_id = team->t.ompt_team_info.parallel_id;
-      
       this_thr->th.ompt_thread_info.state = ompt_state_wait_barrier;
-      if (this_thr->th.ompt_thread_info.state == ompt_state_wait_single) {
-	if ((ompt_status == ompt_status_track_callback)) {
+
+      if ((ompt_status == ompt_status_track_callback)) {
+	my_task_id = team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id;
+	my_parallel_id = team->t.ompt_team_info.parallel_id;
+      
+	if (this_thr->th.ompt_thread_info.state == ompt_state_wait_single) {
 	  if (ompt_callbacks.ompt_callback(ompt_event_single_others_end)) {
 	    ompt_callbacks.ompt_callback(ompt_event_single_others_end)
               (my_parallel_id, my_task_id);
 	  }
 	}
-      }
-      if ((ompt_status == ompt_status_track_callback) &&
-	  ompt_callbacks.ompt_callback(ompt_event_barrier_begin)) {
-	ompt_callbacks.ompt_callback(ompt_event_barrier_begin)
-          (my_parallel_id, my_task_id);
+	if (ompt_callbacks.ompt_callback(ompt_event_barrier_begin)) {
+	  ompt_callbacks.ompt_callback(ompt_event_barrier_begin)
+	    (my_parallel_id, my_task_id);
+	}
       }
     }
 #endif
