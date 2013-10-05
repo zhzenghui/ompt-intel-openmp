@@ -41,5 +41,8 @@ kmp_info_t *ompt_get_thread()
   return ompt_get_thread_gtid(gtid);
 }
 
+ompt_task_id_t __ompt_get_task_id_internal(int ancestor_level); 
+
+ompt_frame_t *__ompt_get_task_frame_internal(int ancestor_level); 
 
 #endif
