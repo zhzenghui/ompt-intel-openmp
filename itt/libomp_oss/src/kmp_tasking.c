@@ -480,9 +480,9 @@ __kmp_task_start( kmp_int32 gtid, kmp_task_t * task, kmp_taskdata_t * current_ta
 
 #if OMPT_SUPPORT
     if ((ompt_status == ompt_status_track_callback) &&
-	(ompt_callbacks.ompt_callback(ompt_event_task_create))) {
+	(ompt_callbacks.ompt_callback(ompt_event_task_begin))) {
       kmp_taskdata_t *parent = current_task->td_parent;
-      ompt_callbacks.ompt_callback(ompt_event_task_create)
+      ompt_callbacks.ompt_callback(ompt_event_task_begin)
 	(parent ? parent->ompt_task_info.task_id : ompt_task_id_none,
 	 parent ? &(parent->ompt_task_info.frame) : NULL,
 	 current_task->ompt_task_info.task_id,
@@ -638,8 +638,8 @@ __kmp_task_finish( kmp_int32 gtid, kmp_task_t *task, kmp_taskdata_t *resumed_tas
 #if OMPT_SUPPORT
    if (ompt_status & ompt_status_track) {
      if ((ompt_status == ompt_status_track_callback) &&
-         (ompt_callbacks.ompt_callback(ompt_event_task_exit))) {
-       ompt_callbacks.ompt_callback(ompt_event_task_exit)
+         (ompt_callbacks.ompt_callback(ompt_event_task_end))) {
+       ompt_callbacks.ompt_callback(ompt_event_task_end)
 	 (taskdata->ompt_task_info.task_id);
      }
      taskdata->ompt_task_info.task_id = ompt_task_id_none;

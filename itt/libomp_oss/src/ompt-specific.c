@@ -118,6 +118,13 @@ ompt_parallel_id_t __ompt_get_parallel_id_internal(int ancestor_level)
 }
 
 
+ompt_thread_id_t __ompt_get_thread_id_internal() 
+{
+  assert(0);
+  return 0;
+}
+
+
 ompt_task_id_t __ompt_get_task_id_internal(int ancestor_level) 
 {
   int level = ancestor_level;
@@ -163,6 +170,13 @@ ompt_frame_t *__ompt_get_task_frame_internal(int ancestor_level)
 #else
 #define NEXT_ID(id_ptr,tid) (__sync_fetch_and_add(id_ptr, 1)) 
 #endif
+
+
+ompt_parallel_id_t __ompt_thread_id_new()
+{
+  static uint64_t ompt_thread_id = 1;
+  return NEXT_ID(&ompt_thread_id, 0);
+}
 
 ompt_parallel_id_t __ompt_parallel_id_new(int gtid)
 {
@@ -220,16 +234,7 @@ void __ompt_lw_taskteam_unlink(ompt_lw_taskteam_t *lwt, kmp_info_t *thr)
 }
 
 
-int __ompt_get_runtime_version_internal(char *buffer, int length)
+const char *__ompt_get_runtime_version_internal()
 {
-  int slen = strlen(__kmp_version_lib_ver) + 1; /* include space for null */
-  int extra = slen - length;                    
-  int result = (extra > 0) ? extra : 0; /* how many characters won't fit */
-  int copylen = slen - result; /* all of the characters that will fit */
-
-  /* fill buffer with a null-terminated string that fits */
-  strncpy(buffer, __kmp_version_lib_ver, copylen); 
-  buffer[copylen-1] = NULL; /* no matter what, last character is null */
-
-  return result;
+  return __kmp_version_lib_ver;
 }

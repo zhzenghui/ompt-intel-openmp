@@ -28,14 +28,14 @@
  | Mandatory Events 
  +--------------------------------------------------------------------------*/
 
-#define ompt_event_parallel_create_implemented          ompt_event_IMPLEMENTED
-#define ompt_event_parallel_exit_implemented            ompt_event_IMPLEMENTED
+#define ompt_event_parallel_begin_implemented           ompt_event_IMPLEMENTED
+#define ompt_event_parallel_end_implemented             ompt_event_IMPLEMENTED
 
-#define ompt_event_task_create_implemented              ompt_event_IMPLEMENTED
-#define ompt_event_task_exit_implemented                ompt_event_IMPLEMENTED
+#define ompt_event_task_begin_implemented               ompt_event_IMPLEMENTED
+#define ompt_event_task_end_implemented                 ompt_event_IMPLEMENTED
 
-#define ompt_event_thread_create_implemented            ompt_event_IMPLEMENTED
-#define ompt_event_thread_exit_implemented              ompt_event_IMPLEMENTED
+#define ompt_event_thread_begin_implemented             ompt_event_IMPLEMENTED
+#define ompt_event_thread_end_implemented               ompt_event_IMPLEMENTED
 
 #define ompt_event_control_implemented                  ompt_event_IMPLEMENTED
 
@@ -70,8 +70,11 @@
  | Optional Events (synchronous events) 
  +--------------------------------------------------------------------------*/
 
-#define ompt_event_implicit_task_create_implemented     ompt_event_unimplemented
-#define ompt_event_implicit_task_exit_implemented       ompt_event_unimplemented
+#define ompt_event_implicit_task_begin_implemented      ompt_event_unimplemented
+#define ompt_event_implicit_task_end_implemented        ompt_event_unimplemented
+
+#define ompt_event_initial_task_begin_implemented       ompt_event_unimplemented
+#define ompt_event_initial_task_end_implemented         ompt_event_unimplemented
 
 #define ompt_event_task_switch_implemented              ompt_event_unimplemented
 
