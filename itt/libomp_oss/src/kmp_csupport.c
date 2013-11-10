@@ -1854,10 +1854,13 @@ __kmpc_unset_nest_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
     int release_status = RELEASE_NESTED_LOCK( lck, gtid );
 
 #if OMPT_SUPPORT
-    if ((release_status == KMP_NESTED_LOCK_RELEASED) &&
-	(ompt_status == ompt_status_track_callback) &&
-	(ompt_callbacks.ompt_callback(ompt_event_release_nest_lock_last))) {
-      ompt_callbacks.ompt_callback(ompt_event_release_nest_lock_last)((uint64_t) lck);
+    if (ompt_status == ompt_status_track_callback) {
+      if ((release_status == KMP_NESTED_LOCK_RELEASED) &&
+	  (ompt_callbacks.ompt_callback(ompt_event_release_nest_lock_last))) {
+	ompt_callbacks.ompt_callback(ompt_event_release_nest_lock_last)((uint64_t) lck);
+      } else if (ompt_callbacks.ompt_callback(ompt_event_release_nest_lock_prev)) {
+	ompt_callbacks.ompt_callback(ompt_event_release_nest_lock_prev)((uint64_t) lck);
+      }
     }
 #endif
 }

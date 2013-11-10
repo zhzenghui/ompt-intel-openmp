@@ -49,8 +49,8 @@
 #define ompt_event_idle_begin_implemented               ompt_event_IMPLEMENTED
 #define ompt_event_idle_end_implemented                 ompt_event_IMPLEMENTED
 
-#define ompt_event_wait_barrier_begin_implemented       ompt_event_unimplemented
-#define ompt_event_wait_barrier_end_implemented         ompt_event_unimplemented
+#define ompt_event_wait_barrier_begin_implemented       ompt_event_IMPLEMENTED
+#define ompt_event_wait_barrier_end_implemented         ompt_event_IMPLEMENTED
 
 #define ompt_event_wait_taskwait_begin_implemented      ompt_event_unimplemented
 #define ompt_event_wait_taskwait_end_implemented        ompt_event_unimplemented
@@ -59,8 +59,7 @@
 #define ompt_event_wait_taskgroup_end_implemented       ompt_event_unimplemented
 
 #define ompt_event_release_lock_implemented             ompt_event_IMPLEMENTED
-#define ompt_event_release_nest_lock_implemented        ompt_event_unimplemented
-#define ompt_event_release_nest_lock_last_implemented   ompt_event_unimplemented
+#define ompt_event_release_nest_lock_last_implemented   ompt_event_IMPLEMENTED
 #define ompt_event_release_critical_implemented         ompt_event_IMPLEMENTED
 #define ompt_event_release_atomic_implemented           ompt_event_IMPLEMENTED
 #define ompt_event_release_ordered_implemented          ompt_event_IMPLEMENTED
@@ -78,7 +77,7 @@
 
 #define ompt_event_task_switch_implemented              ompt_event_unimplemented
 
-#define ompt_event_loop_begin_implemented               ompt_event_IMPLEMENTED
+#define ompt_event_loop_begin_implemented               ompt_event_unimplemented
 #define ompt_event_loop_end_implemented                 ompt_event_IMPLEMENTED
 
 #define ompt_event_section_begin_implemented            ompt_event_unimplemented
@@ -101,19 +100,19 @@
 #define ompt_event_taskgroup_begin_implemented          ompt_event_unimplemented
 #define ompt_event_taskgroup_end_implemented            ompt_event_unimplemented
 
-#define ompt_event_release_nest_lock_prev_implemented   ompt_event_unimplemented
+#define ompt_event_release_nest_lock_prev_implemented   ompt_event_IMPLEMENTED
 #define ompt_event_wait_lock_implemented                ompt_event_unimplemented
 #define ompt_event_wait_nest_lock_implemented           ompt_event_unimplemented
 #define ompt_event_wait_critical_implemented            ompt_event_unimplemented
 #define ompt_event_wait_atomic_implemented              ompt_event_IMPLEMENTED
-#define ompt_event_wait_ordered_implemented             ompt_event_unimplemented
+#define ompt_event_wait_ordered_implemented             ompt_event_IMPLEMENTED
 
 #define ompt_event_acquired_lock_implemented            ompt_event_unimplemented
 #define ompt_event_acquired_nest_lock_first_implemented ompt_event_unimplemented
 #define ompt_event_acquired_nest_lock_next_implemented  ompt_event_unimplemented
 #define ompt_event_acquired_critical_implemented        ompt_event_unimplemented
 #define ompt_event_acquired_atomic_implemented          ompt_event_IMPLEMENTED
-#define ompt_event_acquired_ordered_implemented         ompt_event_unimplemented
+#define ompt_event_acquired_ordered_implemented         ompt_event_IMPLEMENTED
 
 #define ompt_event_init_lock_implemented                ompt_event_unimplemented
 #define ompt_event_init_nest_lock_implemented           ompt_event_unimplemented

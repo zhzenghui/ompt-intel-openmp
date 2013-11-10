@@ -28,7 +28,7 @@ ompt_event(ompt_event_wait_taskgroup_begin, ompt_parallel_callback_t, 15, ompt_e
 ompt_event(ompt_event_wait_taskgroup_end, ompt_parallel_callback_t, 16, ompt_event_wait_taskgroup_end_implemented) /* end wait at taskgroup */
 
 ompt_event(ompt_event_release_lock, ompt_wait_callback_t, 17, ompt_event_release_lock_implemented) /* lock release */
-ompt_event(ompt_event_release_nest_lock_last, ompt_wait_callback_t, 18, ompt_event_release_nest_lock_implemented) /* last nest lock release */
+ompt_event(ompt_event_release_nest_lock_last, ompt_wait_callback_t, 18, ompt_event_release_nest_lock_last_implemented) /* last nest lock release */
 ompt_event(ompt_event_release_critical, ompt_wait_callback_t, 19, ompt_event_release_critical_implemented) /* critical release */
 
 ompt_event(ompt_event_release_atomic, ompt_wait_callback_t, 20, ompt_event_release_atomic_implemented) /* atomic release */
@@ -67,7 +67,7 @@ ompt_event(ompt_event_taskwait_end, ompt_parallel_callback_t, 40, ompt_event_tas
 ompt_event(ompt_event_taskgroup_begin, ompt_parallel_callback_t, 41, ompt_event_taskgroup_begin_implemented) /* task at taskgroup begin */
 ompt_event(ompt_event_taskgroup_end, ompt_parallel_callback_t, 42, ompt_event_taskgroup_end_implemented) /* task at taskgroup end */
 
-ompt_event(ompt_event_release_nest_lock_prev, ompt_parallel_callback_t, 43, ompt_event_release_nest_lock_prev_implemented) /* prev nest lock release */
+ompt_event(ompt_event_release_nest_lock_prev, ompt_wait_callback_t, 43, ompt_event_release_nest_lock_prev_implemented) /* prev nest lock release */
 
 ompt_event(ompt_event_wait_lock, ompt_wait_callback_t, 44, ompt_event_wait_lock_implemented) /* lock wait */
 ompt_event(ompt_event_wait_nest_lock, ompt_wait_callback_t, 45, ompt_event_wait_nest_lock_implemented) /* nest lock wait */
