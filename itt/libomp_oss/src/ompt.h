@@ -16,14 +16,17 @@
  * identifiers
  *---------------------*/
 
+typedef uint64_t ompt_thread_id_t;
+#define ompt_thread_id_none ((ompt_thread_id_t) 0)     /* non-standard */
+
 typedef uint64_t ompt_task_id_t;
-#define ompt_task_id_none ((ompt_task_id_t) 0) /* non-standard */
+#define ompt_task_id_none ((ompt_task_id_t) 0)         /* non-standard */
 
 typedef uint64_t ompt_parallel_id_t;
 #define ompt_parallel_id_none ((ompt_parallel_id_t) 0) /* non-standard */
 
 typedef uint64_t ompt_wait_id_t;
-#define ompt_wait_id_none ((ompt_wait_id_t) 0) /* non-standard */
+#define ompt_wait_id_none ((ompt_wait_id_t) 0)         /* non-standard */
 
 
 /*---------------------
@@ -73,13 +76,11 @@ typedef void (*ompt_wait_callback_t) (
   ompt_wait_id_t wait_id            /* wait id                      */
   );
 
-
 /* parallel and workshares */
 typedef void (*ompt_parallel_callback_t) (
   ompt_parallel_id_t parallel_id,    /* id of parallel region       */
   ompt_task_id_t task_id             /* id of task                  */
   );
-
 
 typedef void (*ompt_new_workshare_callback_t) (
   ompt_task_id_t parent_task_id,    /* id of parent task            */
@@ -115,14 +116,15 @@ typedef void (*ompt_new_task_callback_t) (
 
 /* program */
 typedef void (*ompt_control_callback_t) (
-  uint64_t command,                /* command of control call      */
-  uint64_t modifier                /* modifier of control call     */
+  uint64_t command,                 /* command of control call      */
+  uint64_t modifier                 /* modifier of control call     */
   );
 
 
 typedef void (*ompt_interface_fn_t)(void);
 
 typedef ompt_interface_fn_t (*ompt_function_lookup_t)(const char *);
+
 
 
 /****************************************************************************
@@ -135,12 +137,8 @@ extern "C" {
 
 #define OMPT_API_FNTYPE(fn) fn##_t
 
-#define OMPT_API_FNDECL(return_type, fn, args) \
-  typedef return_type (*OMPT_API_FNTYPE(fn)) args
-
 #define OMPT_API_FUNCTION(return_type, fn, args)  \
-  OMPT_API_FNDECL(return_type, fn, args); \
-  return_type fn args
+  typedef return_type (*OMPT_API_FNTYPE(fn)) args
 
 
 
@@ -148,13 +146,14 @@ extern "C" {
  * INQUIRY FUNCTIONS
  ***************************************************************************/
 
-
 /* state */
 OMPT_API_FUNCTION(ompt_state_t , ompt_get_state, (
   ompt_wait_id_t *ompt_wait_id
 ));
 
 /* thread */
+OMPT_API_FUNCTION(ompt_thread_id_t, ompt_get_thread_id, (void));
+
 OMPT_API_FUNCTION(void *, ompt_get_idle_frame, (void));
 
 /* parallel region */
@@ -172,11 +171,17 @@ OMPT_API_FUNCTION(ompt_frame_t *, ompt_get_task_frame, (
 ));
 
 
+
 /****************************************************************************
  * INITIALIZATION FUNCTIONS
  ***************************************************************************/
 
-int ompt_initialize(ompt_function_lookup_t ompt_fn_lookup); /* to be defined by tool */
+/* initialization interface to be defined by tool */
+int ompt_initialize(
+  ompt_function_lookup_t ompt_fn_lookup, 
+  const char *runtime_version, 
+  int ompt_version
+); 
 
 typedef enum opt_init_mode_e {
   ompt_init_mode_never  = 0,
@@ -204,6 +209,8 @@ OMPT_API_FUNCTION(int, ompt_get_callback, (
   ompt_callback_t *callback
 ));
 
+
+
 /****************************************************************************
  * MISCELLANEOUS FUNCTIONS
  ***************************************************************************/
@@ -214,16 +221,8 @@ OMPT_API_FUNCTION(void, ompt_control, (
   uint64_t modifier
 ));
 
-/* library inquiry */
-OMPT_API_FUNCTION(int, ompt_get_ompt_version, (
-  void
-));
 
-OMPT_API_FUNCTION( int, ompt_get_runtime_version, (
-  char *buffer, 
-  int length
-));
-
+/* state enumeration */
 OMPT_API_FUNCTION(int, ompt_enumerate_state, (
   int current_state, 
   int *next_state, 
@@ -235,14 +234,6 @@ OMPT_API_FUNCTION(int, ompt_enumerate_state, (
 #ifdef  __cplusplus
 };
 #endif
-
-
-/****************************************************************************
- * public variables 
- ***************************************************************************/
-
-/* debugger interface */
-extern char **ompd_dll_locations; 
 
 
 

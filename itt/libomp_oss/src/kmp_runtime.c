@@ -2435,8 +2435,8 @@ __kmp_fork_call(
       ompt_frame = __ompt_get_task_frame_internal(0);
       master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
       if ((ompt_status == ompt_status_track_callback) &&
-	  ompt_callbacks.ompt_callback(ompt_event_parallel_create)) {
-	ompt_callbacks.ompt_callback(ompt_event_parallel_create)
+	  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
+	ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
 	  (ompt_task_id, ompt_frame,
 	   ompt_parallel_id, (void *) microtask);
       }
@@ -2549,8 +2549,8 @@ __kmp_fork_call(
 	      lw_taskteam.ompt_task_info.task_id = ompt_task_id_none;
 
 	      if ((ompt_status == ompt_status_track_callback) &&
-		  ompt_callbacks.ompt_callback(ompt_event_parallel_exit)) {
-		ompt_callbacks.ompt_callback(ompt_event_parallel_exit)
+		  ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
+		ompt_callbacks.ompt_callback(ompt_event_parallel_end)
 		  (lw_taskteam.ompt_task_info.task_id,
 		   &lw_taskteam.ompt_task_info.frame,
 		   lw_taskteam.ompt_team_info.parallel_id,
@@ -2774,9 +2774,9 @@ __kmp_fork_call(
     if (ompt_status & ompt_status_track) {
       master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
       if ((ompt_status == ompt_status_track_callback) &&
-	  ompt_callbacks.ompt_callback(ompt_event_parallel_create)) {
+	  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
 	int  tid = __kmp_tid_from_gtid( gtid );
-	ompt_callbacks.ompt_callback(ompt_event_parallel_create)
+	ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
 	  (team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
 	   &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame),
 	   team->t.ompt_team_info.parallel_id,
@@ -2878,9 +2878,9 @@ __kmp_join_call(ident_t *loc, int gtid)
 #if 0
 #if OMPT_SUPPORT
    if ((ompt_status == ompt_status_track_callback) &&
-       ompt_callbacks.ompt_callback(ompt_event_parallel_exit)) {
+       ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
      int  tid = __kmp_tid_from_gtid( gtid );
-     ompt_callbacks.ompt_callback(ompt_event_parallel_exit)
+     ompt_callbacks.ompt_callback(ompt_event_parallel_end)
        (team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
         &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame),
         team->t.ompt_team_info.parallel_id,
@@ -2892,7 +2892,7 @@ __kmp_join_call(ident_t *loc, int gtid)
 #if OMPT_SUPPORT
    ompt_parallel_info_t parallel_info;
    if ((ompt_status == ompt_status_track_callback) &&
-       ompt_callbacks.ompt_callback(ompt_event_parallel_exit)) {
+       ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
      int  tid = __kmp_tid_from_gtid( gtid );
      parallel_info =  (ompt_parallel_info_t)
        { .parent_task_id = team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
@@ -2992,8 +2992,8 @@ __kmp_join_call(ident_t *loc, int gtid)
 
 #if OMPT_SUPPORT
    if ((ompt_status == ompt_status_track_callback) &&
-       ompt_callbacks.ompt_callback(ompt_event_parallel_exit)) {
-     ompt_callbacks.ompt_callback(ompt_event_parallel_exit)
+       ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
+     ompt_callbacks.ompt_callback(ompt_event_parallel_end)
        (parallel_info.parent_task_id, parallel_info.parent_task_frame,
 	parallel_info.parallel_id, parallel_info.parallel_function);
    }
@@ -6327,8 +6327,8 @@ __kmp_launch_thread( kmp_info_t *this_thr )
    if (ompt_status & ompt_status_track) {
      this_thr->th.ompt_thread_info.idle_frame = __builtin_frame_address(0);
      if ((ompt_status == ompt_status_track_callback) &&
-         ompt_callbacks.ompt_callback(ompt_event_thread_create)) {
-       ompt_callbacks.ompt_callback(ompt_event_thread_create)();
+         ompt_callbacks.ompt_callback(ompt_event_thread_begin)) {
+       ompt_callbacks.ompt_callback(ompt_event_thread_begin)();
      }
    }
 #endif
@@ -6415,8 +6415,8 @@ __kmp_launch_thread( kmp_info_t *this_thr )
 
 #if OMPT_SUPPORT
    if ((ompt_status == ompt_status_track_callback) &&
-       ompt_callbacks.ompt_callback(ompt_event_thread_exit)) {
-     ompt_callbacks.ompt_callback(ompt_event_thread_exit)();
+       ompt_callbacks.ompt_callback(ompt_event_thread_end)) {
+     ompt_callbacks.ompt_callback(ompt_event_thread_end)();
    }
 #endif
 

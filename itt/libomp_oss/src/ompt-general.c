@@ -150,40 +150,71 @@ OMPT_API_ROUTINE int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
  ****************************************************************************/
 
 _OMP_EXTERN __attribute__ (( weak )) 
-int ompt_initialize(ompt_function_lookup_t ompt_fn_lookup)
+int ompt_initialize(ompt_function_lookup_t ompt_fn_lookup, const char *version, 
+		    int ompt_version)
 {
   return no_tool_present;
 }
 
+enum tool_setting_e {
+  omp_tool_error,
+  omp_tool_unset,
+  omp_tool_never,
+  omp_tool_false,
+  omp_tool_true,
+  omp_tool_always,
+}; 
 
 void ompt_init()
 {
-   char *ompt_env_var = getenv("OMPT_INITIALIZE");
+   char *ompt_env_var = getenv("OMP_TOOL");
+   tool_setting_e tool_setting = omp_tool_error;
 
-   int ompt_env_var_is_true = ompt_env_var && !strcmp(ompt_env_var, "true");
-   int ompt_env_var_is_disabled = ompt_env_var && !strcmp(ompt_env_var, "disabled");
-   int ompt_env_var_is_false = ompt_env_var && !strcmp(ompt_env_var, "false");
-   int ompt_env_var_is_null = ompt_env_var && !strcmp(ompt_env_var, "");
+   if (!ompt_env_var) 
+     tool_setting = omp_tool_unset;
+   else if (!strcmp(ompt_env_var, ""))
+     tool_setting = omp_tool_unset;
+   else if (!strcmp(ompt_env_var, "never"))
+     tool_setting = omp_tool_never;
+   else if (!strcmp(ompt_env_var, "false"))
+     tool_setting = omp_tool_false;
+   else if (!strcmp(ompt_env_var, "true"))
+     tool_setting = omp_tool_true;
+   else if (!strcmp(ompt_env_var, "always"))
+     tool_setting = omp_tool_always;
 
-   ompd_dll_locations = (char **) malloc(sizeof(char **));
-   ompd_dll_locations[0] = NULL;
+   switch(tool_setting) {
+   case omp_tool_never: 
+     ompt_status = ompt_status_disabled;
+     break;
 
-   if (!ompt_env_var || ompt_env_var_is_null) {
-      int ompt_init_val = ompt_initialize(ompt_fn_lookup);
-      if (ompt_init_val) ompt_status = ompt_status_track_callback;
-      // else remain in ready
-   } else if (ompt_env_var_is_true) {
-      int ompt_init_val = ompt_initialize(ompt_fn_lookup);
-      ompt_status = (ompt_init_val ? ompt_status_track_callback : ompt_status_track);
-   } else if (ompt_env_var_is_false) {
-      // no-op: remain in ready
-   } else if (ompt_env_var_is_disabled) {
-      ompt_status = ompt_status_disabled;
-   } else {
-      fprintf(stderr,"OMPT: warning: OMPT_INITIALIZE has invalid value.\n"
-                     "      legal values are (NULL,\"\",\"true\",\"false\",\"disabled\").\n");
+   case omp_tool_false:
+     break; // remain in ready state
+
+   case omp_tool_unset:
+   case omp_tool_true:
+   case omp_tool_always: 
+     {
+       const char *runtime_version = 
+	 __ompt_get_runtime_version_internal();
+       int ompt_init_val = 
+	 ompt_initialize(ompt_fn_lookup, runtime_version, OMPT_VERSION);
+       
+       if (ompt_init_val || tool_setting == omp_tool_always) 
+	 ompt_status = ompt_status_track_callback;
+       else if (tool_setting == omp_tool_true) 
+	 ompt_status = ompt_status_track; 
+       break;
+     }
+
+   case omp_tool_error: 
+     fprintf(stderr,
+	     "Warning: OMP_TOOL has invalid value \"%s\".\n"
+	     "  legal values are (NULL,\"\",\"never\","
+	     "\"false\",\"true\",\"always\").\n", ompt_env_var);
+     break;
    }
-}
+} 
 
 
 void ompt_fini()
@@ -244,6 +275,12 @@ OMPT_API_ROUTINE void *ompt_get_idle_frame()
  * tasks
  ****************************************************************************/
 
+
+OMPT_API_ROUTINE ompt_thread_id_t ompt_get_thread_id(void)
+{
+  return __ompt_get_thread_id_internal(); 
+}
+
 OMPT_API_ROUTINE ompt_task_id_t ompt_get_task_id(int ancestor_level)
 {
   return __ompt_get_task_id_internal(ancestor_level); 
@@ -290,15 +327,6 @@ _OMP_EXTERN void ompt_control(uint64_t command, uint64_t modifier)
        ompt_callbacks.ompt_callback(ompt_event_control)(command, modifier);
      }
    }
-}
-
-/*----------------------------------------------------------------------------
- | runtime version
- ---------------------------------------------------------------------------*/
-
-_OMP_EXTERN int ompt_get_runtime_version(char *buffer, int length)
-{
-  return __ompt_get_runtime_version_internal(buffer,length);
 }
 
 
