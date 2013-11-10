@@ -159,10 +159,8 @@ int ompt_initialize(ompt_function_lookup_t ompt_fn_lookup, const char *version,
 enum tool_setting_e {
   omp_tool_error,
   omp_tool_unset,
-  omp_tool_never,
-  omp_tool_false,
-  omp_tool_true,
-  omp_tool_always,
+  omp_tool_disabled,
+  omp_tool_enabled
 }; 
 
 void ompt_init()
@@ -170,48 +168,37 @@ void ompt_init()
    char *ompt_env_var = getenv("OMP_TOOL");
    tool_setting_e tool_setting = omp_tool_error;
 
-   if (!ompt_env_var) 
+   if (!ompt_env_var  || !strcmp(ompt_env_var, ""))
      tool_setting = omp_tool_unset;
-   else if (!strcmp(ompt_env_var, ""))
-     tool_setting = omp_tool_unset;
-   else if (!strcmp(ompt_env_var, "never"))
-     tool_setting = omp_tool_never;
-   else if (!strcmp(ompt_env_var, "false"))
-     tool_setting = omp_tool_false;
-   else if (!strcmp(ompt_env_var, "true"))
-     tool_setting = omp_tool_true;
-   else if (!strcmp(ompt_env_var, "always"))
-     tool_setting = omp_tool_always;
+   else if (!strcmp(ompt_env_var, "disabled"))
+     tool_setting = omp_tool_disabled;
+   else if (!strcmp(ompt_env_var, "enabled"))
+     tool_setting = omp_tool_enabled;
 
    switch(tool_setting) {
-   case omp_tool_never: 
+   case omp_tool_disabled: 
      ompt_status = ompt_status_disabled;
      break;
 
-   case omp_tool_false:
-     break; // remain in ready state
-
    case omp_tool_unset:
-   case omp_tool_true:
-   case omp_tool_always: 
+   case omp_tool_enabled:
      {
        const char *runtime_version = 
 	 __ompt_get_runtime_version_internal();
        int ompt_init_val = 
 	 ompt_initialize(ompt_fn_lookup, runtime_version, OMPT_VERSION);
        
-       if (ompt_init_val || tool_setting == omp_tool_always) 
+       if (ompt_init_val) {
 	 ompt_status = ompt_status_track_callback;
-       else if (tool_setting == omp_tool_true) 
-	 ompt_status = ompt_status_track; 
+       }
        break;
      }
 
    case omp_tool_error: 
      fprintf(stderr,
 	     "Warning: OMP_TOOL has invalid value \"%s\".\n"
-	     "  legal values are (NULL,\"\",\"never\","
-	     "\"false\",\"true\",\"always\").\n", ompt_env_var);
+	     "  legal values are (NULL,\"\",\"disabled\","
+	     "\"enabled\").\n", ompt_env_var);
      break;
    }
 } 
