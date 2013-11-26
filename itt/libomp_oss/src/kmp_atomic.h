@@ -398,24 +398,21 @@ inline void
 __kmp_acquire_atomic_lock( kmp_atomic_lock_t *lck, kmp_int32 gtid )
 {
 #if OMPT_SUPPORT
-   // do this here to reuse it before and after
-   // ...and make sure it has a unique name - this code is inlined
-   kmp_info_t *ompt_this_thr = __kmp_thread_from_gtid( gtid );
-   if ((ompt_status == ompt_status_track_callback) &&
-       ompt_callbacks.ompt_callback(ompt_event_wait_atomic)) {
-     ompt_callbacks.ompt_callback(ompt_event_wait_atomic)
-       (ompt_this_thr->th.ompt_thread_info.wait_id);
-   }
+  if (ompt_status == ompt_status_track_callback) {
+    if (ompt_callbacks.ompt_callback(ompt_event_wait_atomic)) {
+      ompt_callbacks.ompt_callback(ompt_event_wait_atomic)((ompt_wait_id_t) lck);
+    }
+  }
 #endif
 
-    __kmp_acquire_queuing_lock( lck, gtid );
+  __kmp_acquire_queuing_lock( lck, gtid );
 
 #if OMPT_SUPPORT
-   if ((ompt_status == ompt_status_track_callback) &&
-       ompt_callbacks.ompt_callback(ompt_event_acquired_atomic)) {
-     ompt_callbacks.ompt_callback(ompt_event_acquired_atomic)
-       (ompt_this_thr->th.ompt_thread_info.wait_id);
-   }
+  if (ompt_status == ompt_status_track_callback) {
+    if (ompt_callbacks.ompt_callback(ompt_event_acquired_atomic)) {
+      ompt_callbacks.ompt_callback(ompt_event_acquired_atomic)((ompt_wait_id_t) lck);
+    }
+  }
 #endif
 }
 
@@ -428,12 +425,12 @@ __kmp_test_atomic_lock( kmp_atomic_lock_t *lck, kmp_int32 gtid )
 inline void
 __kmp_release_atomic_lock( kmp_atomic_lock_t *lck, kmp_int32 gtid )
 {
-    __kmp_release_queuing_lock( lck, gtid );
+  __kmp_release_queuing_lock( lck, gtid );
 #if OMPT_SUPPORT
-    if ((ompt_status == ompt_status_track_callback) && 
-	ompt_callbacks.ompt_callback(ompt_event_release_atomic)) {
-      ompt_callbacks.ompt_callback(ompt_event_release_atomic)((uint64_t) lck);
-    }
+  if ((ompt_status == ompt_status_track_callback) && 
+      ompt_callbacks.ompt_callback(ompt_event_release_atomic)) {
+    ompt_callbacks.ompt_callback(ompt_event_release_atomic)((ompt_wait_id_t) lck);
+  }
 #endif
 }
 
