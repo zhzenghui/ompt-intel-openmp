@@ -2894,13 +2894,22 @@ __kmp_join_call(ident_t *loc, int gtid)
    if ((ompt_status == ompt_status_track_callback) &&
        ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
      int  tid = __kmp_tid_from_gtid( gtid );
-     parallel_info =  (ompt_parallel_info_t)
-       { .parent_task_id = team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
+#if 0
+     parallel_info =  (ompt_parallel_info_t) 
+       { 
+         .parent_task_id = team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
 	 .parent_task_frame = &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame),
 	 .parallel_id = team->t.ompt_team_info.parallel_id,
 	 .parallel_function = (void *) team->t.t_pkfn 
        };
-   }
+#else
+
+	parallel_info.parent_task_id = team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id;
+	parallel_info.parent_task_frame = &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame);
+	parallel_info.parallel_id = team->t.ompt_team_info.parallel_id;
+	parallel_info.parallel_function = (void *) team->t.t_pkfn;
+#endif
+}
 #endif
 
     /* do cleanup and restore the parent team */
