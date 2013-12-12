@@ -2,8 +2,8 @@
 #include "omp.h"
 #include <ompt.h>
 
-#include "dump.h"
 #include "callback.h"
+#include "dump.h"
 
 main()
 {

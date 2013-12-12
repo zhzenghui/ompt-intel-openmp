@@ -42,7 +42,7 @@ int main()
 }
 
 
-void ompt_event_parallel_create_fn ( 
+void ompt_event_parallel_begin_fn ( 
   ompt_task_id_t  parent_task_id,   /* id of the parent task  */ 
   ompt_frame_t *parent_task_frame,  /* frame data of parent task   */ 
   ompt_parallel_id_t parallel_id,   /* id of parallel region       */ 
@@ -66,7 +66,7 @@ void ompt_event_parallel_create_fn (
   fflush(stdout); 
 }
 
-void ompt_event_parallel_exit_fn ( 
+void ompt_event_parallel_end_fn ( 
   ompt_task_id_t  parent_task_id,   /* id of the parent task  */ 
   ompt_frame_t *parent_task_frame,  /* frame data of parent task   */ 
   ompt_parallel_id_t parallel_id,   /* id of parallel region       */ 
@@ -95,9 +95,10 @@ if (ompt_set_callback(EVENT, (ompt_callback_t) EVENT ## _fn) == 0) { \
   fprintf(stderr,"Failed to register OMPT callback %s!\n", #EVENT); return 0; \
 }
 
-
-int ompt_initialize(ompt_function_lookup_t lookup) {
-  REGISTER(ompt_event_parallel_create);
-  REGISTER(ompt_event_parallel_exit);
+int ompt_initialize(ompt_function_lookup_t lookup, const char *runtime_version, int ompt_version) {
+  printf("Init: %s ver %i\n",runtime_version,ompt_version);
+  REGISTER(ompt_event_parallel_begin);
+  REGISTER(ompt_event_parallel_end);
   return 1;
 }
+

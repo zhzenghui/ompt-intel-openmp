@@ -2,6 +2,8 @@
 #include <ompt.h>
 #include <stdio.h>
 
+ompt_get_parallel_id_t ompt_get_parallel_id_fn;
+
 #define OMPT_EVENT_DETAIL 0
 
 #define N 37
@@ -86,7 +88,7 @@ int main()
 }
 
 
-void ompt_event_parallel_create_fn ( 
+void ompt_event_parallel_begin_fn ( 
   ompt_task_id_t  parent_task_id,   /* id of the parent task  */ 
   ompt_frame_t *parent_task_frame,  /* frame data of parent task   */ 
   ompt_parallel_id_t parallel_id,   /* id of parallel region       */ 
@@ -104,13 +106,13 @@ void ompt_event_parallel_create_fn (
           parallel_function);
 #else
   printf("%d region %8lx: create %*s[level=%d, parent_parallel_id=%8lx]\n",
-          omp_get_thread_num(), parallel_id, level << 1, "", level, ompt_get_parallel_id(0));
+          omp_get_thread_num(), parallel_id, level << 1, "", level, ompt_get_parallel_id_fn(0));
 #endif
 
   fflush(stdout); 
 }
 
-void ompt_event_parallel_exit_fn ( 
+void ompt_event_parallel_end_fn ( 
   ompt_task_id_t  parent_task_id,   /* id of the parent task  */ 
   ompt_frame_t *parent_task_frame,  /* frame data of parent task   */ 
   ompt_parallel_id_t parallel_id,   /* id of parallel region       */ 
@@ -128,7 +130,7 @@ void ompt_event_parallel_exit_fn (
           parallel_function);
 #else
   printf("%d region %8lx: end    %*s[level=%d, parent_parallel_id=%8lx]\n",
-          omp_get_thread_num(), parallel_id, level << 1, "", level,  ompt_get_parallel_id(0));
+          omp_get_thread_num(), parallel_id, level << 1, "", level,  ompt_get_parallel_id_fn(0));
 #endif
 
   fflush(stdout); 
@@ -140,8 +142,9 @@ if (ompt_set_callback(EVENT, (ompt_callback_t) EVENT ## _fn) == 0) { \
 }
 
 
-int ompt_initialize(ompt_function_lookup_t lookup) {
-  REGISTER(ompt_event_parallel_create);
-  REGISTER(ompt_event_parallel_exit);
+int ompt_initialize(ompt_function_lookup_t lookup, const char *version, int ompt_version) {
+  REGISTER(ompt_event_parallel_begin);
+  REGISTER(ompt_event_parallel_end);
+  ompt_get_parallel_id_fn = (ompt_get_parallel_id_t) lookup("ompt_get_parallel_id");
   return 1;
 }

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <ompt.h>
 
+#include "callback.h"
 #include "dump.h"
 
 main()

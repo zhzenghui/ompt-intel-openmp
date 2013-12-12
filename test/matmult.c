@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <omp.h>
+#include "ompt.h"
 #include <math.h>
 #include "callback.h"
 

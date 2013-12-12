@@ -22,6 +22,17 @@ ompt_task_id_t task_id)           /* id for task                 */ \
   fflush(stdout); \
 }
 
+#define TEST_NEW_WORKSHARE_CALLBACK(EVENT) \
+void my_##EVENT ( \
+ompt_parallel_id_t parallel_id,   /* id of parallel region       */ \
+ompt_task_id_t task_id,           /* id for task                 */ \
+void *workshare_function)           /* ptr to outlined function  */ \
+{ \
+  printf("%d: %s: par_id=0x%llx task_id=0x%llx\n", omp_get_thread_num(), #EVENT, parallel_id, task_id); \
+  fflush(stdout); \
+}
+
+
 #define TEST_NEW_PARALLEL_CALLBACK(EVENT) \
 void my_##EVENT ( \
   ompt_task_id_t  parent_task_id,   /* tool data for parent task   */ \
@@ -78,12 +89,12 @@ void my_##EVENT ( \
  * required events 
  *******************************************************************/
 
-TEST_NEW_PARALLEL_CALLBACK(ompt_event_parallel_create)
-TEST_PARALLEL_CALLBACK(ompt_event_parallel_exit)
-TEST_TASK_CALLBACK(ompt_event_task_create)
-TEST_TASK_CALLBACK(ompt_event_task_exit)
-TEST_CALLBACK(ompt_event_thread_create)
-TEST_CALLBACK(ompt_event_thread_exit)
+TEST_NEW_PARALLEL_CALLBACK(ompt_event_parallel_begin)
+TEST_PARALLEL_CALLBACK(ompt_event_parallel_end)
+TEST_TASK_CALLBACK(ompt_event_task_begin)
+TEST_TASK_CALLBACK(ompt_event_task_end)
+TEST_CALLBACK(ompt_event_thread_begin)
+TEST_CALLBACK(ompt_event_thread_end)
 TEST_CONTROL_CALLBACK(ompt_event_control)
 TEST_CALLBACK(ompt_event_runtime_shutdown)
 
@@ -107,15 +118,15 @@ TEST_WAIT_CALLBACK(ompt_event_release_ordered)
 TEST_WAIT_CALLBACK(ompt_event_release_atomic)
 
 /* synchronous events */
-TEST_PARALLEL_CALLBACK(ompt_event_implicit_task_create);
-TEST_PARALLEL_CALLBACK(ompt_event_implicit_task_exit);
+TEST_PARALLEL_CALLBACK(ompt_event_implicit_task_begin);
+TEST_PARALLEL_CALLBACK(ompt_event_implicit_task_end);
 TEST_PARALLEL_CALLBACK(ompt_event_barrier_begin)
 TEST_PARALLEL_CALLBACK(ompt_event_barrier_end)
 TEST_PARALLEL_CALLBACK(ompt_event_master_begin)
 TEST_PARALLEL_CALLBACK(ompt_event_master_end)
 TEST_TASK_SWITCH_CALLBACK(ompt_event_task_switch);
-TEST_PARALLEL_CALLBACK(ompt_event_loop_begin);
-TEST_PARALLEL_CALLBACK(ompt_event_loop_end);
+TEST_NEW_WORKSHARE_CALLBACK(ompt_event_loop_begin);
+TEST_NEW_WORKSHARE_CALLBACK(ompt_event_loop_end);
 TEST_PARALLEL_CALLBACK(ompt_event_section_begin);
 TEST_PARALLEL_CALLBACK(ompt_event_section_end);
 TEST_PARALLEL_CALLBACK(ompt_event_single_in_block_begin);
@@ -150,19 +161,24 @@ TEST_CALLBACK(ompt_event_flush);
 
 #define CHECK(EVENT) \
 if (ompt_set_callback(EVENT, (ompt_callback_t) my_##EVENT) == 0) { \
-  fprintf(stderr,"Failed to register OMPT callback %s!\n",#EVENT); return 0; \
+  fprintf(stderr,"Failed to register OMPT callback %s!\n",#EVENT);  \
 }
 
-int ompt_initialize(ompt_function_lookup_t lookup) {
+ompt_get_task_frame_t ompt_get_task_frame;
+ompt_set_callback_t ompt_set_callback;
 
+int ompt_initialize(ompt_function_lookup_t lookup, const char *runtime_version, int ompt_version) {
+  printf("Init: %s ver %i\n",runtime_version,ompt_version);
+  ompt_get_task_frame = (ompt_get_task_frame_t) lookup("ompt_get_task_frame");
+  ompt_set_callback = (ompt_set_callback_t) lookup("ompt_set_callback");
   /* required events */
 
-  CHECK(ompt_event_parallel_create);
-  CHECK(ompt_event_parallel_exit);
-  CHECK(ompt_event_task_create);
-  CHECK(ompt_event_task_exit);
-  CHECK(ompt_event_thread_create);
-  CHECK(ompt_event_thread_exit);
+  CHECK(ompt_event_parallel_begin);
+  CHECK(ompt_event_parallel_end);
+  CHECK(ompt_event_task_begin);
+  CHECK(ompt_event_task_end);
+  CHECK(ompt_event_thread_begin);
+  CHECK(ompt_event_thread_end);
   CHECK(ompt_event_control);
   CHECK(ompt_event_runtime_shutdown);
 
