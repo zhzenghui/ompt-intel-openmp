@@ -51,7 +51,6 @@ EXEC = \
 	critical \
 	critical-cpp \
 	enumerate-states \
-	enumerate-ompd-dll \
 	parloop-for-sampling \
 	parregion-for-sampling \
 	parregion2-for-sampling \
@@ -74,6 +73,8 @@ EXEC = \
 	ordered \
 	parallelfor \
 	single \
+ 	task3 \
+ 	task4 \
 	task-1 lateinitf
 
 # EXEC = nest1-unit
