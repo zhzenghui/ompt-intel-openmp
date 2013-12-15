@@ -4,6 +4,12 @@
 
 #define OMPT_EVENT_DETAIL 0
 
+#define OMPT_API_DECLARE(fn) fn ## _t fn
+
+#define LOOKUP(lookup, fn) fn = (fn ## _t) lookup(#fn)
+
+OMPT_API_DECLARE(ompt_get_parallel_id);
+
 #define N 37
 long
 fib(int n)
@@ -97,6 +103,7 @@ if (ompt_set_callback(EVENT, (ompt_callback_t) EVENT ## _fn) == 0) { \
 
 int ompt_initialize(ompt_function_lookup_t lookup, const char *runtime_version, int ompt_version) {
   printf("Init: %s ver %i\n",runtime_version,ompt_version);
+  LOOKUP(lookup,ompt_get_parallel_id);
   REGISTER(ompt_event_parallel_begin);
   REGISTER(ompt_event_parallel_end);
   return 1;
