@@ -91,7 +91,7 @@ void my_##EVENT ( \
  *******************************************************************/
 
 TEST_NEW_PARALLEL_CALLBACK(ompt_event_parallel_begin)
-TEST_PARALLEL_CALLBACK(ompt_event_parallel_end)
+TEST_NEW_PARALLEL_CALLBACK(ompt_event_parallel_end)
 TEST_TASK_CALLBACK(ompt_event_task_begin)
 TEST_TASK_CALLBACK(ompt_event_task_end)
 TEST_CALLBACK(ompt_event_thread_begin)

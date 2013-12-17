@@ -1,6 +1,8 @@
 #include <omp.h>
 #include <stdio.h>
 
+#include "callback.h"
+
 int region=0;
 #define N 37
 long
