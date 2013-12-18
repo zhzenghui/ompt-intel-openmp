@@ -34,6 +34,17 @@ void *workshare_function)           /* ptr to outlined function  */ \
 }
 
 
+#define TEST_NEW_WORKSHARE_CALLBACK(EVENT) \
+void my_##EVENT ( \
+ompt_parallel_id_t parallel_id,   /* id of parallel region       */ \
+ompt_task_id_t task_id,           /* id for task                 */ \
+void *workshare_function)           /* ptr to outlined function  */ \
+{ \
+  printf("%d: %s: par_id=0x%llx task_id=0x%llx\n", omp_get_thread_num(), #EVENT, parallel_id, task_id); \
+  fflush(stdout); \
+}
+
+
 #define TEST_NEW_PARALLEL_CALLBACK(EVENT) \
 void my_##EVENT ( \
   ompt_task_id_t  parent_task_id,   /* tool data for parent task   */ \
@@ -165,13 +176,23 @@ if (ompt_set_callback(EVENT, (ompt_callback_t) my_##EVENT) == 0) { \
   fprintf(stderr,"Failed to register OMPT callback %s!\n",#EVENT);  \
 }
 
-ompt_get_task_frame_t ompt_get_task_frame;
-ompt_set_callback_t ompt_set_callback;
+#define OMPT_FN_TYPE(fn) fn ## _t 
+#define OMPT_FN_LOOKUP(lookup,fn) (OMPT_FN_TYPE(fn)) lookup(#fn)
+#define OMPT_FN_DECL(fn) OMPT_FN_TYPE(fn) fn
+
+OMPT_FN_DECL(ompt_get_task_frame);
+OMPT_FN_DECL(ompt_set_callback);
+OMPT_FN_DECL(ompt_get_task_id);
 
 int ompt_initialize(ompt_function_lookup_t lookup, const char *runtime_version, int ompt_version) {
   printf("Init: %s ver %i\n",runtime_version,ompt_version);
-  ompt_get_task_frame = (ompt_get_task_frame_t) lookup("ompt_get_task_frame");
-  ompt_set_callback = (ompt_set_callback_t) lookup("ompt_set_callback");
+
+  /* look up and bind OMPT API functions */
+
+  OMPT_FN_LOOKUP(lookup,ompt_set_callback);
+  OMPT_FN_LOOKUP(lookup,ompt_get_task_frame);
+  OMPT_FN_LOOKUP(lookup,ompt_get_task_id);
+
   /* required events */
 
   CHECK(ompt_event_parallel_begin);
@@ -239,6 +260,5 @@ int ompt_initialize(ompt_function_lookup_t lookup, const char *runtime_version, 
   //CHECK(ompt_event_flush);
   return 1;
 }
-
 
 #endif
