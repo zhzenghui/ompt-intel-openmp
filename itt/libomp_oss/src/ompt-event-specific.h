@@ -80,13 +80,16 @@
 #define ompt_event_loop_begin_implemented               ompt_event_IMPLEMENTED
 #define ompt_event_loop_end_implemented                 ompt_event_IMPLEMENTED
 
-#define ompt_event_section_begin_implemented            ompt_event_unimplemented
-#define ompt_event_section_end_implemented              ompt_event_unimplemented
+#define ompt_event_sections_begin_implemented           ompt_event_unimplemented
+#define ompt_event_sections_end_implemented             ompt_event_unimplemented
 
 #define ompt_event_single_in_block_begin_implemented    ompt_event_IMPLEMENTED
 #define ompt_event_single_in_block_end_implemented      ompt_event_IMPLEMENTED
 #define ompt_event_single_others_begin_implemented      ompt_event_IMPLEMENTED
 #define ompt_event_single_others_end_implemented        ompt_event_IMPLEMENTED
+
+#define ompt_event_workshare_begin_implemented          ompt_event_unimplemented
+#define ompt_event_workshare_end_implemented            ompt_event_unimplemented
 
 #define ompt_event_master_begin_implemented             ompt_event_IMPLEMENTED
 #define ompt_event_master_end_implemented               ompt_event_IMPLEMENTED
