@@ -125,6 +125,7 @@ define curr_config
     CXXFLAGS=$(subst $(space),_,$(CXXFLAGS))
     FFLAGS=$(subst $(space),_,$(FFLAGS))
     LDFLAGS=$(subst $(space),_,$(LDFLAGS))
+    OMPT_SUPPORT=$(ompt_support)
 endef
 # And check it.
 include $(tools_dir)src/common-checks.mk
@@ -503,7 +504,10 @@ else
     endif
 endif
 
-
+ifneq "$(ompt_support)" "enabled"
+  cpp-flags += -D OMPT_DISABLED
+  $(call say,OMPT support is disabled!)
+endif
 
 # Linux* OS: __declspec(thread) TLS is still buggy on static builds.
 # Windows* OS: This define causes problems with LoadLibrary + declspec(thread) on Windows* OS. See CQ50564,
@@ -590,7 +594,11 @@ ld-flags   += $(LDFLAGS)
 # --------------------------------------------------------------------------------------------------
 # Files.
 # --------------------------------------------------------------------------------------------------
-ompt_items = ompt-general
+ifeq "$(ompt_support)" "enabled"
+	ompt_items = ompt-general
+else
+	ompt_items = 
+endif
 
 # Library files. These files participate in all kinds of library.
 lib_c_items :=      \
