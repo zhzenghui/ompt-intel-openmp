@@ -7,10 +7,10 @@ LEVEL=0
 endif
 
 
-ifeq ($(type),rel)
-VER=rel
-else
+ifeq ($(mode),deb)
 VER=deb
+else
+VER=rel
 endif
 
 ifeq ($(strip),yes)
