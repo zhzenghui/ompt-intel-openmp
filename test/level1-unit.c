@@ -9,6 +9,7 @@
 #define LOOKUP(lookup, fn) fn = (fn ## _t) lookup(#fn)
 
 OMPT_API_DECLARE(ompt_get_parallel_id);
+OMPT_API_DECLARE(ompt_set_callback);
 
 #define N 37
 long
@@ -104,6 +105,7 @@ if (ompt_set_callback(EVENT, (ompt_callback_t) EVENT ## _fn) == 0) { \
 int ompt_initialize(ompt_function_lookup_t lookup, const char *runtime_version, int ompt_version) {
   printf("Init: %s ver %i\n",runtime_version,ompt_version);
   LOOKUP(lookup,ompt_get_parallel_id);
+  LOOKUP(lookup,ompt_set_callback);
   REGISTER(ompt_event_parallel_begin);
   REGISTER(ompt_event_parallel_end);
   return 1;
