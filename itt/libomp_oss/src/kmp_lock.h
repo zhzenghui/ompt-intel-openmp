@@ -69,6 +69,9 @@ extern "C" {
 struct ident;
 typedef struct ident ident_t;
 
+#ifndef OMPT_DISABLED
+#define OMPT_SUPPORT 1
+#endif
 // End of copied code.
 // ----------------------------------------------------------------------------
 
@@ -352,7 +355,6 @@ extern void __kmp_release_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid 
 extern void __kmp_init_queuing_lock( kmp_queuing_lock_t *lck );
 extern void __kmp_destroy_queuing_lock( kmp_queuing_lock_t *lck );
 
-#define OMPT_SUPPORT 1
 #if OMPT_SUPPORT
 /* expose this so that locks for atomics can be tagged as such */
 extern void __kmp_set_queuing_lock_flags( kmp_queuing_lock_t *lck, kmp_lock_flags_t flags );
