@@ -94,7 +94,9 @@ ifneq "$(filter lin lrb mac,$(os))" ""
     c-flags-m   += -M -MG
     cxx-flags-m += -M -MG
     # Enable C99 language.
-    c-flags += -std=c99
+    ifneq "$(CPLUSPLUS)" "on"
+        c-flags += -std=c99
+    endif
     # Generate position-independent code (a must for shared objects).
     ifeq "$(LINK_TYPE)" "dyna"
         c-flags   += -fPIC
