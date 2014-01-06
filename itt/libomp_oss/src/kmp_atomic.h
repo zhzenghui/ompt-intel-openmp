@@ -49,7 +49,10 @@
 
 #include "kmp_os.h"
 #include "kmp_lock.h"
+
+#if OMPT_SUPPORT
 #include "ompt-specific.h"
+#endif
 
 // C++ build port.
 // Intel compiler does not support _Complex datatype on win.

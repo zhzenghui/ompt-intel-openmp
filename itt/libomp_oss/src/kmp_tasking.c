@@ -805,7 +805,7 @@ __kmp_init_implicit_task( ident_t *loc_ref, kmp_info_t *this_thr, kmp_team_t *te
         KMP_DEBUG_ASSERT(task->td_allocated_child_tasks  == 0);
     }
 
-#ifdef OMPT_SUPPORT
+#if OMPT_SUPPORT
     if (ompt_status & ompt_status_track) {
       task->ompt_task_info.task_id = __ompt_task_id_new(tid);
       task->ompt_task_info.frame = (ompt_frame_t) 
@@ -962,11 +962,13 @@ __kmp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_tasking_flags_t *flags,
     KA_TRACE(20, ("__kmp_task_alloc(exit): T#%d created task %p parent=%p\n",
                   gtid, taskdata, taskdata->td_parent) );
 
+#if OMPT_SUPPORT
    if (ompt_status & ompt_status_track) {
      taskdata->ompt_task_info.task_id = __ompt_task_id_new(gtid);
      taskdata->ompt_task_info.frame = 
        (ompt_frame_t) {.exit_runtime_frame = NULL, .reenter_runtime_frame = NULL};
    }
+#endif
 
     return task;
 }

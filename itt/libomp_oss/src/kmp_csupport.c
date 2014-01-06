@@ -49,8 +49,10 @@
 #include "kmp_i18n.h"
 #include "kmp_error.h"
 
+#if OMPT_SUPPORT
 #include "ompt-internal.h"
 #include "ompt-specific.h"
+#endif
 
 #define MAX_MESSAGE 512
 
@@ -341,7 +343,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     va_end( ap );
 
-#ifdef OMPT_SUPPORT
+#if OMPT_SUPPORT
     if (ompt_status & ompt_status_track) {
       parent_team->t.t_implicit_task_taskdata[tid].
 	ompt_task_info.frame.reenter_runtime_frame = 0;
@@ -435,7 +437,9 @@ __kmpc_serialized_parallel(ident_t *loc, kmp_int32 global_tid)
                 __kmp_acquire_bootstrap_lock( &__kmp_forkjoin_lock );
 
 
-		ompt_parallel_id_t ompt_parallel_id = __ompt_parallel_id_new(global_tid);
+#if OMPT_SUPPORT
+                ompt_parallel_id_t ompt_parallel_id = __ompt_parallel_id_new(global_tid);
+#endif
                 new_team = __kmp_allocate_team(this_thr->th.th_root, 1, 1,
 #if OMPT_SUPPORT
           ompt_parallel_id,
