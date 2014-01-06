@@ -6351,7 +6351,7 @@ __kmp_launch_thread( kmp_info_t *this_thr )
         KA_TRACE( 20, ("__kmp_launch_thread: T#%d waiting for work\n", gtid ));
 	
 
-#if OMPT_SUPPORT
+#if 0 && OMPT_SUPPORT
 	if (ompt_status & ompt_status_track) {
 	  this_thr->th.ompt_thread_info.state = ompt_state_idle;
 	  if ((ompt_status == ompt_status_track_callback) &&
@@ -6364,7 +6364,7 @@ __kmp_launch_thread( kmp_info_t *this_thr )
         /* No tid yet since not part of a team */
         __kmp_fork_barrier( gtid, KMP_GTID_DNE );
 
-#if OMPT_SUPPORT
+#if 0 && OMPT_SUPPORT
 	if (ompt_status & ompt_status_track) {
 	  this_thr->th.ompt_thread_info.state = ompt_state_overhead;
 	  if ((ompt_status == ompt_status_track_callback) &&
