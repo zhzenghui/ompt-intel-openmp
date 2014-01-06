@@ -93,8 +93,9 @@ TEST_NEW_PARALLEL_CALLBACK(ompt_event_parallel_begin)
 TEST_NEW_PARALLEL_CALLBACK(ompt_event_parallel_end)
 TEST_TASK_CALLBACK(ompt_event_task_begin)
 TEST_TASK_CALLBACK(ompt_event_task_end)
-TEST_CALLBACK(ompt_event_thread_begin)
-TEST_CALLBACK(ompt_event_thread_end)
+TEST_CALLBACK(ompt_event_initial_thread_begin)
+TEST_CALLBACK(ompt_event_openmp_thread_begin)
+TEST_CALLBACK(ompt_event_openmp_thread_end)
 TEST_CONTROL_CALLBACK(ompt_event_control)
 TEST_CALLBACK(ompt_event_runtime_shutdown)
 
@@ -165,12 +166,13 @@ if (ompt_set_callback(EVENT, (ompt_callback_t) my_##EVENT) == 0) { \
 }
 
 #define OMPT_FN_TYPE(fn) fn ## _t 
-#define OMPT_FN_LOOKUP(lookup,fn) (OMPT_FN_TYPE(fn)) lookup(#fn)
+#define OMPT_FN_LOOKUP(lookup,fn) fn = (OMPT_FN_TYPE(fn)) lookup(#fn)
 #define OMPT_FN_DECL(fn) OMPT_FN_TYPE(fn) fn
 
 OMPT_FN_DECL(ompt_get_task_frame);
 OMPT_FN_DECL(ompt_set_callback);
 OMPT_FN_DECL(ompt_get_task_id);
+OMPT_FN_DECL(ompt_get_parallel_id);
 
 int ompt_initialize(ompt_function_lookup_t lookup, const char *runtime_version, int ompt_version) {
   printf("Init: %s ver %i\n",runtime_version,ompt_version);
@@ -180,6 +182,7 @@ int ompt_initialize(ompt_function_lookup_t lookup, const char *runtime_version, 
   OMPT_FN_LOOKUP(lookup,ompt_set_callback);
   OMPT_FN_LOOKUP(lookup,ompt_get_task_frame);
   OMPT_FN_LOOKUP(lookup,ompt_get_task_id);
+  OMPT_FN_LOOKUP(lookup,ompt_get_parallel_id);
 
   /* required events */
 
@@ -187,8 +190,9 @@ int ompt_initialize(ompt_function_lookup_t lookup, const char *runtime_version, 
   CHECK(ompt_event_parallel_end);
   CHECK(ompt_event_task_begin);
   CHECK(ompt_event_task_end);
-  CHECK(ompt_event_thread_begin);
-  CHECK(ompt_event_thread_end);
+  CHECK(ompt_event_initial_thread_begin);
+  CHECK(ompt_event_openmp_thread_begin);
+  CHECK(ompt_event_openmp_thread_end);
   CHECK(ompt_event_control);
   CHECK(ompt_event_runtime_shutdown);
 
