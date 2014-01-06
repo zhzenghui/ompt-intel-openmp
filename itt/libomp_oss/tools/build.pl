@@ -83,7 +83,7 @@ my %makefiles = (
 #         iterated if "--all" option is specified. If base is 0, this is an extra option.
 #     * params: A hash of possible option values. "*" denotes default option value. For example,
 #         if "version" option is not specified, "--version=5" will be used implicitly.
-#     * suffux: Only for extra options. Subroutine returning suffix for build and output
+#     * suffix: Only for extra options. Subroutine returning suffix for build and output
 #         directories.
 my $opts = {
     "target"          => { targets => "",                  base => 1, parms => { map( ( $_ => "" ), keys( %makefiles ) ), rtl => "*" }, },
@@ -98,12 +98,13 @@ my $opts = {
     "mic-arch"        => { targets => "rtl",               base => 0, parms => { knf     => "", knc       => "*", knl => ""   }, suffix => sub { $_[ 0 ];                       } },
     "mic-os"          => { targets => "rtl",               base => 0, parms => { bsd     => "", lin       => "*"              }, suffix => sub { $_[ 0 ];                       } },
     "mic-comp"        => { targets => "rtl",               base => 0, parms => { native  => "", offload   => "*"              }, suffix => sub { substr( $_[ 0 ], 0, 3 );       } },
+    "ompt_support"    => { targets => "rtl",               base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
 };
 my $synonyms = {
     "debug" => [ qw{ dbg debg } ],
 };
 # This array specifies order of options to process, so it cannot be initialized with keys( %$opts ).
-my @all_opts   = qw{ target version lib-type link-type target-compiler mode omp-version coverage tcheck mic-arch mic-os mic-comp };
+my @all_opts   = qw{ target version lib-type link-type target-compiler mode omp-version coverage tcheck mic-arch mic-os mic-comp ompt_support };
 # This is the list of base options.
 my @base_opts  = grep( $opts->{ $_ }->{ base } == 1, @all_opts );
 # This is the list of extra options.
@@ -307,11 +308,13 @@ sub enqueue_jobs($$@) {
                     "VERSION=" . $set->{ version },
                     "TARGET_COMPILER=" . $set->{ "target-compiler" },
                     "suffix=" . $suf,
+                    "ompt_support=" . $set->{ "ompt_support" },
                     @goals,
                 ],
                 build_dir  => $build_dir
             }
         ); # push
+				print $set->{ "ompt_support" }
     }; # if
 }; # sub enqueue_jobs
 
