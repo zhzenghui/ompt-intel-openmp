@@ -236,5 +236,5 @@ void __ompt_lw_taskteam_unlink(ompt_lw_taskteam_t *lwt, kmp_info_t *thr)
 
 const char *__ompt_get_runtime_version_internal()
 {
-  return __kmp_version_lib_ver;
+  return &__kmp_version_lib_ver[KMP_VERSION_MAGIC_LEN];
 }
