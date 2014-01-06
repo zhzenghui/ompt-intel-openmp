@@ -135,7 +135,16 @@ legal_type = $(if $(filter norm,$(LIB_TYPE)),Performance,$(if $(filter prof,$(LI
 # Form target directory name for MIC platforms
 ifeq "$(MIC_ARCH)" "knc"
     mic-postf1  = .knc
+else
+    ifeq "$(MIC_ARCH)" "knf"
+        mic-postf1  = .knf
+    else
+        ifeq "$(MIC_ARCH)" "knl"
+            mic-postf1  = .knl
+        endif
+    endif
 endif
+
 ifeq "$(MIC_OS)" "lin"
     mic-postfix = $(mic-postf1).lin
 else
@@ -219,7 +228,9 @@ ifneq "$(c)" "gcc"
     endif
 endif
 
-ifeq "$(MIC_COMP)" "offload"
+# Check here if we ware compiling for MIC no matter if for offload or native,
+# the library needs to be run on the MIC. Hence compile it with -mmic
+ifeq "$(os)" "lrb"
     c-flags    += -mmic
     cxx-flags  += -mmic
     fort-flags += -mmic

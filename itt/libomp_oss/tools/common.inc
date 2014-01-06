@@ -97,7 +97,7 @@ ifneq "$(mic)" "no"
     endif
 
     # Magic flags for the build script!
-    build_args += --os=lrb --mic-arch=knc --mic-os=lin --mic-comp=offload
+    build_args += --os=lrb
 
     # Check that the binutils for Intel(R) Many Integrated Core Architecture are available
     # First we see whether the objdump on the user's path supports the k1om architecture.
