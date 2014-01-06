@@ -1950,8 +1950,10 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
     register kmp_info_t  *this_thr        = __kmp_threads[ gtid ];
     register kmp_team_t  *team            = this_thr -> th.th_team;
     register int status = 0;
+#if OMPT_SUPPORT
     ompt_task_id_t my_task_id;
     ompt_parallel_id_t my_parallel_id;
+#endif
 
     KA_TRACE( 15, ( "__kmp_barrier: T#%d(%d:%d) has arrived\n",
                     gtid, __kmp_team_from_gtid(gtid)->t.t_id, __kmp_tid_from_gtid(gtid) ) );
@@ -1960,19 +1962,17 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
       this_thr->th.ompt_thread_info.state = ompt_state_wait_barrier;
 
       if ((ompt_status == ompt_status_track_callback)) {
-	my_task_id = team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id;
-	my_parallel_id = team->t.ompt_team_info.parallel_id;
+	        my_task_id = team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id;
+	        my_parallel_id = team->t.ompt_team_info.parallel_id;
       
-	if (this_thr->th.ompt_thread_info.state == ompt_state_wait_single) {
-	  if (ompt_callbacks.ompt_callback(ompt_event_single_others_end)) {
-	    ompt_callbacks.ompt_callback(ompt_event_single_others_end)
-              (my_parallel_id, my_task_id);
-	  }
-	}
-	if (ompt_callbacks.ompt_callback(ompt_event_barrier_begin)) {
-	  ompt_callbacks.ompt_callback(ompt_event_barrier_begin)
-	    (my_parallel_id, my_task_id);
-	}
+	        if (this_thr->th.ompt_thread_info.state == ompt_state_wait_single) {
+	            if (ompt_callbacks.ompt_callback(ompt_event_single_others_end)) {
+	                ompt_callbacks.ompt_callback(ompt_event_single_others_end)(my_parallel_id, my_task_id);
+	            }
+	        }
+	        if (ompt_callbacks.ompt_callback(ompt_event_barrier_begin)) {
+	            ompt_callbacks.ompt_callback(ompt_event_barrier_begin)(my_parallel_id, my_task_id);
+	        }
       }
     }
 #endif
@@ -2076,12 +2076,11 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
                     status ) );
 #if OMPT_SUPPORT
     if (ompt_status & ompt_status_track) {
-      if ((ompt_status == ompt_status_track_callback) &&
-	  ompt_callbacks.ompt_callback(ompt_event_barrier_end)) {
-	ompt_callbacks.ompt_callback(ompt_event_barrier_end)
-          (my_parallel_id, my_task_id);
-      }
-      this_thr->th.ompt_thread_info.state = ompt_state_work_parallel;
+        if ((ompt_status == ompt_status_track_callback) &&
+	        ompt_callbacks.ompt_callback(ompt_event_barrier_end)) {
+	          ompt_callbacks.ompt_callback(ompt_event_barrier_end)(my_parallel_id, my_task_id);
+        }
+        this_thr->th.ompt_thread_info.state = ompt_state_work_parallel;
     }
 #endif
     return status;
@@ -3688,9 +3687,11 @@ __kmp_initialize_root( kmp_root_t *root )
     /* allocate the root team structure */
     KF_TRACE( 10, ( "__kmp_initialize_root: before root_team\n" ) );
 
+#if OMPT_SUPPORT
     int gtid = __kmp_gtid_get_specific();
     kmp_info_t *ti = ompt_get_thread_gtid(gtid);
     ompt_parallel_id_t ompt_parallel_id_1 = __ompt_parallel_id_new(gtid);
+#endif
 
     root_team =
         __kmp_allocate_team(
@@ -3737,7 +3738,9 @@ __kmp_initialize_root( kmp_root_t *root )
     /* allocate the hot team structure */
     KF_TRACE( 10, ( "__kmp_initialize_root: before hot_team\n" ) );
 
+#if OMPT_SUPPORT
     ompt_parallel_id_t ompt_parallel_id_2 = __ompt_parallel_id_new(gtid);
+#endif
 
     hot_team =
         __kmp_allocate_team(
@@ -4339,8 +4342,10 @@ __kmp_register_root( int initial_thread )
         #endif // OMP_30_ENABLED
         KF_TRACE( 10, ( "__kmp_register_root: before serial_team\n" ) );
 
-	kmp_info_t *ti = ompt_get_thread_gtid(gtid);
-	ompt_parallel_id_t ompt_parallel_id_3 = __ompt_parallel_id_new(gtid);
+#if OMPT_SUPPORT
+        kmp_info_t *ti = ompt_get_thread_gtid(gtid);
+        ompt_parallel_id_t ompt_parallel_id_3 = __ompt_parallel_id_new(gtid);
+#endif
 
         root_thread -> th.th_serial_team = __kmp_allocate_team( root, 1, 1,
 #if OMPT_SUPPORT
@@ -4760,8 +4765,10 @@ __kmp_allocate_thread( kmp_root_t *root, kmp_team_t *team, int new_tid )
     #endif // OMP_30_ENABLED
     KF_TRACE( 10, ( "__kmp_allocate_thread: before th_serial/serial_team\n" ) );
 
+#if OMPT_SUPPORT
     kmp_info_t *ti = ompt_get_thread_gtid(new_gtid);
     ompt_parallel_id_t ompt_parallel_id_4 = __ompt_parallel_id_new(new_gtid);
+#endif
 
     new_thr -> th.th_serial_team = serial_team =
         (kmp_team_t*) __kmp_allocate_team( root, 1, 1,

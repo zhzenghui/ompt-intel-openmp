@@ -142,8 +142,7 @@ typedef __float128 _Quad;
 #include <lmmintrin.h>
 #endif // KMP_MIC1 AC: no lmmintrin.h in KNC compiler
 
-#ifndef OMPT_DISABLED
-#define OMPT_SUPPORT 1
+#if OMPT_SUPPORT
 #include "ompt-internal.h"
 #endif
 
