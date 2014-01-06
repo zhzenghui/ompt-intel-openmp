@@ -33,18 +33,6 @@ void *workshare_function)           /* ptr to outlined function  */ \
   fflush(stdout); \
 }
 
-
-#define TEST_NEW_WORKSHARE_CALLBACK(EVENT) \
-void my_##EVENT ( \
-ompt_parallel_id_t parallel_id,   /* id of parallel region       */ \
-ompt_task_id_t task_id,           /* id for task                 */ \
-void *workshare_function)           /* ptr to outlined function  */ \
-{ \
-  printf("%d: %s: par_id=0x%llx task_id=0x%llx\n", omp_get_thread_num(), #EVENT, parallel_id, task_id); \
-  fflush(stdout); \
-}
-
-
 #define TEST_NEW_PARALLEL_CALLBACK(EVENT) \
 void my_##EVENT ( \
   ompt_task_id_t  parent_task_id,   /* tool data for parent task   */ \
