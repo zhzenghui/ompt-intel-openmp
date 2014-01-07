@@ -14,4 +14,3 @@ ompt_interface_fn(ompt_get_task_frame)
 ompt_interface_fn(ompt_get_task_id)
 
 ompt_interface_fn(ompt_get_thread_id)
-
