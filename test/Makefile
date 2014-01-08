@@ -7,7 +7,7 @@ LEVEL=0
 endif
 
 
-ifeq ($(mode),deb)
+ifeq ($(mode),debug)
 VER=deb
 else
 VER=rel
