@@ -41,7 +41,7 @@
 omp_root?=.
 compver?=12
 linktype?=dynamic
-ompt_support?=disabled
+ompt_support?=enabled
 include $(omp_root)/tools/common.inc
 .PHONY: default all omp
 
