@@ -121,8 +121,10 @@ ompt_parallel_id_t __ompt_get_parallel_id_internal(int ancestor_level)
 
 ompt_thread_id_t __ompt_get_thread_id_internal() 
 {
-  assert(0);
-  return 0;
+  //assert(0);
+  ompt_thread_id_t id = __kmp_get_global_thread_id();
+  assert(id >= 0);
+  return (id >=0) ? id + 1: 0;
 }
 
 
