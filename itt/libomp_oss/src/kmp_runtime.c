@@ -6344,7 +6344,7 @@ __kmp_launch_thread( kmp_info_t *this_thr )
      this_thr->th.ompt_thread_info.idle_frame = __builtin_frame_address(0);
      if ((ompt_status == ompt_status_track_callback) &&
          ompt_callbacks.ompt_callback(ompt_event_openmp_thread_begin)) {
-       ompt_callbacks.ompt_callback(ompt_event_openmp_thread_begin)();
+       ompt_callbacks.ompt_callback(ompt_event_openmp_thread_begin)(gtid + 1);
      }
    }
 #endif
@@ -6432,7 +6432,7 @@ __kmp_launch_thread( kmp_info_t *this_thr )
 #if OMPT_SUPPORT
    if ((ompt_status == ompt_status_track_callback) &&
        ompt_callbacks.ompt_callback(ompt_event_openmp_thread_end)) {
-     ompt_callbacks.ompt_callback(ompt_event_openmp_thread_end)();
+     ompt_callbacks.ompt_callback(ompt_event_openmp_thread_end)(gtid + 1);
    }
 #endif
 
