@@ -5,11 +5,11 @@ ompt_event(ompt_event_parallel_begin, ompt_new_parallel_callback_t, 1, ompt_even
 ompt_event(ompt_event_parallel_end, ompt_new_parallel_callback_t, 2, ompt_event_parallel_end_implemented) /* parallel end */
 
 ompt_event(ompt_event_task_begin, ompt_new_task_callback_t, 3, ompt_event_task_begin_implemented) /* task begin */
-ompt_event(ompt_event_task_end, ompt_task_callback_t, 4, ompt_event_task_end_implemented) /* task destroy */
+ompt_event(ompt_event_task_end, ompt_new_task_callback_t, 4, ompt_event_task_end_implemented) /* task destroy */
 
-ompt_event(ompt_event_initial_thread_begin, ompt_callback_t, 5, ompt_event_thread_begin_implemented) /* thread begin */
-ompt_event(ompt_event_openmp_thread_begin, ompt_callback_t, 6, ompt_event_thread_begin_implemented) /* thread begin */
-ompt_event(ompt_event_openmp_thread_end, ompt_callback_t, 7, ompt_event_thread_end_implemented) /* thread end */
+ompt_event(ompt_event_initial_thread_begin, ompt_thread_callback_t, 5, ompt_event_thread_begin_implemented) /* thread begin */
+ompt_event(ompt_event_openmp_thread_begin, ompt_thread_callback_t, 6, ompt_event_thread_begin_implemented) /* thread begin */
+ompt_event(ompt_event_openmp_thread_end, ompt_thread_callback_t, 7, ompt_event_thread_end_implemented) /* thread end */
 
 ompt_event(ompt_event_control, ompt_control_callback_t, 8, ompt_event_control_implemented) /* support control calls */
 
@@ -45,14 +45,14 @@ ompt_event(ompt_event_initial_task_end, ompt_parallel_callback_t, 26, ompt_event
 
 ompt_event(ompt_event_task_switch, ompt_task_switch_callback_t, 27, ompt_event_task_switch_implemented) /* task switch */
 
-ompt_event(ompt_event_loop_begin, ompt_parallel_callback_t, 28, ompt_event_loop_begin_implemented) /* task at loop begin */
-ompt_event(ompt_event_loop_end, ompt_parallel_callback_t, 29, ompt_event_loop_end_implemented) /* task at loop end */
+ompt_event(ompt_event_loop_begin, ompt_new_workshare_callback_t, 28, ompt_event_loop_begin_implemented) /* task at loop begin */
+ompt_event(ompt_event_loop_end, ompt_new_workshare_callback_t, 29, ompt_event_loop_end_implemented) /* task at loop end */
 
-ompt_event(ompt_event_sections_begin, ompt_parallel_callback_t, 30, ompt_event_sections_begin_implemented) /* task at sections begin  */
-ompt_event(ompt_event_sections_end, ompt_parallel_callback_t, 31, ompt_event_sections_end_implemented) /* task at sections end */
+ompt_event(ompt_event_sections_begin, ompt_new_workshare_callback_t, 30, ompt_event_sections_begin_implemented) /* task at sections begin  */
+ompt_event(ompt_event_sections_end, ompt_new_workshare_callback_t, 31, ompt_event_sections_end_implemented) /* task at sections end */
 
-ompt_event(ompt_event_single_in_block_begin, ompt_parallel_callback_t, 32, ompt_event_single_in_block_begin_implemented) /* task at single begin*/
-ompt_event(ompt_event_single_in_block_end, ompt_parallel_callback_t, 33, ompt_event_single_in_block_end_implemented) /* task at single end */
+ompt_event(ompt_event_single_in_block_begin, ompt_new_workshare_callback_t, 32, ompt_event_single_in_block_begin_implemented) /* task at single begin*/
+ompt_event(ompt_event_single_in_block_end, ompt_new_workshare_callback_t, 33, ompt_event_single_in_block_end_implemented) /* task at single end */
 
 ompt_event(ompt_event_single_others_begin, ompt_parallel_callback_t, 34, ompt_event_single_others_begin_implemented) /* task at single begin */
 ompt_event(ompt_event_single_others_end, ompt_parallel_callback_t, 35, ompt_event_single_others_end_implemented) /* task at single end */

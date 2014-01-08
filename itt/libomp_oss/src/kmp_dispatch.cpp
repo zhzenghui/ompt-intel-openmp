@@ -1152,7 +1152,7 @@ __kmp_dispatch_init(
       if (ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
         ompt_callbacks.ompt_callback(ompt_event_loop_begin)
           (team->t.ompt_team_info.parallel_id,
-	   team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id);
+	   team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id, (void*) team->t.t_pkfn);
       }
     }
 #endif
@@ -1232,7 +1232,7 @@ __kmp_dispatch_finish( int gtid, ident_t *loc )
       if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) {
         ompt_callbacks.ompt_callback(ompt_event_loop_end)
 	  (team->t.ompt_team_info.parallel_id,
-	   team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id);
+	   team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id, (void*) team->t.t_pkfn);
       }
     }
 #endif
@@ -1329,7 +1329,7 @@ __kmp_dispatch_finish_chunk( int gtid, ident_t *loc )
         if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) { \
           ompt_callbacks.ompt_callback(ompt_event_loop_end) \
 	    (team->t.ompt_team_info.parallel_id,			\
-	     team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id); \
+	     team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id, (void*) team->t.t_pkfn); \
         } \
       }\ 
     }
