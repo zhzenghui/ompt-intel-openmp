@@ -122,9 +122,15 @@ ompt_parallel_id_t __ompt_get_parallel_id_internal(int ancestor_level)
 ompt_thread_id_t __ompt_get_thread_id_internal() 
 {
   //assert(0);
-  ompt_thread_id_t id = __kmp_get_global_thread_id();
-  assert(id >= 0);
-  return (id >=0) ? id + 1: 0;
+
+  // FIXME
+  // until we have a better way of assigning ids, use __kmp_get_gtid
+  // since the return value might be negative, we need to test that before
+  // assigning it to an ompt_thread_id_t, which is unsigned.
+  int id = __kmp_get_gtid();
+  assert(id >= 0); 
+
+  return (ompt_thread_id_t) (id >=0) ? id + 1: 0;
 }
 
 
