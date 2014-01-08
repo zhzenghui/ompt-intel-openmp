@@ -639,8 +639,12 @@ __kmp_task_finish( kmp_int32 gtid, kmp_task_t *task, kmp_taskdata_t *resumed_tas
    if (ompt_status & ompt_status_track) {
      if ((ompt_status == ompt_status_track_callback) &&
          (ompt_callbacks.ompt_callback(ompt_event_task_end))) {
+        kmp_taskdata_t *parent = taskdata->td_parent;
        ompt_callbacks.ompt_callback(ompt_event_task_end)
-	 (taskdata->ompt_task_info.task_id);
+	 (parent ? parent->ompt_task_info.task_id : ompt_task_id_none,
+	  parent ? &(parent->ompt_task_info.frame) : NULL,
+	  taskdata->ompt_task_info.task_id,
+	  (void *) task->routine);
      }
      taskdata->ompt_task_info.task_id = ompt_task_id_none;
    }

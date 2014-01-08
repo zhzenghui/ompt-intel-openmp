@@ -69,8 +69,17 @@ typedef enum {
  * callback signatures
  *****************************************************************************/
 
+/* initialization */
+typedef void (*ompt_interface_fn_t)(void);
+
+typedef ompt_interface_fn_t (*ompt_function_lookup_t)(
+  const char *                      /* entry point to look up       */
+  );
+
 /* threads */
-typedef void (*ompt_callback_t)(void);
+typedef void (*ompt_thread_callback_t) (
+  ompt_thread_id_t thread_id        /* ID of thread                 */
+  );
 
 typedef void (*ompt_wait_callback_t) (
   ompt_wait_id_t wait_id            /* wait id                      */
@@ -95,7 +104,6 @@ typedef void (*ompt_new_parallel_callback_t) (
   void *parallel_function           /* pointer to outlined function */
   );
 
-
 /* tasks */
 typedef void (*ompt_task_callback_t) (
   ompt_task_id_t task_id            /* id of task                   */
@@ -113,18 +121,13 @@ typedef void (*ompt_new_task_callback_t) (
   void *task_function               /* pointer to outlined function */
   );
 
-
 /* program */
 typedef void (*ompt_control_callback_t) (
   uint64_t command,                 /* command of control call      */
   uint64_t modifier                 /* modifier of control call     */
   );
 
-
-typedef void (*ompt_interface_fn_t)(void);
-
-typedef ompt_interface_fn_t (*ompt_function_lookup_t)(const char *);
-
+typedef void (*ompt_callback_t)(void);
 
 
 /****************************************************************************
