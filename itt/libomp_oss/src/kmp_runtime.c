@@ -4343,7 +4343,6 @@ __kmp_register_root( int initial_thread )
         KF_TRACE( 10, ( "__kmp_register_root: before serial_team\n" ) );
 
 #if OMPT_SUPPORT
-        kmp_info_t *ti = ompt_get_thread_gtid(gtid);
         ompt_parallel_id_t ompt_parallel_id_3 = __ompt_parallel_id_new(gtid);
 #endif
 
@@ -4413,6 +4412,19 @@ __kmp_register_root( int initial_thread )
 
     KMP_MB();
     __kmp_release_bootstrap_lock( &__kmp_forkjoin_lock );
+
+#if OMPT_SUPPORT
+    if ( KMP_UBER_GTID(gtid) ) {
+        if (ompt_status & ompt_status_track) {
+            root_thread->th.ompt_thread_info.idle_frame = __builtin_frame_address(0);
+            root_thread->th.ompt_thread_info.state = ompt_state_overhead;
+            if ((ompt_status == ompt_status_track_callback) &&
+              ompt_callbacks.ompt_callback(ompt_event_initial_thread_begin)) {
+                ompt_callbacks.ompt_callback(ompt_event_initial_thread_begin)(gtid + 1);
+            }
+        }
+    }
+#endif
 
     return gtid;
 }
