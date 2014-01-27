@@ -16,8 +16,8 @@ ompt_event(ompt_event_control, ompt_control_callback_t, 8, ompt_event_control_im
 ompt_event(ompt_event_runtime_shutdown, ompt_callback_t, 9, ompt_event_runtime_shutdown_implemented) /* runtime shutdown */
 
   /*--- Optional Events (blame shifting, ompt_event_unimplemented) ---*/
-ompt_event(ompt_event_idle_begin, ompt_callback_t, 10, ompt_event_idle_begin_implemented) /* begin idle state */
-ompt_event(ompt_event_idle_end, ompt_callback_t, 11, ompt_event_idle_end_implemented) /* end idle state */
+ompt_event(ompt_event_idle_begin, ompt_thread_callback_t, 10, ompt_event_idle_begin_implemented) /* begin idle state */
+ompt_event(ompt_event_idle_end, ompt_thread_callback_t, 11, ompt_event_idle_end_implemented) /* end idle state */
 
 ompt_event(ompt_event_wait_barrier_begin, ompt_parallel_callback_t, 12, ompt_event_wait_barrier_begin_implemented) /* begin wait at barrier */
 ompt_event(ompt_event_wait_barrier_end, ompt_parallel_callback_t, 13, ompt_event_wait_barrier_end_implemented) /* end wait at barrier */

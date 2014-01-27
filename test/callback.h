@@ -137,8 +137,8 @@ TEST_CALLBACK(ompt_event_runtime_shutdown)
  *******************************************************************/
 
 /* Blameshifting events */
-TEST_CALLBACK(ompt_event_idle_begin)
-TEST_CALLBACK(ompt_event_idle_end)
+TEST_THREAD_CALLBACK(ompt_event_idle_begin)
+TEST_THREAD_CALLBACK(ompt_event_idle_end)
 TEST_PARALLEL_CALLBACK(ompt_event_wait_barrier_begin);
 TEST_PARALLEL_CALLBACK(ompt_event_wait_barrier_end);
 TEST_PARALLEL_CALLBACK(ompt_event_wait_taskwait_begin);
