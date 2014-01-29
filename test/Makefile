@@ -62,6 +62,7 @@ EXEC = \
 	lateinit \
 	locktest \
 	locktest-2 \
+	loops \
 	level-1 \
 	level-2 \
 	level-3 \
