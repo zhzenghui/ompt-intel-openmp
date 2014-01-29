@@ -7,8 +7,7 @@ void __ompt_team_assign_id(kmp_team_t *team, ompt_parallel_id_t ompt_pid);
 void __ompt_thread_assign_wait_id(void *variable);
 
 void __ompt_lw_taskteam_init(ompt_lw_taskteam_t *lwt, kmp_info_t *thr, 
-                             int gtid, microtask_t microtask, 
-			     ompt_parallel_id_t ompt_pid);
+                             int gtid, microtask_t microtask, ompt_parallel_id_t ompt_pid);
 
 void __ompt_lw_taskteam_link(ompt_lw_taskteam_t *lwt,  kmp_info_t *thr);
 

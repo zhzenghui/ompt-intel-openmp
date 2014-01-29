@@ -1398,12 +1398,12 @@ __kmp_acquire_queuing_lock_timed_template( kmp_queuing_lock_t *lck,
 #ifdef DEBUG_QUEUING_LOCKS
                     TRACE_LOCK_HT( gtid+1, "acq exit: ", head, 0 );
 #endif
-	    
+
 #if OMPT_SUPPORT
                     if ((ompt_status & ompt_status_track) && (prev_state != ompt_state_undefined)) {
-		      /* change the state before clearing wait_id */
-		      this_thr->th.ompt_thread_info.state = prev_state;
-		      this_thr->th.ompt_thread_info.wait_id = 0;
+                        /* change the state before clearing wait_id */
+                        this_thr->th.ompt_thread_info.state = prev_state;
+                        this_thr->th.ompt_thread_info.wait_id = 0;
                     }
 #endif
 
@@ -1415,11 +1415,11 @@ __kmp_acquire_queuing_lock_timed_template( kmp_queuing_lock_t *lck,
         }
 
 #if OMPT_SUPPORT
-        if (ompt_status & ompt_status_track && prev_state == ompt_state_undefined) {
-	  /* this thread will spin; set wait_id before entering wait state */
-	   prev_state = this_thr->th.ompt_thread_info.state;
-	   this_thr->th.ompt_thread_info.wait_id = (uint64_t) lck;
-	   this_thr->th.ompt_thread_info.state = ompt_state_wait_lock;
+        if ((ompt_status & ompt_status_track) && prev_state == ompt_state_undefined) {
+           /* this thread will spin; set wait_id before entering wait state */
+           prev_state = this_thr->th.ompt_thread_info.state;
+           this_thr->th.ompt_thread_info.wait_id = (uint64_t) lck;
+           this_thr->th.ompt_thread_info.state = ompt_state_wait_lock;
         }
 #endif
 
@@ -1452,11 +1452,11 @@ __kmp_acquire_queuing_lock_timed_template( kmp_queuing_lock_t *lck,
 #ifdef DEBUG_QUEUING_LOCKS
             TRACE_LOCK( gtid+1, "acq exit 2" );
 #endif
-	    
+
 #if OMPT_SUPPORT
-	    /* change the state before clearing wait_id */
-	    this_thr->th.ompt_thread_info.state = prev_state;
-	    this_thr->th.ompt_thread_info.wait_id = 0;
+            /* change the state before clearing wait_id */
+            this_thr->th.ompt_thread_info.state = prev_state;
+            this_thr->th.ompt_thread_info.wait_id = 0;
 #endif
 
             /* got lock, we were dequeued by the thread that released lock */

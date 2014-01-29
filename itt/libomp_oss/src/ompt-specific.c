@@ -59,7 +59,7 @@ ompt_state_t __ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
 
   if (ti) {
     if(ompt_wait_id)
-			*ompt_wait_id = ti->th.ompt_thread_info.wait_id;
+      *ompt_wait_id = ti->th.ompt_thread_info.wait_id;
     return ti->th.ompt_thread_info.state;
   } else {
     return ompt_state_undefined;
@@ -217,8 +217,7 @@ void __ompt_thread_assign_wait_id(void *variable)
 
 
 void __ompt_lw_taskteam_init(ompt_lw_taskteam_t *lwt, kmp_info_t *thr, 
-                             int gtid, microtask_t microtask, 
-			     ompt_parallel_id_t ompt_pid)
+                             int gtid, microtask_t microtask, ompt_parallel_id_t ompt_pid)
 {
   lwt->ompt_team_info.parallel_id = ompt_pid;
   lwt->ompt_team_info.microtask = (void *) microtask;
