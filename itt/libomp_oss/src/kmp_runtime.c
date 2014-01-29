@@ -1956,10 +1956,8 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
     KA_TRACE( 15, ( "__kmp_barrier: T#%d(%d:%d) has arrived\n",
                     gtid, __kmp_team_from_gtid(gtid)->t.t_id, __kmp_tid_from_gtid(gtid) ) );
 #if OMPT_SUPPORT
-    if ((ompt_status & ompt_status_track)) {
-        this_thr->th.ompt_thread_info.state = ompt_state_wait_barrier;
-
-        if ((ompt_status == ompt_status_track_callback)) {
+    if (ompt_status & ompt_status_track) {
+        if (ompt_status == ompt_status_track_callback) {
             my_task_id = team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id;
             my_parallel_id = team->t.ompt_team_info.parallel_id;
 
@@ -1968,9 +1966,12 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
                     ompt_callbacks.ompt_callback(ompt_event_single_others_end)(my_parallel_id, my_task_id);
                 }
             }
+            this_thr->th.ompt_thread_info.state = ompt_state_wait_barrier;
             if (ompt_callbacks.ompt_callback(ompt_event_barrier_begin)) {
                 ompt_callbacks.ompt_callback(ompt_event_barrier_begin)(my_parallel_id, my_task_id);
             }
+        }else{
+            this_thr->th.ompt_thread_info.state = ompt_state_wait_barrier;
         }
     }
 #endif
@@ -6348,11 +6349,11 @@ __kmp_launch_thread( kmp_info_t *this_thr )
 
 #if OMPT_SUPPORT
    if (ompt_status & ompt_status_track) {
-     this_thr->th.ompt_thread_info.idle_frame = __builtin_frame_address(0);
-     if ((ompt_status == ompt_status_track_callback) &&
+       this_thr->th.ompt_thread_info.idle_frame = __builtin_frame_address(0);
+       if ((ompt_status == ompt_status_track_callback) &&
          ompt_callbacks.ompt_callback(ompt_event_openmp_thread_begin)) {
-       ompt_callbacks.ompt_callback(ompt_event_openmp_thread_begin)(gtid + 1);
-     }
+           ompt_callbacks.ompt_callback(ompt_event_openmp_thread_begin)(gtid + 1);
+       }
    }
 #endif
 
@@ -6366,18 +6367,18 @@ __kmp_launch_thread( kmp_info_t *this_thr )
 
 
 #if OMPT_SUPPORT
-    if (ompt_status & ompt_status_track) {
-        this_thr->th.ompt_thread_info.state = ompt_state_idle;
-    }
+        if (ompt_status & ompt_status_track) {
+            this_thr->th.ompt_thread_info.state = ompt_state_idle;
+        }
 #endif
 
         /* No tid yet since not part of a team */
         __kmp_fork_barrier( gtid, KMP_GTID_DNE );
 
 #if OMPT_SUPPORT
-    if (ompt_status & ompt_status_track) {
-        this_thr->th.ompt_thread_info.state = ompt_state_overhead;
-    }
+        if (ompt_status & ompt_status_track) {
+            this_thr->th.ompt_thread_info.state = ompt_state_overhead;
+        }
 #endif
 
         pteam = (kmp_team_t *(*))(& this_thr->th.th_team);
