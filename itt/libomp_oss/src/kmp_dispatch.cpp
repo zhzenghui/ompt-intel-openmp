@@ -1224,7 +1224,7 @@ __kmp_dispatch_finish( int gtid, ident_t *loc )
         } // if
     } // if
     KD_TRACE(100, ("__kmp_dispatch_finish: T#%d returned\n", gtid ) );
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && 0
     kmp_info_t  *this_thr        = __kmp_threads[ gtid ];
 	kmp_team_t  *team            = this_thr -> th.th_team;
 	int  tid = __kmp_tid_from_gtid( gtid );
@@ -1472,7 +1472,7 @@ __kmp_dispatch_next(
             __kmp_str_free( &buff );
         }
         #endif
-		OMPT_LOOP_END;
+        OMPT_LOOP_END;
         return status;
     } else {
         kmp_int32 last = 0;
@@ -2111,7 +2111,7 @@ __kmp_dispatch_next(
         __kmp_str_free( &buff );
     }
     #endif
-	OMPT_LOOP_END;
+    OMPT_LOOP_END;
     return status;
 }
 
