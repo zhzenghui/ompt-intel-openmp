@@ -416,8 +416,12 @@ __kmp_wait_sleep( kmp_info_t *this_thr,
     }
 
 #if OMPT_SUPPORT
-    if ((ompt_status == ompt_status_track_callback) && (ompt_callbacks.ompt_callback(ompt_event_idle_begin))) {
-        ompt_callbacks.ompt_callback(ompt_event_idle_begin)(th_gtid + 1);
+    if (ompt_status == ompt_status_track_callback){
+        if (this_thr->th.ompt_thread_info.state == ompt_state_idle){
+            if (ompt_callbacks.ompt_callback(ompt_event_idle_begin)) {
+                ompt_callbacks.ompt_callback(ompt_event_idle_begin)(th_gtid + 1);
+            }
+        }
     }
 #endif
 
@@ -571,9 +575,12 @@ __kmp_wait_sleep( kmp_info_t *this_thr,
     }
 
 #if OMPT_SUPPORT
-    if ((ompt_status == ompt_status_track_callback) &&
-      (ompt_callbacks.ompt_callback(ompt_event_idle_end))) {
-        ompt_callbacks.ompt_callback(ompt_event_idle_end)(th_gtid + 1);
+    if (ompt_status == ompt_status_track_callback){
+        if (this_thr->th.ompt_thread_info.state == ompt_state_idle){
+            if (ompt_callbacks.ompt_callback(ompt_event_idle_end)) {
+                ompt_callbacks.ompt_callback(ompt_event_idle_end)(th_gtid + 1);
+            }
+        }
     }
 #endif
 
