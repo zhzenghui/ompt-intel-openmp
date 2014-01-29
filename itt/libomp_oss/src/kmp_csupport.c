@@ -1269,15 +1269,15 @@ __kmpc_single(ident_t *loc, kmp_int32 global_tid)
                   team->t.ompt_team_info.parallel_id,
                   team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
                   (void*) team->t.t_pkfn);
+            }
+        }else{
+            if (ompt_callbacks.ompt_callback(ompt_event_single_others_begin)) {
+              ompt_callbacks.ompt_callback(ompt_event_single_others_begin)(
+                team->t.ompt_team_info.parallel_id,
+                team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id);
+            }
+            this_thr->th.ompt_thread_info.state = ompt_state_wait_single;
         }
-    }else{
-        if (ompt_callbacks.ompt_callback(ompt_event_single_others_begin)) {
-          ompt_callbacks.ompt_callback(ompt_event_single_others_begin)(
-            team->t.ompt_team_info.parallel_id,
-            team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id);
-        }
-        this_thr->th.ompt_thread_info.state = ompt_state_wait_single;
-      }
     }
 #endif
 
