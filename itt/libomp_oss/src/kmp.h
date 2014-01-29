@@ -3178,7 +3178,11 @@ extern void __kmp_clear_x87_fpu_status_word();
 #endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
 
-extern int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int npr, int argc, void *argv[] , void **exit_frame_ptr);
+extern int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int npr, int argc, void *argv[]
+#if OMPT_SUPPORT
+                                   , void **exit_frame_ptr
+#endif
+                                 );
 
 extern int  __kmp_is_address_mapped( void *addr );
 extern kmp_uint64 __kmp_hardware_timestamp(void);

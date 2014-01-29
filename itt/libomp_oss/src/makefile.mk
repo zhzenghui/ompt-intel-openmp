@@ -596,6 +596,10 @@ ld-flags   += $(LDFLAGS)
 # --------------------------------------------------------------------------------------------------
 ifeq "$(ompt_support)" "enabled"
 	ompt_items = ompt-general
+  z_Linux_asm$(obj) : \
+      cpp-flags += -D OMPT_SUPPORT=1
+  z_Windows_NT-586_asm$(obj) : \
+      cpp-flags += -D OMPT_SUPPORT=1
 else
 	ompt_items = 
 endif

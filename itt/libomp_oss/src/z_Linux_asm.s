@@ -789,6 +789,11 @@ LOOP:
 				//
 	pushl %ebx		// save %ebx to use during this routine
 				//
+#if OMPT_SUPPORT
+	movl 28(%ebp),%ebx	// get exit_frame address
+	movl %ebp,(%ebx)	//save exit_frame
+#endif
+
 	movl 20(%ebp),%ebx	// Stack alignment - # args
 	addl $2,%ebx		// #args +2  Always pass at least 2 args (gtid and tid)
 	shll $2,%ebx		// Number of bytes used on stack: (#args+2)*4
@@ -1577,7 +1582,9 @@ __tid = -24
 	pushq 	%rbp		// save base pointer
 	movq 	%rsp,%rbp	// establish the base pointer for this routine.
 // begin OMPT SUPPORT
+#if OMPT_SUPPORT
 	movq	%rbp, (%r9)	// save exit_frame
+#endif
 // end OMPT SUPPORT
 
 	pushq 	%rbx		// %rbx is callee-saved register
