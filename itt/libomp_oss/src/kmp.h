@@ -3177,8 +3177,8 @@ extern void __kmp_clear_x87_fpu_status_word();
 # define KMP_X86_MXCSR_MASK      0xffffffc0   /* ignore status flags (6 lsb) */
 #endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
-/* OMPT - add exit runtime frame as arg to microtask */
-extern int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int npr, int argc, void *argv[], void **exit_frame_ptr);
+
+extern int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int npr, int argc, void *argv[] , void **exit_frame_ptr);
 
 extern int  __kmp_is_address_mapped( void *addr );
 extern kmp_uint64 __kmp_hardware_timestamp(void);

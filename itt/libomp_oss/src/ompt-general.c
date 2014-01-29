@@ -150,8 +150,7 @@ OMPT_API_ROUTINE int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
  ****************************************************************************/
 
 _OMP_EXTERN __attribute__ (( weak )) 
-int ompt_initialize(ompt_function_lookup_t ompt_fn_lookup, const char *version, 
-		    int ompt_version)
+int ompt_initialize(ompt_function_lookup_t ompt_fn_lookup, const char *version, int ompt_version)
 {
   return no_tool_present;
 }
@@ -183,22 +182,21 @@ void ompt_init()
    case omp_tool_unset:
    case omp_tool_enabled:
      {
-       const char *runtime_version = 
-	 __ompt_get_runtime_version_internal();
+       const char *runtime_version = __ompt_get_runtime_version_internal();
        int ompt_init_val = 
-	 ompt_initialize(ompt_fn_lookup, runtime_version, OMPT_VERSION);
-       
+         ompt_initialize(ompt_fn_lookup, runtime_version, OMPT_VERSION);
+
        if (ompt_init_val) {
-	 ompt_status = ompt_status_track_callback;
+         ompt_status = ompt_status_track_callback;
        }
        break;
      }
 
    case omp_tool_error: 
      fprintf(stderr,
-	     "Warning: OMP_TOOL has invalid value \"%s\".\n"
-	     "  legal values are (NULL,\"\",\"disabled\","
-	     "\"enabled\").\n", ompt_env_var);
+             "Warning: OMP_TOOL has invalid value \"%s\".\n"
+             "  legal values are (NULL,\"\",\"disabled\","
+             "\"enabled\").\n", ompt_env_var);
      break;
    }
 } 
