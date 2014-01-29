@@ -2527,14 +2527,16 @@ __kmp_fork_call(
                 master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
 
                 __ompt_lw_taskteam_link(&lw_taskteam, master_th);
-            } else
-#endif
-            {
+            } else {
                 exit_runtime_p = &dummy;
             }
+#endif
 
-
-           __kmp_invoke_microtask( microtask, gtid, 0, argc, args , exit_runtime_p);
+           __kmp_invoke_microtask( microtask, gtid, 0, argc, args
+#if OMPT_SUPPORT
+             , exit_runtime_p
+#endif
+           );
 
 #if OMPT_SUPPORT
             if (ompt_status & ompt_status_track) {
@@ -7661,21 +7663,23 @@ __kmp_invoke_task_func( int gtid )
     kmp_info_t  *this_thr = __kmp_threads[ gtid ];
     kmp_team_t  *team     = this_thr -> th.th_team;
 
+#if OMPT_SUPPORT
     void        *dummy;
     void        **exit_runtime_p;
-#if OMPT_SUPPORT
     if (ompt_status & ompt_status_track) {
         exit_runtime_p = &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.exit_runtime_frame);
-    } else
-#endif
-    {
+    } else {
       exit_runtime_p = &dummy;
     }
-
+#endif
 
     __kmp_run_before_invoked_task( gtid, tid, this_thr, team );
     rc = __kmp_invoke_microtask( (microtask_t) TCR_SYNC_PTR(team->t.t_pkfn),
-                 gtid, tid, (int) team->t.t_argc, (void **) team->t.t_argv , exit_runtime_p );
+                 gtid, tid, (int) team->t.t_argc, (void **) team->t.t_argv
+#if OMPT_SUPPORT
+                 , exit_runtime_p
+#endif
+                 );
 
 #if OMPT_SUPPORT
     if (ompt_status & ompt_status_track) {
