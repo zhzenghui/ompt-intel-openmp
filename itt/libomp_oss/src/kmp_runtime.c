@@ -6368,29 +6368,21 @@ __kmp_launch_thread( kmp_info_t *this_thr )
 
         /* wait for work to do */
         KA_TRACE( 20, ("__kmp_launch_thread: T#%d waiting for work\n", gtid ));
-	
 
-#if 0 && OMPT_SUPPORT
-	if (ompt_status & ompt_status_track) {
-	  this_thr->th.ompt_thread_info.state = ompt_state_idle;
-	  if ((ompt_status == ompt_status_track_callback) &&
-	      ompt_callbacks.ompt_callback(ompt_event_idle_begin)) {
-	    ompt_callbacks.ompt_callback(ompt_event_idle_begin)(gtid + 1);
-	  }
-	}
+
+#if OMPT_SUPPORT
+    if (ompt_status & ompt_status_track) {
+        this_thr->th.ompt_thread_info.state = ompt_state_idle;
+    }
 #endif
 
         /* No tid yet since not part of a team */
         __kmp_fork_barrier( gtid, KMP_GTID_DNE );
 
-#if 0 && OMPT_SUPPORT
-	if (ompt_status & ompt_status_track) {
-	  this_thr->th.ompt_thread_info.state = ompt_state_overhead;
-	  if ((ompt_status == ompt_status_track_callback) &&
-	      ompt_callbacks.ompt_callback(ompt_event_idle_end)) {
-	    ompt_callbacks.ompt_callback(ompt_event_idle_end)(gtid + 1);
-	  }
-	}
+#if OMPT_SUPPORT
+    if (ompt_status & ompt_status_track) {
+        this_thr->th.ompt_thread_info.state = ompt_state_overhead;
+    }
 #endif
 
         pteam = (kmp_team_t *(*))(& this_thr->th.th_team);
@@ -6412,23 +6404,22 @@ __kmp_launch_thread( kmp_info_t *this_thr )
 #endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
 #if OMPT_SUPPORT
-		if (ompt_status & ompt_status_track) {
-		  this_thr->th.ompt_thread_info.state = ompt_state_work_parallel;
-		}
+                if (ompt_status & ompt_status_track) {
+                    this_thr->th.ompt_thread_info.state = ompt_state_work_parallel;
+                }
 #endif
 
                 rc = (*pteam) -> t.t_invoke( gtid );
                 KMP_ASSERT( rc );
 
 #if OMPT_SUPPORT
-		if (ompt_status & ompt_status_track) {
-		  /* no frame set while outside task */
-		  int tid = __kmp_tid_from_gtid(gtid); 
-		  (*pteam)->t.t_implicit_task_taskdata[tid].
-		    ompt_task_info.frame.exit_runtime_frame = 0;
+                if (ompt_status & ompt_status_track) {
+                    /* no frame set while outside task */
+                    int tid = __kmp_tid_from_gtid(gtid);
+                    (*pteam)->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.exit_runtime_frame = 0;
 
-		  this_thr->th.ompt_thread_info.state = ompt_state_overhead;
-		}
+                    this_thr->th.ompt_thread_info.state = ompt_state_overhead;
+                }
 #endif
                 KMP_MB();
                 KA_TRACE( 20, ("__kmp_launch_thread: T#%d(%d:%d) done microtask = %p\n",
