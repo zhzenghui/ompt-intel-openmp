@@ -81,6 +81,17 @@ typedef void (*ompt_thread_callback_t) (
   ompt_thread_id_t thread_id        /* ID of thread                 */
   );
 
+typedef enum {
+  ompt_thread_initial,
+  ompt_thread_worker,
+  ompt_thread_other
+  } ompt_thread_type_t;
+
+typedef void (*ompt_thread_type_callback_t) (
+  ompt_thread_type_t thread_type,   /* type of thread               */
+  ompt_thread_id_t thread_id        /* ID of thread                 */
+  );
+
 typedef void (*ompt_wait_callback_t) (
   ompt_wait_id_t wait_id            /* wait id                      */
   );

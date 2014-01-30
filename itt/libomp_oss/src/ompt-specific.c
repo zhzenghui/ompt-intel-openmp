@@ -119,6 +119,14 @@ ompt_parallel_id_t __ompt_get_parallel_id_internal(int ancestor_level)
 }
 
 
+int __ompt_get_parallel_team_size_internal(int ancestor_level)
+{
+  int level = ancestor_level;
+  kmp_team_t *team = ompt_team(level); /* remaining levels */
+  return team ? team->t.t_nproc : -1;
+}
+
+
 ompt_thread_id_t __ompt_get_thread_id_internal() 
 {
   //assert(0);

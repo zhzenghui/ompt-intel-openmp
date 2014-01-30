@@ -4422,8 +4422,8 @@ __kmp_register_root( int initial_thread )
             root_thread->th.ompt_thread_info.idle_frame = __builtin_frame_address(0);
             root_thread->th.ompt_thread_info.state = ompt_state_overhead;
             if ((ompt_status == ompt_status_track_callback) &&
-              ompt_callbacks.ompt_callback(ompt_event_initial_thread_begin)) {
-                ompt_callbacks.ompt_callback(ompt_event_initial_thread_begin)(gtid + 1);
+              ompt_callbacks.ompt_callback(ompt_event_thread_begin)) {
+                ompt_callbacks.ompt_callback(ompt_event_thread_begin)(ompt_thread_initial, gtid + 1);
             }
         }
     }
@@ -6358,8 +6358,8 @@ __kmp_launch_thread( kmp_info_t *this_thr )
    if (ompt_status & ompt_status_track) {
        this_thr->th.ompt_thread_info.idle_frame = __builtin_frame_address(0);
        if ((ompt_status == ompt_status_track_callback) &&
-         ompt_callbacks.ompt_callback(ompt_event_openmp_thread_begin)) {
-           ompt_callbacks.ompt_callback(ompt_event_openmp_thread_begin)(gtid + 1);
+         ompt_callbacks.ompt_callback(ompt_event_thread_begin)) {
+           ompt_callbacks.ompt_callback(ompt_event_thread_begin)(ompt_thread_worker, gtid + 1);
        }
    }
 #endif
@@ -6437,8 +6437,8 @@ __kmp_launch_thread( kmp_info_t *this_thr )
 
 #if OMPT_SUPPORT
    if ((ompt_status == ompt_status_track_callback) &&
-       ompt_callbacks.ompt_callback(ompt_event_openmp_thread_end)) {
-     ompt_callbacks.ompt_callback(ompt_event_openmp_thread_end)(gtid + 1);
+       ompt_callbacks.ompt_callback(ompt_event_thread_end)) {
+     ompt_callbacks.ompt_callback(ompt_event_thread_end)(ompt_thread_worker, gtid + 1);
    }
 #endif
 

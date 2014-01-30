@@ -225,6 +225,12 @@ OMPT_API_ROUTINE ompt_parallel_id_t ompt_get_parallel_id(int ancestor_level)
 }
 
 
+OMPT_API_ROUTINE int ompt_get_parallel_team_size(int ancestor_level)
+{
+   return __ompt_get_parallel_team_size_internal(ancestor_level);
+}
+
+
 OMPT_API_ROUTINE void *ompt_get_parallel_function(int ancestor_level) 
 {
    return __ompt_get_parallel_function_internal(ancestor_level);

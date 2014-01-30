@@ -21,6 +21,13 @@ void my_##EVENT(ompt_thread_id_t thread_id) \
   fflush(stdout); \
 }
 
+#define TEST_THREAD_TYPE_CALLBACK(EVENT) \
+void my_##EVENT(ompt_thread_type_t thread_type, ompt_thread_id_t thread_id) \
+{ \
+  printf("%lld (Type: %d) (%d): %s\n", thread_id, thread_type, omp_get_thread_num(), #EVENT); \
+  fflush(stdout); \
+}
+
 #define TEST_WAIT_CALLBACK(EVENT) \
 void my_##EVENT ( \
   ompt_wait_id_t waitid)            /* address of wait obj */ \
@@ -122,9 +129,8 @@ OMPT_FN_DECL(ompt_get_thread_id);
  * required events 
  *******************************************************************/
 
-TEST_THREAD_CALLBACK(ompt_event_initial_thread_begin)
-TEST_THREAD_CALLBACK(ompt_event_openmp_thread_begin)
-TEST_THREAD_CALLBACK(ompt_event_openmp_thread_end)
+TEST_THREAD_TYPE_CALLBACK(ompt_event_thread_begin)
+TEST_THREAD_TYPE_CALLBACK(ompt_event_thread_end)
 TEST_NEW_PARALLEL_CALLBACK(ompt_event_parallel_begin)
 TEST_NEW_PARALLEL_CALLBACK(ompt_event_parallel_end)
 TEST_NEW_TASK_CALLBACK(ompt_event_task_begin)
@@ -219,9 +225,8 @@ int ompt_initialize(ompt_function_lookup_t lookup, const char *runtime_version, 
   CHECK(ompt_event_parallel_end);
   CHECK(ompt_event_task_begin);
   CHECK(ompt_event_task_end);
-  CHECK(ompt_event_initial_thread_begin);
-  CHECK(ompt_event_openmp_thread_begin);
-  CHECK(ompt_event_openmp_thread_end);
+  CHECK(ompt_event_thread_begin);
+  CHECK(ompt_event_thread_end);
   CHECK(ompt_event_control);
   CHECK(ompt_event_runtime_shutdown);
 

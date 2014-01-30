@@ -7,9 +7,8 @@ ompt_event(ompt_event_parallel_end, ompt_new_parallel_callback_t, 2, ompt_event_
 ompt_event(ompt_event_task_begin, ompt_new_task_callback_t, 3, ompt_event_task_begin_implemented) /* task begin */
 ompt_event(ompt_event_task_end, ompt_new_task_callback_t, 4, ompt_event_task_end_implemented) /* task destroy */
 
-ompt_event(ompt_event_initial_thread_begin, ompt_thread_callback_t, 5, ompt_event_thread_begin_implemented) /* thread begin */
-ompt_event(ompt_event_openmp_thread_begin, ompt_thread_callback_t, 6, ompt_event_thread_begin_implemented) /* thread begin */
-ompt_event(ompt_event_openmp_thread_end, ompt_thread_callback_t, 7, ompt_event_thread_end_implemented) /* thread end */
+ompt_event(ompt_event_thread_begin, ompt_thread_type_callback_t, 6, ompt_event_thread_begin_implemented) /* thread begin */
+ompt_event(ompt_event_thread_end, ompt_thread_type_callback_t, 7, ompt_event_thread_end_implemented) /* thread end */
 
 ompt_event(ompt_event_control, ompt_control_callback_t, 8, ompt_event_control_implemented) /* support control calls */
 
