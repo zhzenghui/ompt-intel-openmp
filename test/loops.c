@@ -1,6 +1,7 @@
 #include <omp.h>
 #include <ompt.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <sys/time.h>
 
 #define OMPT_EVENT_DETAIL 0
@@ -34,6 +35,15 @@ void log(char* type){
     int cur = curLog++;
     logFile[cur].type=type;
     logFile[cur].time=getTime();
+}
+
+void log2(char* t, ... ){
+    char* l=(char*)malloc(50);
+    va_list args;
+    va_start(args, t);
+    vsprintf(l, t, args);
+    va_end(args);
+    log(l);
 }
 
 void foo(){
@@ -108,6 +118,14 @@ void ompt_event_barrier_end_fn(ompt_parallel_id_t parallel_id, ompt_task_id_t ta
     if(ompt_get_thread_id()==5) log("Barrier end");
 }
 
+void ompt_event_wait_barrier_begin_fn(ompt_parallel_id_t parallel_id, ompt_task_id_t task_id){
+    if(ompt_get_thread_id()==5) log("Wait barrier begin");
+}
+
+void ompt_event_wait_barrier_end_fn(ompt_parallel_id_t parallel_id, ompt_task_id_t task_id){
+    if(ompt_get_thread_id()==5) log("Wait barrier end");
+}
+
 void ompt_event_idle_begin_fn(ompt_thread_id_t id){
     if(id==5) log("Idle begin");
 }
@@ -145,6 +163,8 @@ int ompt_initialize(ompt_function_lookup_t lookup, const char *runtime_version, 
   REGISTER(ompt_event_idle_end);
   REGISTER(ompt_event_barrier_begin);
   REGISTER(ompt_event_barrier_end);
+  REGISTER(ompt_event_wait_barrier_begin);
+  REGISTER(ompt_event_wait_barrier_end);
   REGISTER(ompt_event_loop_begin);
   REGISTER(ompt_event_loop_end);
   REGISTER(ompt_event_runtime_shutdown);

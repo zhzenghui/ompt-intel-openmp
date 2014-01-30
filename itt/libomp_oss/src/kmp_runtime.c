@@ -421,6 +421,18 @@ __kmp_wait_sleep( kmp_info_t *this_thr,
             if (ompt_callbacks.ompt_callback(ompt_event_idle_begin)) {
                 ompt_callbacks.ompt_callback(ompt_event_idle_begin)(th_gtid + 1);
             }
+        } else if (ompt_callbacks.ompt_callback(ompt_event_wait_barrier_begin)) {
+            ompt_lw_taskteam_t* team = this_thr->th.ompt_thread_info.lw_taskteam;
+            ompt_parallel_id_t pId;
+            ompt_task_id_t tId;
+            if (team){
+                pId = team->ompt_team_info.parallel_id;
+                tId = team->ompt_task_info.task_id;
+            } else {
+                pId = this_thr->th.th_team->t.ompt_team_info.parallel_id;
+                tId = this_thr->th.th_current_task->ompt_task_info.task_id;
+            }
+            ompt_callbacks.ompt_callback(ompt_event_wait_barrier_begin)(pId, tId);
         }
     }
 #endif
@@ -580,6 +592,18 @@ __kmp_wait_sleep( kmp_info_t *this_thr,
             if (ompt_callbacks.ompt_callback(ompt_event_idle_end)) {
                 ompt_callbacks.ompt_callback(ompt_event_idle_end)(th_gtid + 1);
             }
+        } else if (ompt_callbacks.ompt_callback(ompt_event_wait_barrier_end)) {
+            ompt_lw_taskteam_t* team = this_thr->th.ompt_thread_info.lw_taskteam;
+            ompt_parallel_id_t pId;
+            ompt_task_id_t tId;
+            if (team){
+                pId = team->ompt_team_info.parallel_id;
+                tId = team->ompt_task_info.task_id;
+            } else {
+                pId = this_thr->th.th_team->t.ompt_team_info.parallel_id;
+                tId = this_thr->th.th_current_task->ompt_task_info.task_id;
+            }
+            ompt_callbacks.ompt_callback(ompt_event_wait_barrier_end)(pId, tId);
         }
     }
 #endif
