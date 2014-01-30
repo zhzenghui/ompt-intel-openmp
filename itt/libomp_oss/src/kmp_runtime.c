@@ -2458,13 +2458,6 @@ __kmp_fork_call(
         ompt_parallel_id = __ompt_parallel_id_new(gtid);
         ompt_task_id = __ompt_get_task_id_internal(0);
         ompt_frame = __ompt_get_task_frame_internal(0);
-        master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
-        if ((ompt_status == ompt_status_track_callback) &&
-          ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
-            ompt_callbacks.ompt_callback(ompt_event_parallel_begin)(
-              ompt_task_id, ompt_frame,
-              ompt_parallel_id, (void *) microtask);
-        }
     }
 #endif
 
@@ -2524,6 +2517,16 @@ __kmp_fork_call(
         __kmpc_serialized_parallel(loc, gtid);
 
         if ( exec_master == 0 ) {
+#if OMPT_SUPPORT
+            //TODO: Do we need this here?
+            master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
+            if ((ompt_status == ompt_status_track_callback) &&
+              ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
+                ompt_callbacks.ompt_callback(ompt_event_parallel_begin)(
+                  ompt_task_id, ompt_frame,
+                  ompt_parallel_id, (void *) microtask);
+            }
+#endif
             // we were called from GNU native code
             KA_TRACE( 20, ("__kmp_fork_call: T#%d serial exit\n", gtid ));
             return FALSE;
@@ -2551,10 +2554,17 @@ __kmp_fork_call(
                 exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
                 __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, microtask, ompt_parallel_id);
 
+                __ompt_lw_taskteam_link(&lw_taskteam, master_th);
+
                 /* OMPT state */
                 master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
 
-                __ompt_lw_taskteam_link(&lw_taskteam, master_th);
+                if ((ompt_status == ompt_status_track_callback) &&
+                  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
+                    ompt_callbacks.ompt_callback(ompt_event_parallel_begin)(
+                      ompt_task_id, ompt_frame,
+                      ompt_parallel_id, (void *) microtask);
+                }
             } else {
                 exit_runtime_p = &dummy;
             }
@@ -2794,6 +2804,16 @@ __kmp_fork_call(
         root -> r.r_active = TRUE;
 
     __kmp_fork_team_threads( root, team, master_th, gtid );
+
+#if OMPT_SUPPORT
+    master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
+    if ((ompt_status == ompt_status_track_callback) &&
+      ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
+        ompt_callbacks.ompt_callback(ompt_event_parallel_begin)(
+          ompt_task_id, ompt_frame,
+          ompt_parallel_id, (void *) microtask);
+    }
+#endif
 
 #if 0 && OMPT_SUPPORT
     if (ompt_status & ompt_status_track) {
