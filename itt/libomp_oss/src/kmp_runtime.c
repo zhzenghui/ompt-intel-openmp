@@ -2413,10 +2413,6 @@ __kmp_fork_call(
     int             master_set_numthreads;
     int             level;
 
-#if OMPT_SUPPORT
-    ompt_state_t prev_state;
-#endif
-
     KA_TRACE( 20, ("__kmp_fork_call: enter T#%d\n", gtid ));
 
     /* initialize if needed */
@@ -4421,6 +4417,7 @@ __kmp_register_root( int initial_thread )
         if (ompt_status & ompt_status_track) {
             root_thread->th.ompt_thread_info.idle_frame = __builtin_frame_address(0);
             root_thread->th.ompt_thread_info.state = ompt_state_overhead;
+            root_thread->th.ompt_thread_info.lw_taskteam = NULL;
             if ((ompt_status == ompt_status_track_callback) &&
               ompt_callbacks.ompt_callback(ompt_event_thread_begin)) {
                 ompt_callbacks.ompt_callback(ompt_event_thread_begin)(ompt_thread_initial, gtid + 1);
@@ -4665,12 +4662,6 @@ __kmp_initialize_info( kmp_info_t *this_thr, kmp_team_t *team, int tid, int gtid
 
     KMP_DEBUG_ASSERT( !this_thr->th.th_spin_here );
     KMP_DEBUG_ASSERT( this_thr->th.th_next_waiting == 0 );
-
-#if OMPT_SUPPORT
-    this_thr->th.ompt_thread_info.state = ompt_state_overhead;
-    this_thr->th.ompt_thread_info.wait_id = 0;
-    this_thr->th.ompt_thread_info.lw_taskteam = NULL;
-#endif
 
     KMP_MB();
 }
@@ -6356,6 +6347,9 @@ __kmp_launch_thread( kmp_info_t *this_thr )
 
 #if OMPT_SUPPORT
    if (ompt_status & ompt_status_track) {
+       this_thr->th.ompt_thread_info.state = ompt_state_overhead;
+       this_thr->th.ompt_thread_info.wait_id = 0;
+       this_thr->th.ompt_thread_info.lw_taskteam = NULL;
        this_thr->th.ompt_thread_info.idle_frame = __builtin_frame_address(0);
        if ((ompt_status == ompt_status_track_callback) &&
          ompt_callbacks.ompt_callback(ompt_event_thread_begin)) {
