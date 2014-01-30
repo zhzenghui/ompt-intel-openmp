@@ -422,6 +422,9 @@ __kmp_wait_sleep( kmp_info_t *this_thr,
                 ompt_callbacks.ompt_callback(ompt_event_idle_begin)(th_gtid + 1);
             }
         } else if (ompt_callbacks.ompt_callback(ompt_event_wait_barrier_begin)) {
+            KMP_DEBUG_ASSERT(this_thr->th.ompt_thread_info.state == ompt_state_wait_barrier ||
+                                this_thr->th.ompt_thread_info.state == ompt_state_wait_barrier_implicit ||
+                                this_thr->th.ompt_thread_info.state == ompt_state_wait_barrier_explicit);
             ompt_lw_taskteam_t* team = this_thr->th.ompt_thread_info.lw_taskteam;
             ompt_parallel_id_t pId;
             ompt_task_id_t tId;
@@ -593,6 +596,9 @@ __kmp_wait_sleep( kmp_info_t *this_thr,
                 ompt_callbacks.ompt_callback(ompt_event_idle_end)(th_gtid + 1);
             }
         } else if (ompt_callbacks.ompt_callback(ompt_event_wait_barrier_end)) {
+            KMP_DEBUG_ASSERT(this_thr->th.ompt_thread_info.state == ompt_state_wait_barrier ||
+                    this_thr->th.ompt_thread_info.state == ompt_state_wait_barrier_implicit ||
+                    this_thr->th.ompt_thread_info.state == ompt_state_wait_barrier_explicit);
             ompt_lw_taskteam_t* team = this_thr->th.ompt_thread_info.lw_taskteam;
             ompt_parallel_id_t pId;
             ompt_task_id_t tId;
