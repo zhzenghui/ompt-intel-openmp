@@ -6,7 +6,7 @@
 
 #define OMPT_VERSION 1
 
-#define _OMP_EXTERN
+#define _OMP_EXTERN extern "C"
 
 
 
