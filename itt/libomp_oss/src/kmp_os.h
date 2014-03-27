@@ -340,6 +340,12 @@ extern "C" {
 # define KMP_ALIGN(bytes)     __declspec( align(bytes) )
 #endif
 
+#if defined(__KNC__) && !defined(__MIC2__)
+/* Intel(R) Composer XE (14.0) does not define __MIC2__ anymore.
+   Work around that issue by defining it here for use in all other files. */
+    #define __MIC2__ 1
+#endif
+
 #if defined(__MIC__) || defined(__MIC2__)
     #define KMP_MIC  1
 // Intel(R) Composer XE (13.0) defines both __MIC__ and __MIC2__ !

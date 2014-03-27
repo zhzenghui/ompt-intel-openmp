@@ -71,6 +71,10 @@
         #define KMP_COMPILER "Intel C++ Compiler 13.0"
     #elif __INTEL_COMPILER == 1310
         #define KMP_COMPILER "Intel C++ Compiler 13.1"
+    #elif __INTEL_COMPILER == 1400
+        #define KMP_COMPILER "Intel C++ Compiler 14.0"
+    #elif __INTEL_COMPILER == 1410
+        #define KMP_COMPILER "Intel C++ Compiler 14.1"
     #elif __INTEL_COMPILER == 9999
         #define KMP_COMPILER "Intel C++ Compiler mainline"
     #endif
