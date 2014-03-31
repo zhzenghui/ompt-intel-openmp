@@ -1,7 +1,7 @@
 /*
  * kmp_utility.c -- Utility routines for the OpenMP support library.
- * $Revision: 42199 $
- * $Date: 2013-03-28 10:02:41 -0500 (Thu, 28 Mar 2013) $
+ * $Revision: 42588 $
+ * $Date: 2013-08-13 01:26:00 -0500 (Tue, 13 Aug 2013) $
  */
 
 /* <copyright>
@@ -31,16 +31,6 @@
     THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
 
 </copyright> */
 
@@ -181,36 +171,36 @@ __kmp_query_cpuid( kmp_cpuinfo_t *p )
     max_arg = buf.eax;
 
     p->apic_id = -1;
-    
+
     if (max_arg >= 1) {
         int i;
         kmp_uint32 t, data[ 4 ];
-        
+
         __kmp_x86_cpuid( 1, 0, &buf );
         KA_TRACE( trace_level, ("INFO: CPUID %d: EAX=0x%08X EBX=0x%08X ECX=0x%08X EDX=0x%08X\n",
                                 1, buf.eax, buf.ebx, buf.ecx, buf.edx ) );
-        
+
         {
 #define get_value(reg,lo,mask) ( ( ( reg ) >> ( lo ) ) & ( mask  ) )
-            
+
             p->signature = buf.eax;
             p->family    =   get_value( buf.eax, 20, 0xff )        + get_value( buf.eax, 8, 0x0f );
             p->model     = ( get_value( buf.eax, 16, 0x0f ) << 4 ) + get_value( buf.eax, 4, 0x0f );
             p->stepping  =   get_value( buf.eax,  0, 0x0f );
-            
+
 #undef get_value
-            
+
             KA_TRACE( trace_level, (" family = %d, model = %d, stepping = %d\n", p->family, p->model, p->stepping ) );
         }
-        
+
         for ( t = buf.ebx, i = 0; i < 4; t >>= 8, ++i ) {
             data[ i ] = (t & 0xff);
         }; // for
-        
+
         p->sse2 = ( buf.edx >> 26 ) & 1;
-        
+
 #ifdef KMP_DEBUG
-        
+
         if ( (buf.edx >> 4) & 1 ) {
             /* TSC - Timestamp Counter Available */
             KA_TRACE( trace_level, (" TSC" ) );
@@ -235,7 +225,7 @@ __kmp_query_cpuid( kmp_cpuinfo_t *p )
             /* CLFULSH - Cache Flush Instruction Available */
             cflush_size = data[ 1 ] * 8;    /* Bits 15-08: CLFLUSH line size = 8 (64 bytes) */
             KA_TRACE( trace_level, (" CLFLUSH(%db)", cflush_size ) );
-            
+
         }
         if ( (buf.edx >> 21) & 1 ) {
             /* DTES - Debug Trace & EMON Store */
@@ -262,20 +252,20 @@ __kmp_query_cpuid( kmp_cpuinfo_t *p )
             KA_TRACE( trace_level, (" SLFSNP" ) );
         }
 #endif /* KMP_DEBUG */
-        
+
         __kmp_ht_capable = FALSE;
         if ( (buf.edx >> 28) & 1 ) {
-            
+
             /* HT - Processor is HT Enabled (formerly JT) */
             __kmp_ht_capable = TRUE;
-            
+
             /* Bits 23-16: Logical Processors per Physical Processor (1 for P4) */
             log_per_phy = data[ 2 ];
             __kmp_ht_log_per_phy = log_per_phy;
-            
+
             p->apic_id     = data[ 3 ]; /* Bits 31-24: Processor Initial APIC ID (X) */
             KA_TRACE( trace_level, (" HT(%d TPUs)", log_per_phy ) );
-            
+
             if( log_per_phy > 1 ) {
                 /* default to 1k FOR JT-enabled processors (4k on OS X*) */
 #if KMP_OS_DARWIN
@@ -284,7 +274,7 @@ __kmp_query_cpuid( kmp_cpuinfo_t *p )
                 p->cpu_stackoffset = 1 * 1024;
 #endif
             }
-            
+
             p->physical_id = __kmp_get_physical_id( log_per_phy, p->apic_id );
             p->logical_id  = __kmp_get_logical_id( log_per_phy, p->apic_id );
         }
@@ -294,7 +284,7 @@ __kmp_query_cpuid( kmp_cpuinfo_t *p )
             KA_TRACE( trace_level, (" ATHROTL" ) );
         }
         KA_TRACE( trace_level, (" ]\n" ) );
-        
+
         for (i = 2; i <= max_arg; ++i) {
             __kmp_x86_cpuid( i, 0, &buf );
             KA_TRACE( trace_level,
@@ -302,26 +292,36 @@ __kmp_query_cpuid( kmp_cpuinfo_t *p )
                         i, buf.eax, buf.ebx, buf.ecx, buf.edx ) );
         }
 #endif
+#if KMP_USE_ADAPTIVE_LOCKS
+        p->rtm = 0;
+        if (max_arg > 7)
+        {
+            /* RTM bit CPUID.07:EBX, bit 11 */
+            __kmp_x86_cpuid(7, 0, &buf);
+            p->rtm = (buf.ebx >> 11) & 1;
+            KA_TRACE( trace_level, (" RTM" ) );
+        }
+#endif
     }; // if
-    
+
     { // Parse CPU brand string for frequency.
-        
+
         union kmp_cpu_brand_string {
             struct kmp_cpuid buf[ 3 ];
             char             string[ sizeof( struct kmp_cpuid ) * 3 + 1 ];
         }; // union kmp_cpu_brand_string
         union kmp_cpu_brand_string brand;
         int i;
-        
+
         p->frequency = 0;
-        
+
         // Get CPU brand string.
         for ( i = 0; i < 3; ++ i ) {
             __kmp_x86_cpuid( 0x80000002 + i, 0, &brand.buf[ i ] );
         }; // for
         brand.string[ sizeof( brand.string ) - 1 ] = 0; // Just in case. ;-)
         KA_TRACE( trace_level, ( "cpu brand string: \"%s\"\n", brand.string ) );
-        
+
         // Parse frequency.
         p->frequency = __kmp_parse_frequency( strrchr( brand.string, ' ' ) );
         KA_TRACE( trace_level, ( "cpu frequency from brand string: %" KMP_UINT64_SPEC "\n", p->frequency ) );
@@ -458,5 +458,4 @@ __kmp_expand_file_name( char *result, size_t rlen, char *pattern )
 
     *pos = '\0';
 }
-
 

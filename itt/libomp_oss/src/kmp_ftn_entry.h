@@ -1,7 +1,7 @@
 /*
  * kmp_ftn_entry.h -- Fortran entry linkage support for OpenMP.
- * $Revision: 42221 $
- * $Date: 2013-04-01 07:06:15 -0500 (Mon, 01 Apr 2013) $
+ * $Revision: 42798 $
+ * $Date: 2013-10-30 16:39:54 -0500 (Wed, 30 Oct 2013) $
  */
 
 /* <copyright>
@@ -31,16 +31,6 @@
     THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
 
 </copyright> */
 
@@ -385,7 +375,7 @@ FTN_GET_AFFINITY_MASK_PROC( int KMP_DEREF proc, void **mask )
 /* sets the requested number of threads for the next parallel region */
 
 void FTN_STDCALL
-FTN_SET_NUM_THREADS( int KMP_DEREF arg )
+xexpand(FTN_SET_NUM_THREADS)( int KMP_DEREF arg )
 {
     #ifdef KMP_STUB
         // Nothing.
@@ -397,7 +387,7 @@ FTN_SET_NUM_THREADS( int KMP_DEREF arg )
 
 /* returns the number of threads in current team */
 int FTN_STDCALL
-FTN_GET_NUM_THREADS( void )
+xexpand(FTN_GET_NUM_THREADS)( void )
 {
     #ifdef KMP_STUB
         return 1;
@@ -408,7 +398,7 @@ FTN_GET_NUM_THREADS( void )
 }
 
 int FTN_STDCALL
-FTN_GET_MAX_THREADS( void )
+xexpand(FTN_GET_MAX_THREADS)( void )
 {
     #ifdef KMP_STUB
         return 1;
@@ -430,7 +420,7 @@ FTN_GET_MAX_THREADS( void )
 }
 
 int FTN_STDCALL
-FTN_GET_THREAD_NUM( void )
+xexpand(FTN_GET_THREAD_NUM)( void )
 {
     #ifdef KMP_STUB
         return 0;
@@ -487,7 +477,7 @@ FTN_GET_NUM_KNOWN_THREADS( void )
 }
 
 int FTN_STDCALL
-FTN_GET_NUM_PROCS( void )
+xexpand(FTN_GET_NUM_PROCS)( void )
 {
     #ifdef KMP_STUB
         return 1;
@@ -501,7 +491,7 @@ FTN_GET_NUM_PROCS( void )
 }
 
 void FTN_STDCALL
-FTN_SET_NESTED( int KMP_DEREF flag )
+xexpand(FTN_SET_NESTED)( int KMP_DEREF flag )
 {
     #ifdef KMP_STUB
         __kmps_set_nested( KMP_DEREF flag );
@@ -516,7 +506,7 @@ FTN_SET_NESTED( int KMP_DEREF flag )
 
 
 int FTN_STDCALL
-FTN_GET_NESTED( void )
+xexpand(FTN_GET_NESTED)( void )
 {
     #ifdef KMP_STUB
         return __kmps_get_nested();
@@ -528,7 +518,7 @@ FTN_GET_NESTED( void )
 }
 
 void FTN_STDCALL
-FTN_SET_DYNAMIC( int KMP_DEREF flag )
+xexpand(FTN_SET_DYNAMIC)( int KMP_DEREF flag )
 {
     #ifdef KMP_STUB
         __kmps_set_dynamic( KMP_DEREF flag ? TRUE : FALSE );
@@ -544,7 +534,7 @@ FTN_SET_DYNAMIC( int KMP_DEREF flag )
 
 
 int FTN_STDCALL
-FTN_GET_DYNAMIC( void )
+xexpand(FTN_GET_DYNAMIC)( void )
 {
     #ifdef KMP_STUB
         return __kmps_get_dynamic();
@@ -556,20 +546,30 @@ FTN_GET_DYNAMIC( void )
 }
 
 int FTN_STDCALL
-FTN_IN_PARALLEL( void )
+xexpand(FTN_IN_PARALLEL)( void )
 {
     #ifdef KMP_STUB
         return 0;
     #else
-        return ( __kmp_entry_thread() -> th.th_root ->
-                    r.r_in_parallel ? FTN_TRUE : FTN_FALSE );
+        kmp_info_t *th = __kmp_entry_thread();
+#if OMP_40_ENABLED
+        if ( th->th.th_team_microtask ) {
+            // AC: r_in_parallel does not work inside teams construct
+            //     where real parallel is inactive, but all threads have same root,
+            //     so setting it in one team affects other teams.
+            //     The solution is to use per-team nesting level
+            return ( th->th.th_team->t.t_active_level ? 1 : 0 );
+        }
+        else
+#endif /* OMP_40_ENABLED */
+            return ( th->th.th_root->r.r_in_parallel ? FTN_TRUE : FTN_FALSE );
     #endif
 }
 
 #if OMP_30_ENABLED
 
 void FTN_STDCALL
-FTN_SET_SCHEDULE( kmp_sched_t KMP_DEREF kind, int KMP_DEREF modifier )
+xexpand(FTN_SET_SCHEDULE)( kmp_sched_t KMP_DEREF kind, int KMP_DEREF modifier )
 {
     #ifdef KMP_STUB
         __kmps_set_schedule( KMP_DEREF kind, KMP_DEREF modifier );
@@ -581,7 +581,7 @@ FTN_SET_SCHEDULE( kmp_sched_t KMP_DEREF kind, int KMP_DEREF modifier )
 }
 
 void FTN_STDCALL
-FTN_GET_SCHEDULE( kmp_sched_t * kind, int * modifier )
+xexpand(FTN_GET_SCHEDULE)( kmp_sched_t * kind, int * modifier )
 {
     #ifdef KMP_STUB
         __kmps_get_schedule( kind, modifier );
@@ -593,7 +593,7 @@ FTN_GET_SCHEDULE( kmp_sched_t * kind, int * modifier )
 }
 
 void FTN_STDCALL
-FTN_SET_MAX_ACTIVE_LEVELS( int KMP_DEREF arg )
+xexpand(FTN_SET_MAX_ACTIVE_LEVELS)( int KMP_DEREF arg )
 {
     #ifdef KMP_STUB
 	// Nothing.
@@ -605,7 +605,7 @@ FTN_SET_MAX_ACTIVE_LEVELS( int KMP_DEREF arg )
 }
 
 int FTN_STDCALL
-FTN_GET_MAX_ACTIVE_LEVELS( void )
+xexpand(FTN_GET_MAX_ACTIVE_LEVELS)( void )
 {
     #ifdef KMP_STUB
 	return 0;
@@ -617,7 +617,7 @@ FTN_GET_MAX_ACTIVE_LEVELS( void )
 }
 
 int FTN_STDCALL
-FTN_GET_ACTIVE_LEVEL( void )
+xexpand(FTN_GET_ACTIVE_LEVEL)( void )
 {
     #ifdef KMP_STUB
 	return 0; // returns 0 if it is called from the sequential part of the program
@@ -629,7 +629,7 @@ FTN_GET_ACTIVE_LEVEL( void )
 }
 
 int FTN_STDCALL
-FTN_GET_LEVEL( void )
+xexpand(FTN_GET_LEVEL)( void )
 {
     #ifdef KMP_STUB
 	return 0; // returns 0 if it is called from the sequential part of the program
@@ -641,7 +641,7 @@ FTN_GET_LEVEL( void )
 }
 
 int FTN_STDCALL
-FTN_GET_ANCESTOR_THREAD_NUM( int KMP_DEREF level )
+xexpand(FTN_GET_ANCESTOR_THREAD_NUM)( int KMP_DEREF level )
 {
     #ifdef KMP_STUB
 	return ( KMP_DEREF level ) ? ( -1 ) : ( 0 );
@@ -651,7 +651,7 @@ FTN_GET_ANCESTOR_THREAD_NUM( int KMP_DEREF level )
 }
 
 int FTN_STDCALL
-FTN_GET_TEAM_SIZE( int KMP_DEREF level )
+xexpand(FTN_GET_TEAM_SIZE)( int KMP_DEREF level )
 {
     #ifdef KMP_STUB
         return ( KMP_DEREF level ) ? ( -1 ) : ( 1 );
@@ -661,7 +661,7 @@ FTN_GET_TEAM_SIZE( int KMP_DEREF level )
 }
 
 int FTN_STDCALL
-FTN_GET_THREAD_LIMIT( void )
+xexpand(FTN_GET_THREAD_LIMIT)( void )
 {
     #ifdef KMP_STUB
 	return 1;   // TO DO: clarify whether it returns 1 or 0?
@@ -675,7 +675,7 @@ FTN_GET_THREAD_LIMIT( void )
 }
 
 int FTN_STDCALL
-FTN_IN_FINAL( void )
+xexpand(FTN_IN_FINAL)( void )
 {
     #ifdef KMP_STUB
 	return 0;   // TO DO: clarify whether it returns 1 or 0?
@@ -693,7 +693,7 @@ FTN_IN_FINAL( void )
 
 
 kmp_proc_bind_t FTN_STDCALL
-FTN_GET_PROC_BIND( void )
+xexpand(FTN_GET_PROC_BIND)( void )
 {
     #ifdef KMP_STUB
         return __kmps_get_proc_bind();
@@ -701,6 +701,108 @@ FTN_GET_PROC_BIND( void )
         return get__proc_bind( __kmp_entry_thread() );
     #endif
 }
+
+int FTN_STDCALL
+xexpand(FTN_GET_NUM_TEAMS)( void )
+{
+    #ifdef KMP_STUB
+        return 1;
+    #else
+        kmp_info_t *thr = __kmp_entry_thread();
+        if ( thr->th.th_team_microtask ) {
+            kmp_team_t *team = thr->th.th_team;
+            int tlevel = thr->th.th_teams_level;
+            int ii = team->t.t_level;            // the level of the teams construct
+            int dd = team -> t.t_serialized;
+            int level = tlevel + 1;
+            KMP_DEBUG_ASSERT( ii >= tlevel );
+            while( ii > level )
+            {
+                for( dd = team -> t.t_serialized; ( dd > 0 ) && ( ii > level ); dd--, ii-- )
+                {
+                }
+                if( team -> t.t_serialized && ( !dd ) ) {
+                    team = team->t.t_parent;
+                    continue;
+                }
+                if( ii > level ) {
+                    team = team->t.t_parent;
+                    ii--;
+                }
+            }
+            if ( dd > 1 ) {
+                return 1;  // teams region is serialized ( 1 team of 1 thread ).
+            } else {
+                return team->t.t_parent->t.t_nproc;
+            }
+        } else {
+            return 1;
+        }
+    #endif
+}
+
+int FTN_STDCALL
+xexpand(FTN_GET_TEAM_NUM)( void )
+{
+    #ifdef KMP_STUB
+        return 0;
+    #else
+        kmp_info_t *thr = __kmp_entry_thread();
+        if ( thr->th.th_team_microtask ) {
+            kmp_team_t *team = thr->th.th_team;
+            int tlevel = thr->th.th_teams_level; // the level of the teams construct
+            int ii = team->t.t_level;
+            int dd = team -> t.t_serialized;
+            int level = tlevel + 1;
+            KMP_DEBUG_ASSERT( ii >= tlevel );
+            while( ii > level )
+            {
+                for( dd = team -> t.t_serialized; ( dd > 0 ) && ( ii > level ); dd--, ii-- )
+                {
+                }
+                if( team -> t.t_serialized && ( !dd ) ) {
+                    team = team->t.t_parent;
+                    continue;
+                }
+                if( ii > level ) {
+                    team = team->t.t_parent;
+                    ii--;
+                }
+            }
+            if ( dd > 1 ) {
+                return 0;  // teams region is serialized ( 1 team of 1 thread ).
+            } else {
+                return team->t.t_master_tid;
+            }
+        } else {
+            return 0;
+        }
+    #endif
+}
+
+#if KMP_MIC || KMP_OS_DARWIN
+
+static int __kmp_default_device = 0;
+
+int FTN_STDCALL
+FTN_GET_DEFAULT_DEVICE( void )
+{
+    return __kmp_default_device;
+}
+
+void FTN_STDCALL
+FTN_SET_DEFAULT_DEVICE( int KMP_DEREF arg )
+{
+    __kmp_default_device = KMP_DEREF arg;
+}
+
+int FTN_STDCALL
+FTN_GET_NUM_DEVICES( void )
+{
+    return 0;
+}
+
+#endif // KMP_MIC || KMP_OS_DARWIN
 
 #endif // OMP_40_ENABLED
 
@@ -710,7 +812,7 @@ typedef enum { UNINIT = -1, UNLOCKED, LOCKED } kmp_stub_lock_t;
 
 /* initialize the lock */
 void FTN_STDCALL
-FTN_INIT_LOCK( void **user_lock )
+xexpand(FTN_INIT_LOCK)( void **user_lock )
 {
     #ifdef KMP_STUB
         *((kmp_stub_lock_t *)user_lock) = UNLOCKED;
@@ -721,7 +823,7 @@ FTN_INIT_LOCK( void **user_lock )
 
 /* initialize the lock */
 void FTN_STDCALL
-FTN_INIT_NEST_LOCK( void **user_lock )
+xexpand(FTN_INIT_NEST_LOCK)( void **user_lock )
 {
     #ifdef KMP_STUB
         *((kmp_stub_lock_t *)user_lock) = UNLOCKED;
@@ -731,7 +833,7 @@ FTN_INIT_NEST_LOCK( void **user_lock )
 }
 
 void FTN_STDCALL
-FTN_DESTROY_LOCK( void **user_lock )
+xexpand(FTN_DESTROY_LOCK)( void **user_lock )
 {
     #ifdef KMP_STUB
         *((kmp_stub_lock_t *)user_lock) = UNINIT;
@@ -741,7 +843,7 @@ FTN_DESTROY_LOCK( void **user_lock )
 }
 
 void FTN_STDCALL
-FTN_DESTROY_NEST_LOCK( void **user_lock )
+xexpand(FTN_DESTROY_NEST_LOCK)( void **user_lock )
 {
     #ifdef KMP_STUB
         *((kmp_stub_lock_t *)user_lock) = UNINIT;
@@ -751,7 +853,7 @@ FTN_DESTROY_NEST_LOCK( void **user_lock )
 }
 
 void FTN_STDCALL
-FTN_SET_LOCK( void **user_lock )
+xexpand(FTN_SET_LOCK)( void **user_lock )
 {
     #ifdef KMP_STUB
         if ( *((kmp_stub_lock_t *)user_lock) == UNINIT ) {
@@ -767,7 +869,7 @@ FTN_SET_LOCK( void **user_lock )
 }
 
 void FTN_STDCALL
-FTN_SET_NEST_LOCK( void **user_lock )
+xexpand(FTN_SET_NEST_LOCK)( void **user_lock )
 {
     #ifdef KMP_STUB
         if ( *((kmp_stub_lock_t *)user_lock) == UNINIT ) {
@@ -780,7 +882,7 @@ FTN_SET_NEST_LOCK( void **user_lock )
 }
 
 void FTN_STDCALL
-FTN_UNSET_LOCK( void **user_lock )
+xexpand(FTN_UNSET_LOCK)( void **user_lock )
 {
     #ifdef KMP_STUB
         if ( *((kmp_stub_lock_t *)user_lock) == UNINIT ) {
@@ -796,7 +898,7 @@ FTN_UNSET_LOCK( void **user_lock )
 }
 
 void FTN_STDCALL
-FTN_UNSET_NEST_LOCK( void **user_lock )
+xexpand(FTN_UNSET_NEST_LOCK)( void **user_lock )
 {
     #ifdef KMP_STUB
         if ( *((kmp_stub_lock_t *)user_lock) == UNINIT ) {
@@ -812,7 +914,7 @@ FTN_UNSET_NEST_LOCK( void **user_lock )
 }
 
 int FTN_STDCALL
-FTN_TEST_LOCK( void **user_lock )
+xexpand(FTN_TEST_LOCK)( void **user_lock )
 {
     #ifdef KMP_STUB
         if ( *((kmp_stub_lock_t *)user_lock) == UNINIT ) {
@@ -829,7 +931,7 @@ FTN_TEST_LOCK( void **user_lock )
 }
 
 int FTN_STDCALL
-FTN_TEST_NEST_LOCK( void **user_lock )
+xexpand(FTN_TEST_NEST_LOCK)( void **user_lock )
 {
     #ifdef KMP_STUB
         if ( *((kmp_stub_lock_t *)user_lock) == UNINIT ) {
@@ -842,7 +944,7 @@ FTN_TEST_NEST_LOCK( void **user_lock )
 }
 
 double FTN_STDCALL
-FTN_GET_WTIME( void )
+xexpand(FTN_GET_WTIME)( void )
 {
     #ifdef KMP_STUB
         return __kmps_get_wtime();
@@ -861,7 +963,7 @@ FTN_GET_WTIME( void )
 }
 
 double FTN_STDCALL
-FTN_GET_WTICK( void )
+xexpand(FTN_GET_WTICK)( void )
 {
     #ifdef KMP_STUB
         return __kmps_get_wtick();
@@ -938,6 +1040,191 @@ FTN_SET_DEFAULTS( char const * str
 
 /* ------------------------------------------------------------------------ */
 
+
+#if OMP_40_ENABLED
+/* returns the status of cancellation */
+int FTN_STDCALL
+xexpand(FTN_GET_CANCELLATION)(void) {
+#ifdef KMP_STUB
+    return 0 /* false */;
+#else
+    // initialize the library if needed
+    if ( ! __kmp_init_serial ) {
+        __kmp_serial_initialize();
+    }
+    return __kmp_omp_cancellation;
+#endif
+}
+
+int FTN_STDCALL
+FTN_GET_CANCELLATION_STATUS(int cancel_kind) {
+#ifdef KMP_STUB
+    return 0 /* false */;
+#else
+    return __kmp_get_cancellation_status(cancel_kind);
+#endif
+}
+
+#endif // OMP_40_ENABLED
+
+// GCC compatibility (versioned symbols)
+#if KMP_OS_LINUX
+
+/*
+    These following sections create function aliases (dummy symbols) for the omp_* routines.
+    These aliases will then be versioned according to how libgomp ``versions'' its 
+    symbols (OMP_1.0, OMP_2.0, OMP_3.0, ...) while also retaining the 
+    default version which libiomp5 uses: VERSION (defined in exports_so.txt)
+    If you want to see the versioned symbols for libgomp.so.1 then just type: 
+
+    objdump -T /path/to/libgomp.so.1 | grep omp_
+
+    Example:
+    Step 1)  Create __kmp_api_omp_set_num_threads_10_alias 
+             which is alias of __kmp_api_omp_set_num_threads
+    Step 2)  Set __kmp_api_omp_set_num_threads_10_alias to version: omp_set_num_threads@OMP_1.0
+    Step 2B) Set __kmp_api_omp_set_num_threads to default version : omp_set_num_threads@@VERSION
+*/
+
+// OMP_1.0 aliases
+xaliasify(FTN_SET_NUM_THREADS,   10);
+xaliasify(FTN_GET_NUM_THREADS,   10);
+xaliasify(FTN_GET_MAX_THREADS,   10);
+xaliasify(FTN_GET_THREAD_NUM,    10);
+xaliasify(FTN_GET_NUM_PROCS,     10);
+xaliasify(FTN_IN_PARALLEL,       10);
+xaliasify(FTN_SET_DYNAMIC,       10);
+xaliasify(FTN_GET_DYNAMIC,       10);
+xaliasify(FTN_SET_NESTED,        10);
+xaliasify(FTN_GET_NESTED,        10);
+xaliasify(FTN_INIT_LOCK,         10);
+xaliasify(FTN_INIT_NEST_LOCK,    10);
+xaliasify(FTN_DESTROY_LOCK,      10);
+xaliasify(FTN_DESTROY_NEST_LOCK, 10);
+xaliasify(FTN_SET_LOCK,          10);
+xaliasify(FTN_SET_NEST_LOCK,     10);
+xaliasify(FTN_UNSET_LOCK,        10);
+xaliasify(FTN_UNSET_NEST_LOCK,   10);
+xaliasify(FTN_TEST_LOCK,         10);
+xaliasify(FTN_TEST_NEST_LOCK,    10);
+
+// OMP_2.0 aliases
+xaliasify(FTN_GET_WTICK, 20);
+xaliasify(FTN_GET_WTIME, 20);
+
+#if OMP_30_ENABLED
+// OMP_3.0 aliases
+xaliasify(FTN_SET_SCHEDULE,            30);
+xaliasify(FTN_GET_SCHEDULE,            30);
+xaliasify(FTN_GET_THREAD_LIMIT,        30);
+xaliasify(FTN_SET_MAX_ACTIVE_LEVELS,   30);
+xaliasify(FTN_GET_MAX_ACTIVE_LEVELS,   30);
+xaliasify(FTN_GET_LEVEL,               30);
+xaliasify(FTN_GET_ANCESTOR_THREAD_NUM, 30);
+xaliasify(FTN_GET_TEAM_SIZE,           30);
+xaliasify(FTN_GET_ACTIVE_LEVEL,        30);
+xaliasify(FTN_INIT_LOCK,               30);
+xaliasify(FTN_INIT_NEST_LOCK,          30);
+xaliasify(FTN_DESTROY_LOCK,            30);
+xaliasify(FTN_DESTROY_NEST_LOCK,       30);
+xaliasify(FTN_SET_LOCK,                30);
+xaliasify(FTN_SET_NEST_LOCK,           30);
+xaliasify(FTN_UNSET_LOCK,              30);
+xaliasify(FTN_UNSET_NEST_LOCK,         30);
+xaliasify(FTN_TEST_LOCK,               30);
+xaliasify(FTN_TEST_NEST_LOCK,          30);
+
+// OMP_3.1 aliases
+xaliasify(FTN_IN_FINAL, 31);
+#endif /* OMP_30_ENABLED */
+
+#if OMP_40_ENABLED
+// OMP_4.0 aliases
+xaliasify(FTN_GET_PROC_BIND, 40);
+xaliasify(FTN_GET_NUM_TEAMS, 40);
+xaliasify(FTN_GET_TEAM_NUM, 40);
+xaliasify(FTN_GET_CANCELLATION, 40);
+#endif /* OMP_40_ENABLED */
+
+#if OMP_41_ENABLED
+// OMP_4.1 aliases
+#endif
+
+#if OMP_50_ENABLED
+// OMP_5.0 aliases
+#endif
+
+// OMP_1.0 versioned symbols
+xversionify(FTN_SET_NUM_THREADS,   10, "OMP_1.0");
+xversionify(FTN_GET_NUM_THREADS,   10, "OMP_1.0");
+xversionify(FTN_GET_MAX_THREADS,   10, "OMP_1.0");
+xversionify(FTN_GET_THREAD_NUM,    10, "OMP_1.0");
+xversionify(FTN_GET_NUM_PROCS,     10, "OMP_1.0");
+xversionify(FTN_IN_PARALLEL,       10, "OMP_1.0");
+xversionify(FTN_SET_DYNAMIC,       10, "OMP_1.0");
+xversionify(FTN_GET_DYNAMIC,       10, "OMP_1.0");
+xversionify(FTN_SET_NESTED,        10, "OMP_1.0");
+xversionify(FTN_GET_NESTED,        10, "OMP_1.0");
+xversionify(FTN_INIT_LOCK,         10, "OMP_1.0");
+xversionify(FTN_INIT_NEST_LOCK,    10, "OMP_1.0");
+xversionify(FTN_DESTROY_LOCK,      10, "OMP_1.0");
+xversionify(FTN_DESTROY_NEST_LOCK, 10, "OMP_1.0");
+xversionify(FTN_SET_LOCK,          10, "OMP_1.0");
+xversionify(FTN_SET_NEST_LOCK,     10, "OMP_1.0");
+xversionify(FTN_UNSET_LOCK,        10, "OMP_1.0");
+xversionify(FTN_UNSET_NEST_LOCK,   10, "OMP_1.0");
+xversionify(FTN_TEST_LOCK,         10, "OMP_1.0");
+xversionify(FTN_TEST_NEST_LOCK,    10, "OMP_1.0");
+
+// OMP_2.0 versioned symbols
+xversionify(FTN_GET_WTICK,         20, "OMP_2.0");
+xversionify(FTN_GET_WTIME,         20, "OMP_2.0");
+
+#if OMP_30_ENABLED
+// OMP_3.0 versioned symbols
+xversionify(FTN_SET_SCHEDULE,      30, "OMP_3.0");
+xversionify(FTN_GET_SCHEDULE,      30, "OMP_3.0");
+xversionify(FTN_GET_THREAD_LIMIT,        30, "OMP_3.0");
+xversionify(FTN_SET_MAX_ACTIVE_LEVELS,   30, "OMP_3.0");
+xversionify(FTN_GET_MAX_ACTIVE_LEVELS,   30, "OMP_3.0");
+xversionify(FTN_GET_ANCESTOR_THREAD_NUM, 30, "OMP_3.0");
+xversionify(FTN_GET_LEVEL,               30, "OMP_3.0");
+xversionify(FTN_GET_TEAM_SIZE,     30, "OMP_3.0");
+xversionify(FTN_GET_ACTIVE_LEVEL,  30, "OMP_3.0");
+
+// the lock routines have a 1.0 and 3.0 version
+xversionify(FTN_INIT_LOCK,         30, "OMP_3.0");
+xversionify(FTN_INIT_NEST_LOCK,    30, "OMP_3.0");
+xversionify(FTN_DESTROY_LOCK,      30, "OMP_3.0");
+xversionify(FTN_DESTROY_NEST_LOCK, 30, "OMP_3.0");
+xversionify(FTN_SET_LOCK,          30, "OMP_3.0");
+xversionify(FTN_SET_NEST_LOCK,     30, "OMP_3.0");
+xversionify(FTN_UNSET_LOCK,        30, "OMP_3.0");
+xversionify(FTN_UNSET_NEST_LOCK,   30, "OMP_3.0");
+xversionify(FTN_TEST_LOCK,         30, "OMP_3.0");
+xversionify(FTN_TEST_NEST_LOCK,    30, "OMP_3.0");
+
+// OMP_3.1 versioned symbol
+xversionify(FTN_IN_FINAL,          31, "OMP_3.1");
+#endif /* OMP_30_ENABLED */
+
+#if OMP_40_ENABLED
+// OMP_4.0 versioned symbols
+xversionify(FTN_GET_PROC_BIND,     40, "OMP_4.0");
+xversionify(FTN_GET_NUM_TEAMS,     40, "OMP_4.0");
+xversionify(FTN_GET_TEAM_NUM,      40, "OMP_4.0");
+xversionify(FTN_GET_CANCELLATION,  40, "OMP_4.0");
+#endif /* OMP_40_ENABLED */
+
+#if OMP_41_ENABLED
+// OMP_4.1 versioned symbols
+#endif
+
+#if OMP_50_ENABLED
+// OMP_5.0 versioned symbols
+#endif
+
+#endif /* KMP_OS_LINUX */
 
 #ifdef __cplusplus
     } //extern "C"

@@ -28,19 +28,9 @@
 #    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-#
-#------------------------------------------------------------------------
-#
-#    Portions of this software are protected under the following patents:
-#        U.S. Patent 5,812,852
-#        U.S. Patent 6,792,599
-#        U.S. Patent 7,069,556
-#        U.S. Patent 7,328,433
-#        U.S. Patent 7,500,242
-#
 # </copyright>
 
-# This is version script for OMP RTL shared libraries (libiomp5*.so and libguide*.so).
+# This is version script for OMP RTL shared library (libiomp5*.so)
 
 VERSION {
 
@@ -69,11 +59,66 @@ VERSION {
         __kmp_thread_pool;
         __kmp_thread_pool_nth;
 
+#if USE_ITT_BUILD
+        #
+        # ITT support.
+        #
+        # The following entry points are added so that the backtraces from
+        # the tools contain meaningful names for all the functions that might
+        # appear in a backtrace of a thread which is blocked in the RTL.
+        __kmp_acquire_drdpa_lock;
+        __kmp_acquire_nested_drdpa_lock;
+        __kmp_acquire_nested_queuing_lock;
+        __kmp_acquire_nested_tas_lock;
+        __kmp_acquire_nested_ticket_lock;
+        __kmp_acquire_queuing_lock;
+        __kmp_acquire_tas_lock;
+        __kmp_acquire_ticket_lock;
+        __kmp_fork_call;
+        __kmp_get_reduce_method;
+        __kmp_invoke_microtask;
+        __kmp_itt_fini_ittlib;
+        __kmp_itt_init_ittlib;
+        __kmp_launch_monitor;
+        __kmp_launch_worker;
+        __kmp_reap_monitor;
+        __kmp_reap_worker;
+        __kmp_release;
+        __kmp_wait_sleep;
+        __kmp_wait_yield_4;
+        __kmp_wait_yield_8;
+
+        # ittnotify symbols to be used by debugger
+        __kmp_itt_fini_ittlib;
+        __kmp_itt_init_ittlib;
+#endif /* USE_ITT_BUILD */
 
     local: # Non-exported symbols.
 
         *;         # All other symbols are not exported.
 
 }; # VERSION
+
+# sets up GCC OMP_ version dependency chain
+OMP_1.0 {
+};
+OMP_2.0 {
+} OMP_1.0;
+OMP_3.0 {
+} OMP_2.0;
+OMP_3.1 {
+} OMP_3.0;
+OMP_4.0 {
+} OMP_3.1;
+
+# sets up GCC GOMP_ version dependency chain
+GOMP_1.0 {
+};
+GOMP_2.0 {
+} GOMP_1.0;
+GOMP_3.0 {
+} GOMP_2.0;
+GOMP_4.0 {
+} GOMP_3.0;
 
 # end of file #

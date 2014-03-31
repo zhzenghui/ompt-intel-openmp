@@ -1,7 +1,7 @@
 /*
  * kmp_ftn_extra.c -- Fortran 'extra' linkage support for OpenMP.
- * $Revision: 42061 $
- * $Date: 2013-02-28 16:36:24 -0600 (Thu, 28 Feb 2013) $
+ * $Revision: 42757 $
+ * $Date: 2013-10-18 08:20:57 -0500 (Fri, 18 Oct 2013) $
  */
 
 /* <copyright>
@@ -32,35 +32,23 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
 
 #include "kmp.h"
 
-// Note: This string is not printed when KMP_VERSION=1.
-char const __kmp_version_ftnextra[] = KMP_VERSION_PREFIX "Fortran \"extra\" OMP support: "
-#ifdef USE_FTN_EXTRA
-    "yes";
-#else
-    "no";
+#if KMP_OS_WINDOWS
+#   define KMP_FTN_ENTRIES KMP_FTN_PLAIN
+#elif KMP_OS_UNIX
+#   define KMP_FTN_ENTRIES KMP_FTN_APPEND
 #endif
 
-#ifdef USE_FTN_EXTRA
-
-#define FTN_STDCALL /* nothing to do */
-#define KMP_FTN_ENTRIES	USE_FTN_EXTRA
-
-#include "kmp_ftn_os.h"
-#include "kmp_ftn_entry.h"
-
-#endif /* USE_FTN_EXTRA */
-
+// Note: This string is not printed when KMP_VERSION=1.
+char const __kmp_version_ftnextra[] = KMP_VERSION_PREFIX "Fortran \"extra\" OMP support: "
+#ifdef KMP_FTN_ENTRIES
+    "yes";
+#   define FTN_STDCALL /* nothing to do */
+#   include "kmp_ftn_os.h"
+#   include "kmp_ftn_entry.h"
+#else
+    "no";
+#endif /* KMP_FTN_ENTRIES */

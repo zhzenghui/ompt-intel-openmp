@@ -1,7 +1,7 @@
 /*
  * kmp_taskq.c -- TASKQ support for OpenMP.
- * $Revision: 42099 $
- * $Date: 2013-03-08 15:25:21 -0600 (Fri, 08 Mar 2013) $
+ * $Revision: 42582 $
+ * $Date: 2013-08-09 06:30:22 -0500 (Fri, 09 Aug 2013) $
  */
 
 /* <copyright>
@@ -31,16 +31,6 @@
     THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
 
 </copyright> */
 
@@ -1969,7 +1959,7 @@ __kmpc_end_taskq_task(ident_t *loc, kmp_int32 global_tid, kmpc_thunk_t *thunk)
 #if KMP_ARCH_X86 || \
     KMP_ARCH_X86_64
 
-        __kmp_test_then_or32( &queue->tq_flags, (kmp_int32) TQF_ALL_TASKS_QUEUED );
+        KMP_TEST_THEN_OR32( &queue->tq_flags, (kmp_int32) TQF_ALL_TASKS_QUEUED );
 #else
         {
             __kmp_acquire_lock(& queue->tq_queue_lck, global_tid);
@@ -2002,7 +1992,7 @@ __kmpc_end_taskq_task(ident_t *loc, kmp_int32 global_tid, kmpc_thunk_t *thunk)
 #if KMP_ARCH_X86 || \
     KMP_ARCH_X86_64
 
-            __kmp_test_then_or32( &queue->tq_flags, (kmp_int32) TQF_IS_LAST_TASK );
+            KMP_TEST_THEN_OR32( &queue->tq_flags, (kmp_int32) TQF_IS_LAST_TASK );
 #else
             {
                 __kmp_acquire_lock(& queue->tq_queue_lck, global_tid);

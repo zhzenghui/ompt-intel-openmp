@@ -28,16 +28,6 @@
 #    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-#
-#------------------------------------------------------------------------
-#
-#    Portions of this software are protected under the following patents:
-#        U.S. Patent 5,812,852
-#        U.S. Patent 6,792,599
-#        U.S. Patent 7,069,556
-#        U.S. Patent 7,328,433
-#        U.S. Patent 7,500,242
-#
 # </copyright>
 
 # --------------------------------------------------------------------------------------------------
@@ -48,17 +38,27 @@
 # Check tools versions.
 #
 ifeq "$(clean)" ""    # Do not check tools if clean goal specified.
-    ifeq "$(c)" "gcc"
-        curr_tools := $(strip $(shell $(perl) $(tools_dir)check-tools.pl $(oa-opts) --no-intel --gnu-fortran --make))
-        ifneq "$(findstring N/A,$(curr_tools))" ""
-            curr_tools := $(strip $(shell $(perl) $(tools_dir)check-tools.pl $(oa-opts) --make))
-            fort = ifort
-        else
-            fort = gfortran
-        endif
+
+    check_tools_flags = --make
+
+    # determine if fortran check is required from goals
+    # MAKECMDGOALS is like argv for gnu make
+    ifneq "$(filter mod all,$(MAKECMDGOALS))" ""
+        check_tools_flags += --fortran
     else
-        curr_tools := $(strip $(shell $(perl) $(tools_dir)check-tools.pl $(oa-opts) --make))
+        ifeq "$(MAKECMDGOALS)" "" # will default to all if no goals specified on command line
+            check_tools_flags += --fortran
+        endif
     endif
+    ifneq "$(filter gcc clang,$(c))" "" # if build compiler is gcc or clang
+        check_tools_flags += --no-intel
+    endif
+    ifeq "$(c)" "clang"
+        check_tools_flags += --clang
+    endif
+
+    curr_tools := $(strip $(shell $(perl) $(tools_dir)check-tools.pl $(oa-opts) $(check_tools_flags)))
+
     ifeq "$(curr_tools)" ""
         $(error check-tools.pl failed)
     endif
@@ -68,7 +68,7 @@ ifeq "$(clean)" ""    # Do not check tools if clean goal specified.
         missed_tools := $(subst $(space),$(comma)$(space),$(missed_tools))
         $(error Development tools not found: $(missed_tools))
     endif
-    prev_tools := $(strip $(shell [[ -e tools.cfg ]] && cat tools.cfg))
+    prev_tools := $(strip $(shell [ -e tools.cfg ] && cat tools.cfg))
     $(call say,Tools  : $(curr_tools))
     ifeq "$(prev_tools)" ""
         # No saved config file, let us create it.
@@ -90,7 +90,7 @@ endif
 ifeq "$(curr_config)" ""
     $(error makefile must define `curr_config' variable)
 endif
-prev_config := $(shell [[ -e build.cfg ]] && cat build.cfg)
+prev_config := $(shell [ -e build.cfg ] && cat build.cfg)
 curr_config := $(strip $(curr_config))
 ifeq "$(clean)" ""    # Do not check config if clean goal specified.
     $(call say,Config : $(curr_config))

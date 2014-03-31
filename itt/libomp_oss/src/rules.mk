@@ -1,6 +1,6 @@
 # rules.mk #
-# $Revision: 42152 $
-# $Date: 2013-03-18 09:02:50 -0500 (Mon, 18 Mar 2013) $
+# $Revision: 42423 $
+# $Date: 2013-06-07 09:25:21 -0500 (Fri, 07 Jun 2013) $
 
 # <copyright>
 #    Copyright (c) 2008-2013 Intel Corporation.  All Rights Reserved.
@@ -29,16 +29,6 @@
 #    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 #    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-#
-#------------------------------------------------------------------------
-#
-#    Portions of this software are protected under the following patents:
-#        U.S. Patent 5,812,852
-#        U.S. Patent 6,792,599
-#        U.S. Patent 7,069,556
-#        U.S. Patent 7,328,433
-#        U.S. Patent 7,500,242
 #
 # </copyright>
 
@@ -110,7 +100,8 @@ ifeq "$(platform)" "mac_32e"
     $(call _out_lib_fat_dir,mac_32e).done : \
         $(call _out_lib_dir,mac_32).touch \
         $(call _out_lib_dir,mac_32e).touch \
-        $(tools_dir)make-fat-binaries.pl $(call _out_lib_fat_dir,mac_32).dir .rebuild
+        $(tools_dir)make-fat-binaries.pl \
+        $(call _out_lib_fat_dir,mac_32).dir $(call _out_lib_fat_dir,mac_32e).dir .rebuild
 	    $(target)
 	    $(perl) $(tools_dir)make-fat-binaries.pl \
 	        --output=$(dir $@) $(call _out_lib_dir,mac_32) $(call _out_lib_dir,mac_32e)

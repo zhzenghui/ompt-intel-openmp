@@ -1,7 +1,7 @@
 /*
  * kmp_sched.c -- static scheduling -- iteration initialization
- * $Revision: 42178 $
- * $Date: 2013-03-22 07:07:59 -0500 (Fri, 22 Mar 2013) $
+ * $Revision: 42358 $
+ * $Date: 2013-05-07 13:43:26 -0500 (Tue, 07 May 2013) $
  */
 
 /* <copyright>
@@ -32,20 +32,10 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
 
 /*
- * Dynamic scheduling initialization and dispatch.
+ * Static scheduling initialization.
  *
  * NOTE: team->t.t_nproc is a constant inside of any dispatch loop, however
  *       it may change values between parallel regions.  __kmp_max_nth
@@ -112,10 +102,10 @@ __kmp_for_static_init(
     typedef typename traits_t< T >::signed_t    ST;
     /*  this all has to be changed back to TID and such.. */
     register kmp_int32   gtid = global_tid;
-    register kmp_uint32  tid  = __kmp_tid_from_gtid( global_tid );
+    register kmp_uint32  tid;
     register kmp_uint32  nth;
     register UT          trip_count;
-    register kmp_team_t *team = __kmp_threads[ gtid ]->th.th_team;
+    register kmp_team_t *team;
 
     KE_TRACE( 10, ("__kmpc_for_static_init called (%d)\n", global_tid));
     #ifdef KMP_DEBUG
@@ -160,6 +150,19 @@ __kmp_for_static_init(
         #endif
         KE_TRACE( 10, ("__kmpc_for_static_init: T#%d return\n", global_tid ) );
         return;
+    }
+
+    #if OMP_40_ENABLED
+    if ( schedtype > kmp_ord_upper ) {
+        // we are in DISTRIBUTE construct
+        schedtype += kmp_sch_static - kmp_distribute_static;      // AC: convert to usual schedule type
+        tid  = __kmp_threads[ gtid ]->th.th_team->t.t_master_tid;
+        team = __kmp_threads[ gtid ]->th.th_team->t.t_parent;
+    } else
+    #endif
+    {
+        tid  = __kmp_tid_from_gtid( global_tid );
+        team = __kmp_threads[ gtid ]->th.th_team;
     }
 
     /* determine if "for" loop is an active worksharing construct */
@@ -319,13 +322,13 @@ extern "C" {
 @param    plower    Pointer to the lower bound
 @param    pupper    Pointer to the upper bound
 @param    pstride   Pointer to the stride
-@param    incr      Pointer to the increment
-@param    chunk     Pointer to the chunk size
+@param    incr      Loop increment
+@param    chunk     The chunk size
 
 Each of the four functions here are identical apart from the argument types.
 
 The functions compute the upper and lower bounds and stride to be used for the set of iterations
-to be executed by the current thread from the statically scheduled loop that is described by the 
+to be executed by the current thread from the statically scheduled loop that is described by the
 initial values of the bround, stride, increment and chunk size.
 
 @{
@@ -374,7 +377,7 @@ __kmpc_for_static_init_8u( ident_t *loc, kmp_int32 gtid, kmp_int32 schedtype, km
     __kmp_for_static_init< kmp_uint64 >(
                       loc, gtid, schedtype, plastiter, plower, pupper, pstride, incr, chunk );
 }
-/*! 
+/*!
 @}
 */
 

@@ -1,7 +1,7 @@
 ;  z_Windows_NT-586_asm.asm:  - microtasking routines specifically
 ;    written for IA-32 architecture and Intel(R) 64 running Windows* OS
-;  $Revision: 42181 $
-;  $Date: 2013-03-26 15:04:45 -0500 (Tue, 26 Mar 2013) $
+;  $Revision: 42487 $
+;  $Date: 2013-07-08 08:11:23 -0500 (Mon, 08 Jul 2013) $
 
 ;  <copyright>
 ;    Copyright (c) 1997-2013 Intel Corporation.  All Rights Reserved.
@@ -30,16 +30,6 @@
 ;    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ;    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-;
-;
-;------------------------------------------------------------------------
-;
-;    Portions of this software are protected under the following patents:
-;        U.S. Patent 5,812,852
-;        U.S. Patent 6,792,599
-;        U.S. Patent 7,069,556
-;        U.S. Patent 7,328,433
-;        U.S. Patent 7,500,242
 ;
 ; </copyright>
 
@@ -707,59 +697,6 @@ ___kmp_clear_x87_fpu_status_word PROC NEAR
 ___kmp_clear_x87_fpu_status_word ENDP
 _TEXT     ENDS
 
-;------------------------------------------------------------------------
-;
-; FUNCTION ___kmp_load_mxcsr
-;
-; void
-; __kmp_load_mxcsr( kmp_int32 *p );
-;
-; parameters:
-;       p:      4(%esp)
-
-PUBLIC  ___kmp_load_mxcsr
-_TEXT   SEGMENT
-        ALIGN 16
-_p$ = 4
-
-___kmp_load_mxcsr PROC NEAR
-
-        mov       eax, DWORD PTR _p$[esp]
-;        ldmxcsr   DWORD PTR [eax]
-        DB 15      ; 0x0f
-        DB 174     ; 0xae
-        DB 16      ; 0x10
-        ret
-
-___kmp_load_mxcsr ENDP
-_TEXT     ENDS
-
-;------------------------------------------------------------------------
-;
-; FUNCTION ___kmp_store_mxcsr
-;
-; void
-; __kmp_store_mxcsr( kmp_int32 *p );
-;
-; parameters:
-;       p:      4(%esp)
-
-PUBLIC  ___kmp_store_mxcsr
-_TEXT   SEGMENT
-        ALIGN 16
-_p$ = 4
-
-___kmp_store_mxcsr PROC NEAR
-
-        mov       eax, DWORD PTR _p$[esp]
-;        stmxcsr   DWORD PTR [eax]
-        DB 15      ; 0x0f
-        DB 174     ; 0xae
-        DB 24      ; 0x18
-        ret
-
-___kmp_store_mxcsr ENDP
-_TEXT     ENDS
 
 ;------------------------------------------------------------------------
 ;
@@ -1572,52 +1509,6 @@ __kmp_clear_x87_fpu_status_word PROC ;NEAR
         ret
 
 __kmp_clear_x87_fpu_status_word ENDP
-_TEXT   ENDS
-
-
-;------------------------------------------------------------------------
-;
-; FUNCTION __kmp_load_mxcsr
-;
-; void
-; __kmp_load_mxcsr( kmp_int32 *p );
-;
-; parameters:
-;	p:	rcx
-;
-
-PUBLIC  __kmp_load_mxcsr
-_TEXT   SEGMENT
-        ALIGN 16
-__kmp_load_mxcsr PROC ;NEAR
-
-        ldmxcsr DWORD PTR [rcx]
-        ret
-
-__kmp_load_mxcsr ENDP
-_TEXT   ENDS
-
-
-;------------------------------------------------------------------------
-;
-; FUNCTION __kmp_store_mxcsr
-;
-; void
-; __kmp_store_mxcsr( kmp_int32 *p );
-;
-; parameters:
-;	p:	rcx
-;
-
-PUBLIC  __kmp_store_mxcsr
-_TEXT   SEGMENT
-        ALIGN 16
-__kmp_store_mxcsr PROC ;NEAR
-
-        stmxcsr DWORD PTR [rcx]
-        ret
-
-__kmp_store_mxcsr ENDP
 _TEXT   ENDS
 
 

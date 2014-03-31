@@ -1,7 +1,7 @@
 /*
  * kmp_i18n.h
- * $Revision: 42061 $
- * $Date: 2013-02-28 16:36:24 -0600 (Thu, 28 Feb 2013) $
+ * $Revision: 42810 $
+ * $Date: 2013-11-07 12:06:33 -0600 (Thu, 07 Nov 2013) $
  */
 
 /* <copyright>
@@ -31,16 +31,6 @@
     THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
 
 </copyright> */
 
@@ -212,7 +202,7 @@ void    __kmp_msg( kmp_msg_severity_t severity, kmp_msg_t message, ... );
     }
 
 #ifdef KMP_DEBUG
-    void __kmp_i18n_dump_catalog( kmp_str_buf_t & buffer );
+    void __kmp_i18n_dump_catalog( kmp_str_buf_t * buffer );
 #endif // KMP_DEBUG
 
 #ifdef __cplusplus

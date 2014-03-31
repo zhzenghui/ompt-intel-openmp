@@ -279,7 +279,13 @@ CPP_CLI_SUPPORT        = NO
 
 SIP_SUPPORT            = NO
 
-# For Microsoft's IDL there are propget and propput attributes to indicate getter and setter methods for a property. Setting this option to YES (the default) will make doxygen replace the get and set methods by a property in the documentation. This will only work if the methods are indeed getting or setting a simple type. If this is not the case, or you want to show the methods anyway, you should set this option to NO.
+# For Microsoft's IDL there are propget and propput attributes to
+# indicate getter and setter methods for a property. Setting this
+# option to YES (the default) will make doxygen replace the get and
+# set methods by a property in the documentation. This will only work
+# if the methods are indeed getting or setting a simple type. If this
+# is not the case, or you want to show the methods anyway, you should
+# set this option to NO.
 
 IDL_PROPERTY_SUPPORT   = YES
 
@@ -663,8 +669,10 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = src doc/doxygen/libomp_interface.h 
-                         
+INPUT                  = src  doc/doxygen/libomp_interface.h 
+# The ittnotify code also has doxygen documentation, but if we include it here
+# it takes over from us!
+# src/thirdparty/ittnotify                         
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -690,8 +698,8 @@ FILE_PATTERNS          = *.c *.h *.cpp
 # should be searched for input files as well. Possible values are YES and NO.
 # If left blank NO is used.
 
-# It might be simpler just to set NO here and not have the EXCLUDE list below.
-RECURSIVE              = YES
+# Only look in the one directory.
+RECURSIVE              = NO
 
 # The EXCLUDE tag can be used to specify files and/or directories that should be
 # excluded from the INPUT source files. This way you can easily exclude a
@@ -699,7 +707,7 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE                = src/samples src/dsl src/thirdparty src/test-touch.c
+EXCLUDE                = src/test-touch.c
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -1531,7 +1539,7 @@ INCLUDE_FILE_PATTERNS  =
 # undefined via #undef or recursively expanded use the := operator
 # instead of the = operator.
 
-PREDEFINED             = 
+PREDEFINED             = OMP_30_ENABLED=1, OMP_40_ENABLED=1
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then
 # this tag can be used to specify a list of macro names that should be expanded.

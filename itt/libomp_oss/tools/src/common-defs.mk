@@ -28,16 +28,6 @@
 #    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-#
-#------------------------------------------------------------------------
-#
-#    Portions of this software are protected under the following patents:
-#        U.S. Patent 5,812,852
-#        U.S. Patent 6,792,599
-#        U.S. Patent 7,069,556
-#        U.S. Patent 7,328,433
-#        U.S. Patent 7,500,242
-#
 # </copyright>
 
 # --------------------------------------------------------------------------------------------------
@@ -74,7 +64,7 @@ endif
 # Description:
 #     The function return printable name of specified architecture, IA-32 architecture or Intel(R) 64.
 #
-legal_arch = $(if $(filter 32,$(1)),IA-32,$(if $(filter 32e,$(1)),Intel(R) 64,$(if $(filter l1,$(1)),L1OM,$(error Bad architecture specified: $(1))))))
+legal_arch = $(if $(filter 32,$(1)),IA-32,$(if $(filter 32e,$(1)),Intel(R) 64,$(if $(filter l1,$(1)),L1OM,$(if $(filter arm,$(1)),ARM,$(error Bad architecture specified: $(1))))))
 
 # Synopsis:
 #     var_name = $(call check_variable,var,list)
@@ -157,9 +147,9 @@ endif
 # --------------------------------------------------------------------------------------------------
 
 os       := $(call check_variable,os,lin lrb mac win)
-arch     := $(call check_variable,arch,32 32e 64)
+arch     := $(call check_variable,arch,32 32e 64 arm)
 platform := $(os)_$(arch)
-platform := $(call check_variable,platform,lin_32 lin_32e lin_64 lrb_32e mac_32 mac_32e win_32 win_32e win_64)
+platform := $(call check_variable,platform,lin_32 lin_32e lin_64 lin_arm lrb_32e mac_32 mac_32e win_32 win_32e win_64)
 # oa-opts means "os and arch options". They are passed to almost all perl scripts.
 oa-opts  := --os=$(os) --arch=$(arch)
 

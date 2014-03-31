@@ -1,7 +1,7 @@
 //  z_Linux_asm.s:  - microtasking routines specifically
 //                    written for Intel platforms running Linux* OS
-// $Revision: 42181 $
-// $Date: 2013-03-26 15:04:45 -0500 (Tue, 26 Mar 2013) $
+// $Revision: 42810 $
+// $Date: 2013-11-07 12:06:33 -0600 (Thu, 07 Nov 2013) $
 
 // <copyright>
 //    Copyright (c) 1997-2013 Intel Corporation.  All Rights Reserved.
@@ -31,16 +31,6 @@
 //    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-//
-//------------------------------------------------------------------------
-//
-//    Portions of this software are protected under the following patents:
-//        U.S. Patent 5,812,852
-//        U.S. Patent 6,792,599
-//        U.S. Patent 7,069,556
-//        U.S. Patent 7,328,433
-//        U.S. Patent 7,500,242
-//
 // </copyright>
 
 // -----------------------------------------------------------------------
@@ -49,7 +39,7 @@
 
 #if KMP_ARCH_X86 || KMP_ARCH_X86_64
 
-#if __MIC__ || __MIC2__
+# if __MIC__ || __MIC2__
 //
 // the 'delay r16/r32/r64' should be used instead of the 'pause'.
 // The delay operation has the effect of removing the current thread from
@@ -70,9 +60,9 @@
 //	mov    $100, %rax
 //	delay  %rax
 //.endm
-#else
-# define pause_op   .byte 0xf3,0x90
-#endif // __MIC__ || __MIC2__
+# else
+#  define pause_op   .byte 0xf3,0x90
+# endif // __MIC__ || __MIC2__
 
 # if defined __APPLE__ && defined __MACH__
 #  define KMP_PREFIX_UNDERSCORE(x) _##x  // extra underscore for OS X* symbols
@@ -106,7 +96,7 @@ KMP_PREFIX_UNDERSCORE($0):
 KMP_PREFIX_UNDERSCORE(\proc):
 .endm
 # endif // defined __APPLE__ && defined __MACH__
-#endif // __i386 || defined __x86_64
+#endif // KMP_ARCH_X86 || KMP_ARCH_x86_64
 
 
 // -----------------------------------------------------------------------
@@ -122,15 +112,15 @@ KMP_PREFIX_UNDERSCORE(\proc):
 // put this stuff in assembly.
 //
 
-#if KMP_ARCH_X86
-# if defined __APPLE__ && defined __MACH__
+# if KMP_ARCH_X86
+#  if defined __APPLE__ && defined __MACH__
         .data
         .comm .gomp_critical_user_,32
         .data
         .globl ___kmp_unnamed_critical_addr
 ___kmp_unnamed_critical_addr:
         .long .gomp_critical_user_
-# else /* Linux* OS */
+#  else /* Linux* OS */
         .data
         .comm .gomp_critical_user_,32,8
         .data
@@ -140,18 +130,18 @@ __kmp_unnamed_critical_addr:
         .4byte .gomp_critical_user_
         .type __kmp_unnamed_critical_addr,@object
         .size __kmp_unnamed_critical_addr,4
-#endif /* defined __APPLE__ && defined __MACH__ */
-#endif /* KMP_ARCH_X86 */
+#  endif /* defined __APPLE__ && defined __MACH__ */
+# endif /* KMP_ARCH_X86 */
 
-#if KMP_ARCH_X86_64
-# if defined __APPLE__ && defined __MACH__
+# if KMP_ARCH_X86_64
+#  if defined __APPLE__ && defined __MACH__
         .data
         .comm .gomp_critical_user_,32
         .data
         .globl ___kmp_unnamed_critical_addr
 ___kmp_unnamed_critical_addr:
         .quad .gomp_critical_user_
-# else /* Linux* OS */
+#  else /* Linux* OS */
         .data
         .comm .gomp_critical_user_,32,8
         .data
@@ -161,8 +151,8 @@ __kmp_unnamed_critical_addr:
         .8byte .gomp_critical_user_
         .type __kmp_unnamed_critical_addr,@object
         .size __kmp_unnamed_critical_addr,8
-#endif /* defined __APPLE__ && defined __MACH__ */
-#endif /* KMP_ARCH_X86_64 */
+#  endif /* defined __APPLE__ && defined __MACH__ */
+# endif /* KMP_ARCH_X86_64 */
 
 #endif /* KMP_GOMP_COMPAT */
 
@@ -223,6 +213,8 @@ __kmp_unnamed_critical_addr:
 
 	DEBUG_INFO __kmp_x86_cpuid
 
+
+# if !KMP_ASM_INTRINS
 
 //------------------------------------------------------------------------
 //
@@ -511,6 +503,8 @@ __kmp_unnamed_critical_addr:
 
         DEBUG_INFO __kmp_xchg_real32
 
+# endif /* !KMP_ASM_INTRINS */
+
 
 //------------------------------------------------------------------------
 //
@@ -623,52 +617,6 @@ L44:
 
         DEBUG_INFO __kmp_test_then_add_real64
 
-        PROC  __kmp_test_then_add_complex32
-
-_addr = 8
-_data_real = 12
-_data_imag = 16
-_old_real = -8
-_old_imag = -4
-_new_real = -16
-_new_imag = -12
-
-        pushl   %ebp
-        movl    %esp, %ebp
-        subl    $16, %esp
-        pushl   %esi
-        pushl   %ebx
-        pushl   %ecx
-        movl    _addr(%ebp), %esi
-LOOP:
-	flds    (%esi)
-	fsts    _old_real(%ebp)
-	movl    _old_real(%ebp), %eax
-	fadds   _data_real(%ebp)
-	fstps   _new_real(%ebp)
-	movl    _new_real(%ebp), %ebx
-	flds    4(%esi)
-	fsts    _old_imag(%ebp)
-	movl    _old_imag(%ebp), %edx
-	fadds   _data_imag(%ebp)
-	fstps   _new_imag(%ebp)
-	movl    _new_imag(%ebp), %ecx
-
-	lock
-	cmpxchg8b (%esi)
-                        // Compare %EDX:%EAX with <addr>.  If equal set
-                        // ZF and load %ECX:%EBX into <addr>.  Else, clear
-                        // ZF and load <addr> into %EDX:%EAX.
-        jnz     LOOP
-        popl    %ecx
-        popl    %ebx
-        popl    %esi
-        movl    %ebp, %esp
-        popl    %ebp
-        ret
-
-        DEBUG_INFO __kmp_test_then_add_complex32
-
 
 //------------------------------------------------------------------------
 //
@@ -726,44 +674,6 @@ LOOP:
 
         DEBUG_INFO __kmp_clear_x87_fpu_status_word
 
-//------------------------------------------------------------------------
-//
-// FUNCTION __kmp_load_mxcsr
-//
-// void
-// __kmp_load_mxcsr( kmp_int32 *p );
-//
-// parameters:
-// 	p:	4(%esp)
-//
-
-        PROC  __kmp_load_mxcsr
-
-        movl  4(%esp), %eax
-        ldmxcsr (%eax)
-        ret
-
-        DEBUG_INFO __kmp_load_mxcsr
-
-
-//------------------------------------------------------------------------
-//
-// FUNCTION __kmp_store_mxcsr
-//
-// void
-// __kmp_store_mxcsr( kmp_int32 *p );
-//
-// parameters:
-// 	p:	4(%esp)
-//
-
-        PROC  __kmp_store_mxcsr
-
-        movl  4(%esp), %eax
-        stmxcsr (%eax)
-        ret
-
-        DEBUG_INFO __kmp_store_mxcsr
 
 //------------------------------------------------------------------------
 //
@@ -869,9 +779,9 @@ LOOP:
 
 // AC: The following #if hiden the .text thus moving the rest of code into .data section on MIC.
 // To prevent this in future .text added to every routine definition for x86_64.
-#if __MIC__ || __MIC2__
+# if __MIC__ || __MIC2__
 
-#else
+# else
 
 //------------------------------------------------------------------------
 //
@@ -889,7 +799,7 @@ LOOP:
 
         DEBUG_INFO __kmp_x86_pause
 
-#endif // __MIC__ || __MIC2__
+# endif // __MIC__ || __MIC2__
 
 //------------------------------------------------------------------------
 //
@@ -927,6 +837,9 @@ LOOP:
 
         DEBUG_INFO __kmp_x86_cpuid
 
+
+
+# if !KMP_ASM_INTRINS
 
 //------------------------------------------------------------------------
 //
@@ -1277,9 +1190,10 @@ LOOP:
 
         DEBUG_INFO __kmp_compare_and_store_ret64
 
+# endif /* !KMP_ASM_INTRINS */
 
-#if __MIC__ || __MIC2__
-#else
+
+# if ! (__MIC__ || __MIC2__)
 
 //------------------------------------------------------------------------
 //
@@ -1354,6 +1268,8 @@ LOOP:
         DEBUG_INFO __kmp_test_then_add_real64
 
 
+# if !KMP_ASM_INTRINS
+
 //------------------------------------------------------------------------
 //
 // FUNCTION __kmp_xchg_real32
@@ -1409,7 +1325,9 @@ LOOP:
         DEBUG_INFO __kmp_xchg_real64
 
 
-#endif // __MIC__ || __MIC2__
+# endif /* !(__MIC__ || __MIC2__) */
+
+# endif /* !KMP_ASM_INTRINS */
 
 
 //------------------------------------------------------------------------
@@ -1476,56 +1394,6 @@ LOOP:
 #endif
 
         DEBUG_INFO __kmp_clear_x87_fpu_status_word
-
-
-#if __MIC__ || __MIC2__
-
-// LRB1:
-// fp87: non-desired instruction on LRB1
-// ldmxscr and stmxscr: do not exist on LRB1
-
-#else
-
-//------------------------------------------------------------------------
-//
-// FUNCTION __kmp_load_mxcsr
-//
-// void
-// __kmp_load_mxcsr( kmp_int32 *p );
-//
-// parameters:
-// 	p:	%rdi
-//
-
-        .text
-        PROC  __kmp_load_mxcsr
-
-        ldmxcsr (%rdi)
-        ret
-
-        DEBUG_INFO __kmp_load_mxcsr
-
-
-//------------------------------------------------------------------------
-//
-// FUNCTION __kmp_store_mxcsr
-//
-// void
-// __kmp_store_mxcsr( kmp_int32 *p );
-//
-// parameters:
-// 	p:	%rdi
-//
-
-        .text
-        PROC  __kmp_store_mxcsr
-
-        stmxcsr (%rdi)
-        ret
-
-        DEBUG_INFO __kmp_store_mxcsr
-
-#endif // __MIC__ || __MIC2__
 
 
 //------------------------------------------------------------------------
@@ -1724,3 +1592,19 @@ L_kmp_1_exit:
 	
 // -----------------------------------------------------------------------
 #endif /* KMP_ARCH_X86_64 */
+
+#if KMP_ARCH_ARM
+    .data
+    .comm .gomp_critical_user_,32,8
+    .data
+    .align 4
+    .global __kmp_unnamed_critical_addr
+__kmp_unnamed_critical_addr:
+    .4byte .gomp_critical_user_
+    .size __kmp_unnamed_critical_addr,4
+#endif /* KMP_ARCH_ARM */
+
+
+#if defined(__linux__)
+.section .note.GNU-stack,"",@progbits
+#endif

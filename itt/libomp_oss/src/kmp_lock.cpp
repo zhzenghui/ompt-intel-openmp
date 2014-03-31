@@ -1,7 +1,7 @@
 /*
  * kmp_lock.cpp -- lock-related functions
- * $Revision: 42181 $
- * $Date: 2013-03-26 15:04:45 -0500 (Tue, 26 Mar 2013) $
+ * $Revision: 42810 $
+ * $Date: 2013-11-07 12:06:33 -0600 (Thu, 07 Nov 2013) $
  */
 
 /* <copyright>
@@ -32,30 +32,21 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
 
 #include <stddef.h>
 
 #include "kmp.h"
+#include "kmp_itt.h"
 #include "kmp_i18n.h"
 #include "kmp_lock.h"
 #include "kmp_io.h"
 
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
 # include <unistd.h>
 # include <sys/syscall.h>
 // We should really include <futex.h>, but that causes compatibility problems on different
-// Linux* OS distributions that either require that you include (or break when you try to include) 
+// Linux* OS distributions that either require that you include (or break when you try to include)
 // <pci/types.h>.
 // Since all we need is the two macros below (which are part of the kernel ABI, so can't change)
 // we just define the constants here and don't include <futex.h>
@@ -149,11 +140,14 @@ __kmp_acquire_tas_lock_timed_template( kmp_tas_lock_t *lck, kmp_int32 gtid )
     /* else __kmp_printf( "." );*/
 #endif /* USE_LOCK_PROFILE */
 
-    if ( KMP_COMPARE_AND_STORE_ACQ32( & ( lck->lk.poll ), 0, gtid + 1 ) ) {
+    if ( ( lck->lk.poll == 0 )
+      && KMP_COMPARE_AND_STORE_ACQ32( & ( lck->lk.poll ), 0, gtid + 1 ) ) {
+        KMP_FSYNC_ACQUIRED(lck);
         return;
     }
 
     kmp_uint32 spins;
+    KMP_FSYNC_PREPARE( lck );
     KMP_INIT_YIELD( spins );
     if ( TCR_4( __kmp_nth ) > ( __kmp_avail_proc ? __kmp_avail_proc :
       __kmp_xproc ) ) {
@@ -163,8 +157,8 @@ __kmp_acquire_tas_lock_timed_template( kmp_tas_lock_t *lck, kmp_int32 gtid )
         KMP_YIELD_SPIN( spins );
     }
 
-    while ( KMP_COMPARE_AND_STORE_ACQ32( & ( lck->lk.poll ), 0, gtid + 1 )
-      == 0 ) {
+    while ( ( lck->lk.poll != 0 ) ||
+      ( ! KMP_COMPARE_AND_STORE_ACQ32( & ( lck->lk.poll ), 0, gtid + 1 ) ) ) {
         //
         // FIXME - use exponential backoff here
         //
@@ -176,6 +170,7 @@ __kmp_acquire_tas_lock_timed_template( kmp_tas_lock_t *lck, kmp_int32 gtid )
             KMP_YIELD_SPIN( spins );
         }
     }
+    KMP_FSYNC_ACQUIRED( lck );
 }
 
 void
@@ -203,7 +198,9 @@ __kmp_acquire_tas_lock_with_checks( kmp_tas_lock_t *lck, kmp_int32 gtid )
 int
 __kmp_test_tas_lock( kmp_tas_lock_t *lck, kmp_int32 gtid )
 {
-    if ( KMP_COMPARE_AND_STORE_ACQ32( & ( lck->lk.poll ), 0, gtid + 1 ) ) {
+    if ( ( lck->lk.poll == 0 )
+      && KMP_COMPARE_AND_STORE_ACQ32( & ( lck->lk.poll ), 0, gtid + 1 ) ) {
+        KMP_FSYNC_ACQUIRED( lck );
         return TRUE;
     }
     return FALSE;
@@ -227,7 +224,8 @@ __kmp_release_tas_lock( kmp_tas_lock_t *lck, kmp_int32 gtid )
 {
     KMP_MB();       /* Flush all pending memory write invalidates.  */
 
-    TCW_4( lck->lk.poll, 0 );
+    KMP_FSYNC_RELEASING(lck);
+    KMP_ST_REL32( &(lck->lk.poll), 0 );
 
     KMP_MB();       /* Flush all pending memory write invalidates.  */
 
@@ -419,7 +417,7 @@ __kmp_destroy_nested_tas_lock_with_checks( kmp_tas_lock_t *lck )
 }
 
 
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
 
 /* ------------------------------------------------------------------------ */
 /* futex locks */
@@ -455,11 +453,12 @@ __kmp_acquire_futex_lock_timed_template( kmp_futex_lock_t *lck, kmp_int32 gtid )
     /* else __kmp_printf( "." );*/
 #endif /* USE_LOCK_PROFILE */
 
+    KMP_FSYNC_PREPARE( lck );
     KA_TRACE( 1000, ("__kmp_acquire_futex_lock: lck:%p(0x%x), T#%d entering\n",
       lck, lck->lk.poll, gtid ) );
 
     kmp_int32 poll_val;
-    while ( ( poll_val = __kmp_compare_and_store_ret32( & ( lck->lk.poll ), 0,
+    while ( ( poll_val = KMP_COMPARE_AND_STORE_RET32( & ( lck->lk.poll ), 0,
       gtid_code ) ) != 0 ) {
         kmp_int32 cond = poll_val & 1;
         KA_TRACE( 1000, ("__kmp_acquire_futex_lock: lck:%p, T#%d poll_val = 0x%x cond = 0x%x\n",
@@ -478,7 +477,7 @@ __kmp_acquire_futex_lock_timed_template( kmp_futex_lock_t *lck, kmp_int32 gtid )
             // Try to set the lsb in the poll to indicate to the owner
             // thread that they need to wake this thread up.
             //
-            if ( ! __kmp_compare_and_store32( & ( lck->lk.poll ),
+            if ( ! KMP_COMPARE_AND_STORE_REL32( & ( lck->lk.poll ),
               poll_val, poll_val | 1 ) ) {
                 KA_TRACE( 1000, ("__kmp_acquire_futex_lock: lck:%p(0x%x), T#%d can't set bit 0\n",
                   lck, lck->lk.poll, gtid ) );
@@ -512,6 +511,7 @@ __kmp_acquire_futex_lock_timed_template( kmp_futex_lock_t *lck, kmp_int32 gtid )
         gtid_code |= 1;
     }
 
+    KMP_FSYNC_ACQUIRED( lck );
     KA_TRACE( 1000, ("__kmp_acquire_futex_lock: lck:%p(0x%x), T#%d exiting\n",
       lck, lck->lk.poll, gtid ) );
 }
@@ -542,6 +542,7 @@ int
 __kmp_test_futex_lock( kmp_futex_lock_t *lck, kmp_int32 gtid )
 {
     if ( KMP_COMPARE_AND_STORE_ACQ32( & ( lck->lk.poll ), 0, ( gtid + 1 ) << 1 ) ) {
+        KMP_FSYNC_ACQUIRED( lck );
         return TRUE;
     }
     return FALSE;
@@ -568,7 +569,9 @@ __kmp_release_futex_lock( kmp_futex_lock_t *lck, kmp_int32 gtid )
     KA_TRACE( 1000, ("__kmp_release_futex_lock: lck:%p(0x%x), T#%d entering\n",
       lck, lck->lk.poll, gtid ) );
 
-    kmp_int32 poll_val = __kmp_xchg_fixed32( & ( lck->lk.poll ), 0 );
+    KMP_FSYNC_RELEASING(lck);
+
+    kmp_int32 poll_val = KMP_XCHG_FIXED32( & ( lck->lk.poll ), 0 );
 
     KA_TRACE( 1000, ("__kmp_release_futex_lock: lck:%p, T#%d released poll_val = 0x%x\n",
        lck, gtid, poll_val ) );
@@ -771,7 +774,7 @@ __kmp_destroy_nested_futex_lock_with_checks( kmp_futex_lock_t *lck )
     __kmp_destroy_nested_futex_lock( lck );
 }
 
-#endif // KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#endif // KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
 
 
 /* ------------------------------------------------------------------------ */
@@ -818,9 +821,11 @@ __kmp_acquire_ticket_lock_timed_template( kmp_ticket_lock_t *lck, kmp_int32 gtid
 #endif /* USE_LOCK_PROFILE */
 
     if ( TCR_4( lck->lk.now_serving ) == my_ticket ) {
+        KMP_FSYNC_ACQUIRED(lck);
         return;
     }
     KMP_WAIT_YIELD( &lck->lk.now_serving, my_ticket, __kmp_bakery_check, lck );
+    KMP_FSYNC_ACQUIRED(lck);
 }
 
 void
@@ -860,6 +865,7 @@ __kmp_test_ticket_lock( kmp_ticket_lock_t *lck, kmp_int32 gtid )
         kmp_uint32 next_ticket = my_ticket + 1;
         if ( KMP_COMPARE_AND_STORE_ACQ32( (kmp_int32 *) &lck->lk.next_ticket,
           my_ticket, next_ticket ) ) {
+            KMP_FSYNC_ACQUIRED( lck );
             return TRUE;
         }
     }
@@ -894,9 +900,10 @@ __kmp_release_ticket_lock( kmp_ticket_lock_t *lck, kmp_int32 gtid )
 
     KMP_MB();       /* Flush all pending memory write invalidates.  */
 
+    KMP_FSYNC_RELEASING(lck);
     distance = ( TCR_4( lck->lk.next_ticket ) - TCR_4( lck->lk.now_serving ) );
 
-    lck->lk.now_serving += 1;
+    KMP_ST_REL32( &(lck->lk.now_serving), lck->lk.now_serving + 1 );
 
     KMP_MB();       /* Flush all pending memory write invalidates.  */
 
@@ -1274,7 +1281,7 @@ __kmp_is_queuing_lock_nestable( kmp_queuing_lock_t *lck )
 
 /* Acquire a lock using a the queuing lock implementation */
 template <bool takeTime>
-/* [TLW] The unused template above is left behind because of what BEB believes is a 
+/* [TLW] The unused template above is left behind because of what BEB believes is a
    potential compiler problem with __forceinline. */
 __forceinline static void
 __kmp_acquire_queuing_lock_timed_template( kmp_queuing_lock_t *lck,
@@ -1288,6 +1295,7 @@ __kmp_acquire_queuing_lock_timed_template( kmp_queuing_lock_t *lck,
 
     KA_TRACE( 1000, ("__kmp_acquire_queuing_lock: lck:%p, T#%d entering\n", lck, gtid ));
 
+    KMP_FSYNC_PREPARE( lck );
     KMP_DEBUG_ASSERT( this_thr != NULL );
     spin_here_p = & this_thr->th.th_spin_here;
 
@@ -1388,6 +1396,7 @@ __kmp_acquire_queuing_lock_timed_template( kmp_queuing_lock_t *lck,
 #ifdef DEBUG_QUEUING_LOCKS
                     TRACE_LOCK_HT( gtid+1, "acq exit: ", head, 0 );
 #endif
+                    KMP_FSYNC_ACQUIRED( lck );
                     return; /* lock holder cannot be on queue */
                 }
                 enqueued = FALSE;
@@ -1498,6 +1507,7 @@ __kmp_test_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid )
 
         if ( KMP_COMPARE_AND_STORE_ACQ32( head_id_p, 0, -1 ) ) {
             KA_TRACE( 1000, ("__kmp_test_queuing_lock: T#%d exiting: holding lock\n", gtid ));
+            KMP_FSYNC_ACQUIRED(lck);
             return TRUE;
         }
     }
@@ -1548,6 +1558,8 @@ __kmp_release_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid )
 #endif
     KMP_DEBUG_ASSERT( !this_thr->th.th_spin_here );
     KMP_DEBUG_ASSERT( this_thr->th.th_next_waiting == 0 );
+
+    KMP_FSYNC_RELEASING(lck);
 
     while( 1 ) {
         kmp_int32 dequeued;
@@ -1917,6 +1929,594 @@ __kmp_set_queuing_lock_flags( kmp_queuing_lock_t *lck, kmp_lock_flags_t flags )
     lck->lk.flags = flags;
 }
 
+#if KMP_USE_ADAPTIVE_LOCKS
+
+/*
+    RTM Adaptive locks
+*/
+
+// TODO: Use the header for intrinsics below with the compiler 13.0
+//#include <immintrin.h>
+
+// Values from the status register after failed speculation.
+#define _XBEGIN_STARTED          (~0u)
+#define _XABORT_EXPLICIT         (1 << 0)
+#define _XABORT_RETRY            (1 << 1)
+#define _XABORT_CONFLICT         (1 << 2)
+#define _XABORT_CAPACITY         (1 << 3)
+#define _XABORT_DEBUG            (1 << 4)
+#define _XABORT_NESTED           (1 << 5)
+#define _XABORT_CODE(x)          ((unsigned char)(((x) >> 24) & 0xFF))
+
+// Aborts for which it's worth trying again immediately
+#define SOFT_ABORT_MASK  (_XABORT_RETRY | _XABORT_CONFLICT | _XABORT_EXPLICIT)
+
+#define STRINGIZE_INTERNAL(arg) #arg
+#define STRINGIZE(arg) STRINGIZE_INTERNAL(arg)
+
+// Access to RTM instructions
+
+/*
+  A version of XBegin which returns -1 on speculation, and the value of EAX on an abort.
+  This is the same definition as the compiler intrinsic that will be supported at some point.
+*/
+static __inline int _xbegin()
+{
+    int res = -1;
+
+#if KMP_OS_WINDOWS
+#if KMP_ARCH_X86_64
+    _asm {
+        _emit 0xC7
+        _emit 0xF8
+        _emit 2
+        _emit 0
+        _emit 0
+        _emit 0
+        jmp   L2
+        mov   res, eax
+    L2:
+    }
+#else /* IA32 */
+    _asm {
+        _emit 0xC7
+        _emit 0xF8
+        _emit 2
+        _emit 0
+        _emit 0
+        _emit 0
+        jmp   L2
+        mov   res, eax
+    L2:
+    }
+#endif // KMP_ARCH_X86_64
+#else
+    /* Note that %eax must be noted as killed (clobbered), because
+     * the XSR is returned in %eax(%rax) on abort.  Other register
+     * values are restored, so don't need to be killed.
+     *
+     * We must also mark 'res' as an input and an output, since otherwise
+     * 'res=-1' may be dropped as being dead, whereas we do need the
+     * assignment on the successful (i.e., non-abort) path.
+     */
+    __asm__ volatile ("1: .byte  0xC7; .byte 0xF8;\n"
+                      "   .long  1f-1b-6\n"
+                      "    jmp   2f\n"
+                      "1:  movl  %%eax,%0\n"
+                      "2:"
+                      :"+r"(res)::"memory","%eax");
+#endif // KMP_OS_WINDOWS
+    return res;
+}
+
+/*
+  Transaction end
+*/
+static __inline void _xend()
+{
+#if KMP_OS_WINDOWS
+    __asm  {
+        _emit 0x0f
+        _emit 0x01
+        _emit 0xd5
+    }
+#else
+    __asm__ volatile (".byte 0x0f; .byte 0x01; .byte 0xd5" :::"memory");
+#endif
+}
+
+/*
+  This is a macro, the argument must be a single byte constant which
+  can be evaluated by the inline assembler, since it is emitted as a
+  byte into the assembly code.
+*/
+#if KMP_OS_WINDOWS
+#define _xabort(ARG)                            \
+    _asm _emit 0xc6                             \
+    _asm _emit 0xf8                             \
+    _asm _emit ARG
+#else
+#define _xabort(ARG) \
+    __asm__ volatile (".byte 0xC6; .byte 0xF8; .byte " STRINGIZE(ARG) :::"memory");
+#endif
+
+//
+//    Statistics is collected for testing purpose
+//
+#if KMP_DEBUG_ADAPTIVE_LOCKS
+
+// We accumulate speculative lock statistics when the lock is destroyed.
+// We keep locks that haven't been destroyed in the liveLocks list
+// so that we can grab their statistics too.
+static kmp_adaptive_lock_statistics_t destroyedStats;
+
+// To hold the list of live locks.
+static kmp_adaptive_lock_t liveLocks;
+
+// A lock so we can safely update the list of locks.
+static kmp_bootstrap_lock_t chain_lock;
+
+// Initialize the list of stats.
+void
+__kmp_init_speculative_stats()
+{
+    kmp_adaptive_lock *lck = &liveLocks;
+
+    memset( ( void * ) & ( lck->stats ), 0, sizeof( lck->stats ) );
+    lck->stats.next = lck;
+    lck->stats.prev = lck;
+
+    KMP_ASSERT( lck->stats.next->stats.prev == lck );
+    KMP_ASSERT( lck->stats.prev->stats.next == lck );
+
+    __kmp_init_bootstrap_lock( &chain_lock );
+
+}
+
+// Insert the lock into the circular list
+static void
+__kmp_remember_lock( kmp_adaptive_lock * lck )
+{
+    __kmp_acquire_bootstrap_lock( &chain_lock );
+
+    lck->stats.next = liveLocks.stats.next;
+    lck->stats.prev = &liveLocks;
+
+    liveLocks.stats.next = lck;
+    lck->stats.next->stats.prev  = lck;
+
+    KMP_ASSERT( lck->stats.next->stats.prev == lck );
+    KMP_ASSERT( lck->stats.prev->stats.next == lck );
+
+    __kmp_release_bootstrap_lock( &chain_lock );
+}
+
+static void
+__kmp_forget_lock( kmp_adaptive_lock * lck )
+{
+    KMP_ASSERT( lck->stats.next->stats.prev == lck );
+    KMP_ASSERT( lck->stats.prev->stats.next == lck );
+
+    kmp_adaptive_lock * n = lck->stats.next;
+    kmp_adaptive_lock * p = lck->stats.prev;
+
+    n->stats.prev = p;
+    p->stats.next = n;
+}
+
+static void
+__kmp_zero_speculative_stats( kmp_adaptive_lock * lck )
+{
+    memset( ( void * )&lck->stats, 0, sizeof( lck->stats ) );
+    __kmp_remember_lock( lck );
+}
+
+static void
+__kmp_add_stats( kmp_adaptive_lock_statistics_t * t, kmp_adaptive_lock_t * lck )
+{
+    kmp_adaptive_lock_statistics_t volatile *s = &lck->stats;
+
+    t->nonSpeculativeAcquireAttempts += lck->acquire_attempts;
+    t->successfulSpeculations += s->successfulSpeculations;
+    t->hardFailedSpeculations += s->hardFailedSpeculations;
+    t->softFailedSpeculations += s->softFailedSpeculations;
+    t->nonSpeculativeAcquires += s->nonSpeculativeAcquires;
+    t->lemmingYields          += s->lemmingYields;
+}
+
+static void
+__kmp_accumulate_speculative_stats( kmp_adaptive_lock * lck)
+{
+    kmp_adaptive_lock_statistics_t *t = &destroyedStats;
+
+    __kmp_acquire_bootstrap_lock( &chain_lock );
+
+    __kmp_add_stats( &destroyedStats, lck );
+    __kmp_forget_lock( lck );
+
+    __kmp_release_bootstrap_lock( &chain_lock );
+}
+
+static float
+percent (kmp_uint32 count, kmp_uint32 total)
+{
+    return (total == 0) ? 0.0: (100.0 * count)/total;
+}
+
+static
+FILE * __kmp_open_stats_file()
+{
+    if (strcmp (__kmp_speculative_statsfile, "-") == 0)
+        return stdout;
+
+    size_t buffLen = strlen( __kmp_speculative_statsfile ) + 20;
+    char buffer[buffLen];
+    snprintf (&buffer[0], buffLen, __kmp_speculative_statsfile, getpid());
+    FILE * result = fopen(&buffer[0], "w");
+
+    // Maybe we should issue a warning here...
+    return result ? result : stdout;
+}
+
+void
+__kmp_print_speculative_stats()
+{
+    if (__kmp_user_lock_kind != lk_adaptive)
+        return;
+
+    FILE * statsFile = __kmp_open_stats_file();
+
+    kmp_adaptive_lock_statistics_t total = destroyedStats;
+    kmp_adaptive_lock *lck;
+
+    for (lck = liveLocks.stats.next; lck != &liveLocks; lck = lck->stats.next) {
+        __kmp_add_stats( &total, lck );
+    }
+    kmp_adaptive_lock_statistics_t *t = &total;
+    kmp_uint32 totalSections     = t->nonSpeculativeAcquires + t->successfulSpeculations;
+    kmp_uint32 totalSpeculations = t->successfulSpeculations + t->hardFailedSpeculations +
+                                   t->softFailedSpeculations;
+
+    fprintf ( statsFile, "Speculative lock statistics (all approximate!)\n");
+    fprintf ( statsFile, " Lock parameters: \n"
+             "   max_soft_retries               : %10d\n"
+             "   max_badness                    : %10d\n",
+             __kmp_adaptive_backoff_params.max_soft_retries,
+             __kmp_adaptive_backoff_params.max_badness);
+    fprintf( statsFile, " Non-speculative acquire attempts : %10d\n", t->nonSpeculativeAcquireAttempts );
+    fprintf( statsFile, " Total critical sections          : %10d\n", totalSections );
+    fprintf( statsFile, " Successful speculations          : %10d (%5.1f%%)\n",
+             t->successfulSpeculations, percent( t->successfulSpeculations, totalSections ) );
+    fprintf( statsFile, " Non-speculative acquires         : %10d (%5.1f%%)\n",
+             t->nonSpeculativeAcquires, percent( t->nonSpeculativeAcquires, totalSections ) );
+    fprintf( statsFile, " Lemming yields                   : %10d\n\n", t->lemmingYields );
+
+    fprintf( statsFile, " Speculative acquire attempts     : %10d\n", totalSpeculations );
+    fprintf( statsFile, " Successes                        : %10d (%5.1f%%)\n",
+             t->successfulSpeculations, percent( t->successfulSpeculations, totalSpeculations ) );
+    fprintf( statsFile, " Soft failures                    : %10d (%5.1f%%)\n",
+             t->softFailedSpeculations, percent( t->softFailedSpeculations, totalSpeculations ) );
+    fprintf( statsFile, " Hard failures                    : %10d (%5.1f%%)\n",
+             t->hardFailedSpeculations, percent( t->hardFailedSpeculations, totalSpeculations ) );
+
+    if (statsFile != stdout)
+        fclose( statsFile );
+}
+
+# define KMP_INC_STAT(lck,stat) ( lck->lk.adaptive.stats.stat++ )
+#else
+# define KMP_INC_STAT(lck,stat)
+
+#endif // KMP_DEBUG_ADAPTIVE_LOCKS
+
+static inline bool
+__kmp_is_unlocked_queuing_lock( kmp_queuing_lock_t *lck )
+{
+    // It is enough to check that the head_id is zero.
+    // We don't also need to check the tail.
+    bool res = lck->lk.head_id == 0;
+
+    // We need a fence here, since we must ensure that no memory operations
+    // from later in this thread float above that read.
+#if KMP_COMPILER_ICC
+    _mm_mfence();
+#else
+    __sync_synchronize();
+#endif
+
+    return res;
+}
+
+// Functions for manipulating the badness
+static __inline void
+__kmp_update_badness_after_success( kmp_queuing_lock_t *lck )
+{
+    // Reset the badness to zero so we eagerly try to speculate again
+    lck->lk.adaptive.badness = 0;
+    KMP_INC_STAT(lck,successfulSpeculations);
+}
+
+// Create a bit mask with one more set bit.
+static __inline void
+__kmp_step_badness( kmp_queuing_lock_t *lck )
+{
+    kmp_uint32 newBadness = ( lck->lk.adaptive.badness << 1 ) | 1;
+    if ( newBadness > lck->lk.adaptive.max_badness) {
+        return;
+    } else {
+        lck->lk.adaptive.badness = newBadness;
+    }
+}
+
+// Check whether speculation should be attempted.
+static __inline int
+__kmp_should_speculate( kmp_queuing_lock_t *lck, kmp_int32 gtid )
+{
+    kmp_uint32 badness = lck->lk.adaptive.badness;
+    kmp_uint32 attempts= lck->lk.adaptive.acquire_attempts;
+    int res = (attempts & badness) == 0;
+    return res;
+}
+
+// Attempt to acquire only the speculative lock.
+// Does not back off to the non-speculative lock.
+//
+static int
+__kmp_test_adaptive_lock_only( kmp_queuing_lock_t * lck, kmp_int32 gtid )
+{
+    int retries = lck->lk.adaptive.max_soft_retries;
+
+    // We don't explicitly count the start of speculation, rather we record
+    // the results (success, hard fail, soft fail). The sum of all of those
+    // is the total number of times we started speculation since all
+    // speculations must end one of those ways.
+    do
+    {
+        kmp_uint32 status = _xbegin();
+        // Switch this in to disable actual speculation but exercise
+        // at least some of the rest of the code. Useful for debugging...
+        // kmp_uint32 status = _XABORT_NESTED;
+
+        if (status == _XBEGIN_STARTED )
+        { /* We have successfully started speculation
+           * Check that no-one acquired the lock for real between when we last looked
+           * and now. This also gets the lock cache line into our read-set,
+           * which we need so that we'll abort if anyone later claims it for real.
+           */
+            if (! __kmp_is_unlocked_queuing_lock( lck ) )
+            {
+                // Lock is now visibly acquired, so someone beat us to it.
+                // Abort the transaction so we'll restart from _xbegin with the
+                // failure status.
+                _xabort(0x01)
+                KMP_ASSERT2( 0, "should not get here" );
+            }
+            return 1;   // Lock has been acquired (speculatively)
+        } else {
+            // We have aborted, update the statistics
+            if ( status & SOFT_ABORT_MASK)
+            {
+                KMP_INC_STAT(lck,softFailedSpeculations);
+                // and loop round to retry.
+            }
+            else
+            {
+                KMP_INC_STAT(lck,hardFailedSpeculations);
+                // Give up if we had a hard failure.
+                break;
+            }
+        }
+    }  while( retries-- ); // Loop while we have retries, and didn't fail hard.
+
+    // Either we had a hard failure or we didn't succeed softly after
+    // the full set of attempts, so back off the badness.
+    __kmp_step_badness( lck );
+    return 0;
+}
+
+// Attempt to acquire the speculative lock, or back off to the non-speculative one
+// if the speculative lock cannot be acquired.
+// We can succeed speculatively, non-speculatively, or fail.
+static int
+__kmp_test_adaptive_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid )
+{
+    // First try to acquire the lock speculatively
+    if ( __kmp_should_speculate( lck, gtid ) && __kmp_test_adaptive_lock_only( lck, gtid ) )
+        return 1;
+
+    // Speculative acquisition failed, so try to acquire it non-speculatively.
+    // Count the non-speculative acquire attempt
+    lck->lk.adaptive.acquire_attempts++;
+
+    // Use base, non-speculative lock.
+    if ( __kmp_test_queuing_lock( lck, gtid ) )
+    {
+        KMP_INC_STAT(lck,nonSpeculativeAcquires);
+        return 1;       // Lock is acquired (non-speculatively)
+    }
+    else
+    {
+        return 0;       // Failed to acquire the lock, it's already visibly locked.
+    }
+}
+
+static int
+__kmp_test_adaptive_lock_with_checks( kmp_queuing_lock_t *lck, kmp_int32 gtid )
+{
+    if ( __kmp_env_consistency_check ) {
+        char const * const func = "omp_test_lock";
+        if ( lck->lk.initialized != lck ) {
+            KMP_FATAL( LockIsUninitialized, func );
+        }
+    }
+
+    int retval = __kmp_test_adaptive_lock( lck, gtid );
+
+    if ( __kmp_env_consistency_check && retval ) {
+        lck->lk.owner_id = gtid + 1;
+    }
+    return retval;
+}
+
+// Block until we can acquire a speculative, adaptive lock.
+// We check whether we should be trying to speculate.
+// If we should be, we check the real lock to see if it is free,
+// and, if not, pause without attempting to acquire it until it is.
+// Then we try the speculative acquire.
+// This means that although we suffer from lemmings a little (
+// because all we can't acquire the lock speculatively until
+// the queue of threads waiting has cleared), we don't get into a
+// state where we can never acquire the lock speculatively (because we
+// force the queue to clear by preventing new arrivals from entering the
+// queue).
+// This does mean that when we're trying to break lemmings, the lock
+// is no longer fair. However OpenMP makes no guarantee that its
+// locks are fair, so this isn't a real problem.
+static void
+__kmp_acquire_adaptive_lock( kmp_queuing_lock_t * lck, kmp_int32 gtid )
+{
+    if ( __kmp_should_speculate( lck, gtid ) )
+    {
+        if ( __kmp_is_unlocked_queuing_lock( lck ) )
+        {
+            if ( __kmp_test_adaptive_lock_only( lck , gtid ) )
+                return;
+            // We tried speculation and failed, so give up.
+        }
+        else
+        {
+            // We can't try speculation until the lock is free, so we
+            // pause here (without suspending on the queueing lock,
+            // to allow it to drain, then try again.
+            // All other threads will also see the same result for
+            // shouldSpeculate, so will be doing the same if they
+            // try to claim the lock from now on.
+            while ( ! __kmp_is_unlocked_queuing_lock( lck ) )
+            {
+                KMP_INC_STAT(lck,lemmingYields);
+                __kmp_yield (TRUE);
+            }
+
+            if ( __kmp_test_adaptive_lock_only( lck, gtid ) )
+                return;
+        }
+    }
+
+    // Speculative acquisition failed, so acquire it non-speculatively.
+    // Count the non-speculative acquire attempt
+    lck->lk.adaptive.acquire_attempts++;
+
+    __kmp_acquire_queuing_lock_timed_template<FALSE>( lck, gtid );
+    // We have acquired the base lock, so count that.
+    KMP_INC_STAT(lck,nonSpeculativeAcquires );
+}
+
+static void
+__kmp_acquire_adaptive_lock_with_checks( kmp_queuing_lock_t *lck, kmp_int32 gtid )
+{
+    if ( __kmp_env_consistency_check ) {
+        char const * const func = "omp_set_lock";
+        if ( lck->lk.initialized != lck ) {
+            KMP_FATAL( LockIsUninitialized, func );
+        }
+        if ( __kmp_get_queuing_lock_owner( lck ) == gtid ) {
+            KMP_FATAL( LockIsAlreadyOwned, func );
+        }
+    }
+
+    __kmp_acquire_adaptive_lock( lck, gtid );
+
+    if ( __kmp_env_consistency_check ) {
+        lck->lk.owner_id = gtid + 1;
+    }
+}
+
+static void
+__kmp_release_adaptive_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid )
+{
+    if ( __kmp_is_unlocked_queuing_lock( lck ) )
+    {   // If the lock doesn't look claimed we must be speculating.
+        // (Or the user's code is buggy and they're releasing without locking;
+        // if we had XTEST we'd be able to check that case...)
+        _xend();        // Exit speculation
+        __kmp_update_badness_after_success( lck );
+    }
+    else
+    {   // Since the lock *is* visibly locked we're not speculating,
+        // so should use the underlying lock's release scheme.
+        __kmp_release_queuing_lock( lck, gtid );
+    }
+}
+
+static void
+__kmp_release_adaptive_lock_with_checks( kmp_queuing_lock_t *lck, kmp_int32 gtid )
+{
+    if ( __kmp_env_consistency_check ) {
+        char const * const func = "omp_unset_lock";
+        KMP_MB();  /* in case another processor initialized lock */
+        if ( lck->lk.initialized != lck ) {
+            KMP_FATAL( LockIsUninitialized, func );
+        }
+        if ( __kmp_get_queuing_lock_owner( lck ) == -1 ) {
+            KMP_FATAL( LockUnsettingFree, func );
+        }
+        if ( __kmp_get_queuing_lock_owner( lck ) != gtid ) {
+            KMP_FATAL( LockUnsettingSetByAnother, func );
+        }
+        lck->lk.owner_id = 0;
+    }
+    __kmp_release_adaptive_lock( lck, gtid );
+}
+
+static void
+__kmp_init_adaptive_lock( kmp_queuing_lock_t *lck )
+{
+    __kmp_init_queuing_lock( lck );
+    lck->lk.adaptive.badness = 0;
+    lck->lk.adaptive.acquire_attempts = 0; //nonSpeculativeAcquireAttempts = 0;
+    lck->lk.adaptive.max_soft_retries = __kmp_adaptive_backoff_params.max_soft_retries;
+    lck->lk.adaptive.max_badness      = __kmp_adaptive_backoff_params.max_badness;
+#if KMP_DEBUG_ADAPTIVE_LOCKS
+    __kmp_zero_speculative_stats( &lck->lk.adaptive );
+#endif
+    KA_TRACE(1000, ("__kmp_init_adaptive_lock: lock %p initialized\n", lck));
+}
+
+static void
+__kmp_init_adaptive_lock_with_checks( kmp_queuing_lock_t * lck )
+{
+    __kmp_init_adaptive_lock( lck );
+}
+
+static void
+__kmp_destroy_adaptive_lock( kmp_queuing_lock_t *lck )
+{
+#if KMP_DEBUG_ADAPTIVE_LOCKS
+    __kmp_accumulate_speculative_stats( &lck->lk.adaptive );
+#endif
+    __kmp_destroy_queuing_lock (lck);
+    // Nothing needed for the speculative part.
+}
+
+static void
+__kmp_destroy_adaptive_lock_with_checks( kmp_queuing_lock_t *lck )
+{
+    if ( __kmp_env_consistency_check ) {
+        char const * const func = "omp_destroy_lock";
+        if ( lck->lk.initialized != lck ) {
+            KMP_FATAL( LockIsUninitialized, func );
+        }
+        if ( __kmp_get_queuing_lock_owner( lck ) != -1 ) {
+            KMP_FATAL( LockStillOwned, func );
+        }
+    }
+    __kmp_destroy_adaptive_lock( lck );
+}
+
+
+#endif // KMP_USE_ADAPTIVE_LOCKS
+
+
 /* ------------------------------------------------------------------------ */
 /* DRDPA ticket locks                                                */
 /* "DRDPA" means Dynamically Reconfigurable Distributed Polling Area */
@@ -1959,6 +2559,8 @@ __kmp_acquire_drdpa_lock_timed_template( kmp_drdpa_lock_t *lck, kmp_int32 gtid )
     // and poll to be re-read every spin iteration.
     //
     kmp_uint32 spins;
+
+    KMP_FSYNC_PREPARE(lck);
     KMP_INIT_YIELD(spins);
     while (TCR_8(polls[ticket & mask]).poll < ticket) { // volatile load
         __kmp_static_delay(TRUE);
@@ -1989,6 +2591,7 @@ __kmp_acquire_drdpa_lock_timed_template( kmp_drdpa_lock_t *lck, kmp_int32 gtid )
     //
     // Critical section starts here
     //
+    KMP_FSYNC_ACQUIRED(lck);
     KA_TRACE(1000, ("__kmp_acquire_drdpa_lock: ticket #%lld acquired lock %p\n",
       ticket, lck));
     lck->lk.now_serving = ticket;                       // non-volatile store
@@ -2055,7 +2658,7 @@ __kmp_acquire_drdpa_lock_timed_template( kmp_drdpa_lock_t *lck, kmp_int32 gtid )
                 //
                 polls = (volatile struct kmp_base_drdpa_lock::kmp_lock_poll *)
                   __kmp_allocate(num_polls * sizeof(*polls));
-                int i;
+                kmp_uint32 i;
                 for (i = 0; i < old_num_polls; i++) {
                     polls[i].poll = old_polls[i].poll;
                 }
@@ -2143,6 +2746,7 @@ __kmp_test_drdpa_lock( kmp_drdpa_lock_t *lck, kmp_int32 gtid )
         kmp_uint64 next_ticket = ticket + 1;
         if (KMP_COMPARE_AND_STORE_ACQ64((kmp_int64 *)&lck->lk.next_ticket,
           ticket, next_ticket)) {
+            KMP_FSYNC_ACQUIRED(lck);
             KA_TRACE(1000, ("__kmp_test_drdpa_lock: ticket #%lld acquired lock %p\n",
                ticket, lck));
             lck->lk.now_serving = ticket;               // non-volatile store
@@ -2198,7 +2802,8 @@ __kmp_release_drdpa_lock( kmp_drdpa_lock_t *lck, kmp_int32 gtid )
     kmp_uint64 mask = TCR_8(lck->lk.mask);              // volatile load
     KA_TRACE(1000, ("__kmp_release_drdpa_lock: ticket #%lld released lock %p\n",
        ticket - 1, lck));
-    TCW_8(polls[ticket & mask].poll, ticket);           // volatile store
+    KMP_FSYNC_RELEASING(lck);
+    KMP_ST_REL64(&(polls[ticket & mask].poll), ticket); // volatile store
 }
 
 static void
@@ -2581,7 +3186,7 @@ void __kmp_set_user_lock_vptrs( kmp_lock_kind_t user_lock_kind )
         }
         break;
 
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
 
         case lk_futex: {
             __kmp_base_user_lock_size = sizeof( kmp_base_futex_lock_t );
@@ -2652,7 +3257,7 @@ void __kmp_set_user_lock_vptrs( kmp_lock_kind_t user_lock_kind )
         }
         break;
 
-#endif // KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#endif // KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
 
         case lk_ticket: {
             __kmp_base_user_lock_size = sizeof( kmp_base_ticket_lock_t );
@@ -2801,6 +3406,63 @@ void __kmp_set_user_lock_vptrs( kmp_lock_kind_t user_lock_kind )
                ( &__kmp_set_queuing_lock_flags );
         }
         break;
+
+#if KMP_USE_ADAPTIVE_LOCKS
+        case lk_adaptive: {
+            __kmp_base_user_lock_size = sizeof( kmp_base_queuing_lock_t );
+            __kmp_user_lock_size = sizeof( kmp_queuing_lock_t );
+
+            __kmp_get_user_lock_owner_ =
+              ( kmp_int32 ( * )( kmp_user_lock_p ) )
+              ( &__kmp_get_queuing_lock_owner );
+
+            __kmp_acquire_user_lock_with_checks_ =
+              ( void ( * )( kmp_user_lock_p, kmp_int32 ) )
+              ( &__kmp_acquire_adaptive_lock_with_checks );
+
+            __kmp_test_user_lock_with_checks_ =
+              ( int  ( * )( kmp_user_lock_p, kmp_int32 ) )
+              ( &__kmp_test_adaptive_lock_with_checks );
+
+            __kmp_release_user_lock_with_checks_ =
+              ( void ( * )( kmp_user_lock_p, kmp_int32 ) )
+              ( &__kmp_release_adaptive_lock_with_checks );
+
+            __kmp_init_user_lock_with_checks_ =
+              ( void ( * )( kmp_user_lock_p ) )
+              ( &__kmp_init_adaptive_lock_with_checks );
+
+            __kmp_destroy_user_lock_with_checks_ =
+              ( void ( * )( kmp_user_lock_p ) )
+              ( &__kmp_destroy_adaptive_lock_with_checks );
+
+            __kmp_destroy_user_lock_ =
+              ( void ( * )( kmp_user_lock_p ) )
+              ( &__kmp_destroy_adaptive_lock );
+
+            __kmp_is_user_lock_initialized_ =
+              ( int ( * )( kmp_user_lock_p ) )
+              ( &__kmp_is_queuing_lock_initialized );
+
+            __kmp_get_user_lock_location_ =
+              ( const ident_t * ( * )( kmp_user_lock_p ) )
+              ( &__kmp_get_queuing_lock_location );
+
+            __kmp_set_user_lock_location_ =
+              ( void ( * )( kmp_user_lock_p, const ident_t * ) )
+              ( &__kmp_set_queuing_lock_location );
+
+            __kmp_get_user_lock_flags_ =
+              ( kmp_lock_flags_t ( * )( kmp_user_lock_p ) )
+              ( &__kmp_get_queuing_lock_flags );
+
+            __kmp_set_user_lock_flags_ =
+              ( void ( * )( kmp_user_lock_p, kmp_lock_flags_t ) )
+              ( &__kmp_set_queuing_lock_flags );
+
+        }
+        break;
+#endif // KMP_USE_ADAPTIVE_LOCKS
 
         case lk_drdpa: {
             __kmp_base_user_lock_size = sizeof( kmp_base_drdpa_lock_t );

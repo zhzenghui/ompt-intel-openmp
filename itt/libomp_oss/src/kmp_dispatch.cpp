@@ -1,7 +1,7 @@
 /*
  * kmp_dispatch.cpp: dynamic scheduling - iteration initialization and dispatch.
- * $Revision: 42195 $
- * $Date: 2013-03-27 16:10:35 -0500 (Wed, 27 Mar 2013) $
+ * $Revision: 42674 $
+ * $Date: 2013-09-18 11:12:49 -0500 (Wed, 18 Sep 2013) $
  */
 
 /* <copyright>
@@ -32,16 +32,6 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
 
 /*
@@ -58,6 +48,7 @@
 
 #include "kmp.h"
 #include "kmp_i18n.h"
+#include "kmp_itt.h"
 #include "kmp_str.h"
 #include "kmp_error.h"
 #if KMP_OS_WINDOWS && KMP_ARCH_X86
@@ -286,6 +277,14 @@ compare_and_swap< kmp_int64 >( volatile kmp_int64 *p, kmp_int64 c, kmp_int64 s )
     Spin wait loop that first does pause, then yield.
     Waits until function returns non-zero when called with *spinner and check.
     Does NOT put threads to sleep.
+#if USE_ITT_BUILD
+    Arguments:
+        obj -- is higher-level syncronization object to report to ittnotify. It is used to report
+            locks consistently. For example, if lock is acquired immediately, its address is
+            reported to ittnotify via KMP_FSYNC_ACQUIRED(). However, it lock cannot be acquired
+            immediately and lock routine calls to KMP_WAIT_YIELD(), the later should report the same
+            address, not an address of low-level spinner.
+#endif // USE_ITT_BUILD
 */
 template< typename UT >
 // ToDo: make inline function (move to header file for icl)
@@ -293,6 +292,7 @@ static UT  // unsigned 4- or 8-byte type
 __kmp_wait_yield( volatile UT * spinner,
                   UT            checker,
                   kmp_uint32 (* pred)( UT, UT )
+                  USE_ITT_BUILD_ARG(void        * obj)    // Higher-level synchronization object, or NULL.
                   )
 {
     // note: we may not belong to a team at this point
@@ -302,9 +302,12 @@ __kmp_wait_yield( volatile UT * spinner,
     register          kmp_uint32 (*f) ( UT, UT ) = pred;
     register          UT           r;
 
+    KMP_FSYNC_SPIN_INIT( obj, (void*) spin );
     KMP_INIT_YIELD( spins );
     // main wait spin loop
-    while(!f(r = *spin, check)) {
+    while(!f(r = *spin, check))
+    {
+        KMP_FSYNC_SPIN_PREPARE( obj );
         /* GEH - remove this since it was accidentally introduced when kmp_wait was split.
            It causes problems with infinite recursion because of exit lock */
         /* if ( TCR_4(__kmp_global.g.g_done) && __kmp_global.g.g_abort)
@@ -318,6 +321,7 @@ __kmp_wait_yield( volatile UT * spinner,
         KMP_YIELD( TCR_4(__kmp_nth) > __kmp_avail_proc );
         KMP_YIELD_SPIN( spins );
     }
+    KMP_FSYNC_SPIN_ACQUIRED( obj );
     return r;
 }
 
@@ -425,6 +429,7 @@ __kmp_dispatch_deo( int *gtid_ref, int *cid_ref, ident_t *loc_ref )
         #endif
 
         __kmp_wait_yield< UT >( &sh->u.s.ordered_iteration, lower, __kmp_ge< UT >
+                                USE_ITT_BUILD_ARG( NULL )
                                 );
         KMP_MB();  /* is this necessary? */
         #ifdef KMP_DEBUG
@@ -485,6 +490,7 @@ __kmp_dispatch_dxo( int *gtid_ref, int *cid_ref, ident_t *loc_ref )
                 ( th -> th.th_dispatch -> th_dispatch_pr_current );
         }
 
+        KMP_FSYNC_RELEASING( & sh->u.s.ordered_iteration );
         #if ! defined( KMP_GOMP_COMPAT )
             if ( __kmp_env_consistency_check ) {
                 if ( pr->ordered_bumped != 0 ) {
@@ -546,7 +552,7 @@ __kmp_dispatch_guided_remaining(
     typename traits_t< T >::unsigned_t idx
 ) {
     /* Note: On Windows* OS on IA-32 architecture and Intel(R) 64, at
-       least for ICL 8.1, long double arithmetic may not really have 
+       least for ICL 8.1, long double arithmetic may not really have
        long double precision, even with /Qlong_double.  Currently, we
        workaround that in the caller code, by manipulating the FPCW for
        Windows* OS on IA-32 architecture.  The lack of precision is not
@@ -882,11 +888,11 @@ __kmp_dispatch_init(
         } // case
     case kmp_sch_guided_iterative_chunked :
         {
-            int nproc = team->t.t_nproc;
+            T nproc = team->t.t_nproc;
             KD_TRACE(100,("__kmp_dispatch_init: T#%d kmp_sch_guided_iterative_chunked case\n",gtid));
 
             if ( nproc > 1 ) {
-                if ( (2UL * chunk + 1 ) * nproc >= tc ) {
+                if ( (2L * chunk + 1 ) * nproc >= tc ) {
                     /* chunk size too large, switch to dynamic */
                     schedule = kmp_sch_dynamic_chunked;
                 } else {
@@ -905,11 +911,11 @@ __kmp_dispatch_init(
         break;
     case kmp_sch_guided_analytical_chunked:
         {
-            int nproc = team->t.t_nproc;
+            T nproc = team->t.t_nproc;
             KD_TRACE(100, ("__kmp_dispatch_init: T#%d kmp_sch_guided_analytical_chunked case\n", gtid));
 
             if ( nproc > 1 ) {
-                if ( (2UL * chunk + 1 ) * nproc >= tc ) {
+                if ( (2L * chunk + 1 ) * nproc >= tc ) {
                     /* chunk size too large, switch to dynamic */
                     schedule = kmp_sch_dynamic_chunked;
                 } else {
@@ -919,17 +925,18 @@ __kmp_dispatch_init(
                     #if KMP_OS_WINDOWS && KMP_ARCH_X86
                     /* Linux* OS already has 64-bit computation by default for
 		       long double, and on Windows* OS on Intel(R) 64,
-		       /Qlong_double doesn't work.  On Windows* OS 
+		       /Qlong_double doesn't work.  On Windows* OS
 		       on IA-32 architecture, we need to set precision to
-		       64-bit instead of the default 53-bit. Even though long 
+		       64-bit instead of the default 53-bit. Even though long
 		       double doesn't work on Windows* OS on Intel(R) 64, the
-		       resulting lack of precision is not expected to impact 
+		       resulting lack of precision is not expected to impact
 		       the correctness of the algorithm, but this has not been
 		       mathematically proven.
                     */
-                    // save original FPCW and set precision to 64-bit, as 
+                    // save original FPCW and set precision to 64-bit, as
                     // Windows* OS on IA-32 architecture defaults to 53-bit
-                    unsigned int oldFpcw = _control87(0,0x30000);
+                    unsigned int oldFpcw = _control87(0,0);
+                    _control87(_PC_64,_MCW_PC); // 0,0x30000
                     #endif
                     /* value used for comparison in solver for cross-over point */
                     long double target = ((long double)chunk * 2 + 1) * nproc / tc;
@@ -1008,7 +1015,7 @@ __kmp_dispatch_init(
                     pr->u.p.count = tc - __kmp_dispatch_guided_remaining(tc, GUIDED_ANALYTICAL_WORKAROUND, cross) - cross * chunk;
                     #if KMP_OS_WINDOWS && KMP_ARCH_X86
                         // restore FPCW
-                        _control87(oldFpcw,0x30000);
+                        _control87(oldFpcw,_MCW_PC);
                     #endif
                 } // if
             } else {
@@ -1097,6 +1104,7 @@ __kmp_dispatch_init(
         KD_TRACE(100, ("__kmp_dispatch_init: T#%d before wait: my_buffer_index:%d sh->buffer_index:%d\n",
                         gtid, my_buffer_index, sh->buffer_index) );
         __kmp_wait_yield< kmp_uint32 >( & sh->buffer_index, my_buffer_index, __kmp_eq< kmp_uint32 >
+                                        USE_ITT_BUILD_ARG( NULL )
                                         );
             // Note: KMP_WAIT_YIELD() cannot be used there: buffer index and my_buffer_index are
             // *always* 32-bit integers.
@@ -1106,6 +1114,11 @@ __kmp_dispatch_init(
 
         th -> th.th_dispatch -> th_dispatch_pr_current = (dispatch_private_info_t*) pr;
         th -> th.th_dispatch -> th_dispatch_sh_current = (dispatch_shared_info_t*)  sh;
+#if USE_ITT_BUILD
+        if ( pr->ordered ) {
+            __kmp_itt_ordered_init( gtid );
+        }; // if
+#endif /* USE_ITT_BUILD */
     }; // if
     #ifdef KMP_DEBUG
     {
@@ -1192,6 +1205,7 @@ __kmp_dispatch_finish( int gtid, ident_t *loc )
             #endif
 
             __kmp_wait_yield< UT >(&sh->u.s.ordered_iteration, lower, __kmp_ge< UT >
+                                   USE_ITT_BUILD_ARG(NULL)
                                    );
             KMP_MB();  /* is this necessary? */
             #ifdef KMP_DEBUG
@@ -1261,6 +1275,7 @@ __kmp_dispatch_finish_chunk( int gtid, ident_t *loc )
                 #endif
 
                 __kmp_wait_yield< UT >(&sh->u.s.ordered_iteration, lower, __kmp_ge< UT >
+                                       USE_ITT_BUILD_ARG(NULL)
                                        );
 
                 KMP_MB();  /* is this necessary? */
@@ -1461,7 +1476,7 @@ __kmp_dispatch_next(
                         // Other threads do not look into the data of this thread,
                         //  so it's not necessary to make volatile casting.
                         init   = ( pr->u.p.count )++;
-                        status = ( init < pr->u.p.ub );
+                        status = ( init < (UT)pr->u.p.ub );
                     } else {
                         typedef union {
                             struct {
@@ -1488,7 +1503,7 @@ __kmp_dispatch_next(
                             }
                             vnew = vold;
                             init   = vnew.p.count;
-                            status = ( init < vnew.p.ub ) ;
+                            status = ( init < (UT)vnew.p.ub ) ;
                         }
 
                         if( !status ) {
@@ -1532,12 +1547,12 @@ __kmp_dispatch_next(
                                     vold.b = *( volatile kmp_int64 * )( &victim->u.p.count );
                                     vnew = vold;
 
-                                    KMP_DEBUG_ASSERT( (vnew.p.ub - 1) * chunk <= trip );
-                                    if ( vnew.p.count >= vnew.p.ub || (remaining = vnew.p.ub - vnew.p.count) < 4 ) {
+                                    KMP_DEBUG_ASSERT( (vnew.p.ub - 1) * (UT)chunk <= trip );
+                                    if ( vnew.p.count >= (UT)vnew.p.ub || (remaining = vnew.p.ub - vnew.p.count) < 4 ) {
                                         break;
                                     }
                                     vnew.p.ub -= (remaining >> 2);
-                                    KMP_DEBUG_ASSERT((vnew.p.ub - 1) * chunk <= trip);
+                                    KMP_DEBUG_ASSERT((vnew.p.ub - 1) * (UT)chunk <= trip);
                                     #pragma warning( push )
                                     // disable warning on pointless comparison of unsigned with 0
                                     #pragma warning( disable: 186 )
@@ -1551,7 +1566,7 @@ __kmp_dispatch_next(
                                         status = 1;
                                         while_index = 0;
                                         // now update own count and ub
-                                        #if KMP_ARCH_X86 
+                                        #if KMP_ARCH_X86
                                         // stealing executed on non-KMP_ARCH_X86 only
                                             // Atomic 64-bit write on ia32 is
                                             // unavailable, so we do this in steps.
@@ -1773,7 +1788,7 @@ __kmp_dispatch_next(
                             status = 0;
                             break;
                         }
-                        if ( remaining < pr->u.p.parm2 ) { // compare with K*nproc*(chunk+1), K=2 by default
+                        if ( (T)remaining < pr->u.p.parm2 ) { // compare with K*nproc*(chunk+1), K=2 by default
                             // use dynamic-style shcedule
                             // atomically inrement iterations, get old value
                             init = test_then_add<ST>( (ST*)&sh->u.s.iteration, (ST)chunkspec );
@@ -1783,7 +1798,7 @@ __kmp_dispatch_next(
                             } else {
                                 // got some iterations to work on
                                 status = 1;
-                                if ( remaining > chunkspec ) {
+                                if ( (T)remaining > chunkspec ) {
                                     limit = init + chunkspec - 1;
                                 } else {
                                     last = 1;   // the last chunk
@@ -1838,10 +1853,10 @@ __kmp_dispatch_next(
                     T   chunkspec = pr->u.p.parm1;
                     UT chunkIdx;
     #if KMP_OS_WINDOWS && KMP_ARCH_X86
-                    /* for storing original FPCW value for Windows* OS on 
+                    /* for storing original FPCW value for Windows* OS on
 		       IA-32 architecture 8-byte version */
                     unsigned int oldFpcw;
-                    int fpcwSet = 0;
+                    unsigned int fpcwSet = 0;
     #endif
                     KD_TRACE(100, ("__kmp_dispatch_next: T#%d kmp_sch_guided_chunked analytical case\n",
                                    gtid ) );
@@ -1849,11 +1864,11 @@ __kmp_dispatch_next(
                     trip  = pr->u.p.tc;
 
                     KMP_DEBUG_ASSERT(team->t.t_nproc > 1);
-                    KMP_DEBUG_ASSERT((2UL * chunkspec + 1) * team->t.t_nproc < trip);
+                    KMP_DEBUG_ASSERT((2UL * chunkspec + 1) * (UT)team->t.t_nproc < trip);
 
                     while(1) { /* this while loop is a safeguard against unexpected zero chunk sizes */
                         chunkIdx = test_then_inc_acq< ST >((volatile ST *) & sh->u.s.iteration );
-                        if ( chunkIdx >= pr->u.p.parm2 ) {
+                        if ( chunkIdx >= (UT)pr->u.p.parm2 ) {
                             --trip;
                             /* use dynamic-style scheduling */
                             init = chunkIdx * chunkspec + pr->u.p.count;
@@ -1875,7 +1890,8 @@ __kmp_dispatch_next(
 			       FPCW and set precision to 64-bit, as Windows* OS
 			       on IA-32 architecture defaults to 53-bit */
                             if ( !fpcwSet ) {
-                                oldFpcw = _control87(0,0x30000);
+                                oldFpcw = _control87(0,0);
+                                _control87(_PC_64,_MCW_PC);
                                 fpcwSet = 0x30000;
                             }
     #endif
@@ -1898,9 +1914,11 @@ __kmp_dispatch_next(
                         } // if
                     } // while (1)
     #if KMP_OS_WINDOWS && KMP_ARCH_X86
-                    /* restore FPCW if necessary */
-                    if ( oldFpcw & fpcwSet != 0 )
-                        _control87(oldFpcw,0x30000);
+                    /* restore FPCW if necessary
+                       AC: check fpcwSet flag first because oldFpcw can be uninitialized here
+                    */
+                    if ( fpcwSet && ( oldFpcw & fpcwSet ) )
+                        _control87(oldFpcw,_MCW_PC);
     #endif
                     if ( status != 0 ) {
                         start = pr->u.p.lb;
@@ -1949,7 +1967,7 @@ __kmp_dispatch_next(
                     init = ( index * ( (2*parm2) - (index-1)*parm4 ) ) / 2;
                     trip = pr->u.p.tc - 1;
 
-                    if ( (status = (index < parm3 && init <= trip)) == 0 ) {
+                    if ( (status = ((T)index < parm3 && init <= trip)) == 0 ) {
                         *p_lb = 0;
                         *p_ub = 0;
                         if ( p_st != 0 ) *p_st = 0;
@@ -2275,9 +2293,11 @@ __kmp_wait_yield_4(volatile kmp_uint32 * spinner,
     register          kmp_uint32 (*f) ( kmp_uint32, kmp_uint32 ) = pred;
     register          kmp_uint32           r;
 
+    KMP_FSYNC_SPIN_INIT( obj, (void*) spin );
     KMP_INIT_YIELD( spins );
     // main wait spin loop
     while(!f(r = TCR_4(*spin), check)) {
+        KMP_FSYNC_SPIN_PREPARE( obj );
         /* GEH - remove this since it was accidentally introduced when kmp_wait was split.
            It causes problems with infinite recursion because of exit lock */
         /* if ( TCR_4(__kmp_global.g.g_done) && __kmp_global.g.g_abort)
@@ -2290,6 +2310,7 @@ __kmp_wait_yield_4(volatile kmp_uint32 * spinner,
         KMP_YIELD( TCR_4(__kmp_nth) > __kmp_avail_proc );
         KMP_YIELD_SPIN( spins );
     }
+    KMP_FSYNC_SPIN_ACQUIRED( obj );
     return r;
 }
 
@@ -2307,10 +2328,12 @@ __kmp_wait_yield_8( volatile kmp_uint64 * spinner,
     register          kmp_uint32 (*f) ( kmp_uint64, kmp_uint64 ) = pred;
     register          kmp_uint64           r;
 
+    KMP_FSYNC_SPIN_INIT( obj, (void*) spin );
     KMP_INIT_YIELD( spins );
     // main wait spin loop
     while(!f(r = *spin, check))
     {
+        KMP_FSYNC_SPIN_PREPARE( obj );
         /* GEH - remove this since it was accidentally introduced when kmp_wait was split.
            It causes problems with infinite recursion because of exit lock */
         /* if ( TCR_4(__kmp_global.g.g_done) && __kmp_global.g.g_abort)
@@ -2324,6 +2347,7 @@ __kmp_wait_yield_8( volatile kmp_uint64 * spinner,
         KMP_YIELD( TCR_4(__kmp_nth) > __kmp_avail_proc );
         KMP_YIELD_SPIN( spins );
     }
+    KMP_FSYNC_SPIN_ACQUIRED( obj );
     return r;
 }
 

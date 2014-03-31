@@ -1,7 +1,7 @@
 /*
  * kmp_threadprivate.c -- OpenMP threadprivate support library
- * $Revision: 42178 $
- * $Date: 2013-03-22 07:07:59 -0500 (Fri, 22 Mar 2013) $
+ * $Revision: 42618 $
+ * $Date: 2013-08-27 09:15:45 -0500 (Tue, 27 Aug 2013) $
  */
 
 /* <copyright>
@@ -32,19 +32,10 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
 
 #include "kmp.h"
+#include "kmp_itt.h"
 #include "kmp_i18n.h"
 
 /* ------------------------------------------------------------------------ */
@@ -664,8 +655,6 @@ __kmpc_threadprivate_cached(
     size_t     size,         // Size of original global variable.
     void ***   cache
 ) {
-    void *ret, **my_cache;
-
     KC_TRACE( 10, ("__kmpc_threadprivate_cached: T#%d called with cache: %p, address: %p, size: %"
                    KMP_SIZE_T_SPEC "\n",
                    global_tid, *cache, data, size ) );
@@ -674,33 +663,22 @@ __kmpc_threadprivate_cached(
         __kmp_acquire_lock( & __kmp_global_lock, global_tid );
 
         if ( TCR_PTR(*cache) == 0) {
-            int i;
-            kmp_cached_addr_t *tp_cache_addr;
-
             __kmp_acquire_bootstrap_lock(&__kmp_tp_cached_lock);
-            if(__kmp_threads_capacity > __kmp_tp_capacity)
-                __kmp_msg(
-                    kmp_ms_fatal,
-                    KMP_MSG( ManyThreadsForTPDirective ),
-                    KMP_HNT( Set_ALL_THREADPRIVATE, __kmp_threads_capacity),
-                    __kmp_msg_null
-                 );
             __kmp_tp_cached = 1;
             __kmp_release_bootstrap_lock(&__kmp_tp_cached_lock);
-            /* TODO: free all this memory in __kmp_common_destroy using __kmp_threadpriv_cache_list */
-                my_cache = (void**)
-                    __kmp_allocate(
-                        sizeof( void * ) * __kmp_tp_capacity + sizeof ( kmp_cached_addr_t )
-                    );
-
+            void ** my_cache;
+            KMP_ITT_IGNORE(
+            my_cache = (void**)
+                __kmp_allocate(sizeof( void * ) * __kmp_tp_capacity + sizeof ( kmp_cached_addr_t ));
+                           );
+            // No need to zero the allocated memory; __kmp_allocate does that.
             KC_TRACE( 50, ("__kmpc_threadprivate_cached: T#%d allocated cache at address %p\n",
                            global_tid, my_cache ) );
-/*
-            // AC: commented out because __kmp_allocate zeroes the memory
-            for (i = 0; i < __kmp_tp_capacity; ++i)
-                TCW_PTR(my_cache[i], 0);
-*/
-            /* add address of mycache for cleanup later to linked list */
+            
+            /* TODO: free all this memory in __kmp_common_destroy using __kmp_threadpriv_cache_list */
+            /* Add address of mycache to linked list for cleanup later  */
+            kmp_cached_addr_t *tp_cache_addr;
+
             tp_cache_addr = (kmp_cached_addr_t *) & my_cache[__kmp_tp_capacity];
             tp_cache_addr -> addr = my_cache;
             tp_cache_addr -> next = __kmp_threadpriv_cache_list;
@@ -716,7 +694,7 @@ __kmpc_threadprivate_cached(
         __kmp_release_lock( & __kmp_global_lock, global_tid );
     }
 
-
+    void *ret;
     if ((ret = TCR_PTR((*cache)[ global_tid ])) == 0) {
         ret = __kmpc_threadprivate( loc, global_tid, data, (size_t) size);
 

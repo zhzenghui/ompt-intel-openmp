@@ -30,16 +30,6 @@
 !    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 !    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-!
-!------------------------------------------------------------------------
-!
-!    Portions of this software are protected under the following patents:
-!        U.S. Patent 5,812,852
-!        U.S. Patent 6,792,599
-!        U.S. Patent 7,069,556
-!        U.S. Patent 7,328,433
-!        U.S. Patent 7,500,242
-!
 ! </copyright>
 
 !***
@@ -61,6 +51,7 @@
         integer, parameter :: kmp_pointer_kind       = int_ptr_kind()
         integer, parameter :: kmp_size_t_kind        = int_ptr_kind()
         integer, parameter :: kmp_affinity_mask_kind = int_ptr_kind()
+        integer, parameter :: kmp_cancel_kind        = omp_integer_kind
 
       end module omp_lib_kinds
 
@@ -84,6 +75,11 @@
         integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_master = 2
         integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_close = 3
         integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_spread = 4
+
+        integer (kind=kmp_cancel_kind), parameter :: kmp_cancel_parallel = 1
+        integer (kind=kmp_cancel_kind), parameter :: kmp_cancel_loop = 2
+        integer (kind=kmp_cancel_kind), parameter :: kmp_cancel_sections = 3
+        integer (kind=kmp_cancel_kind), parameter :: kmp_cancel_taskgroup = 4
 
         interface
 
@@ -203,53 +199,113 @@
             double precision omp_get_wtick
           end function omp_get_wtick
 
+          function omp_get_default_device()
+            use omp_lib_kinds
+            integer (kind=omp_integer_kind) omp_get_default_device
+          end function omp_get_default_device
+
+          subroutine omp_set_default_device(dflt_device)
+            use omp_lib_kinds
+            integer (kind=omp_integer_kind) dflt_device
+          end subroutine omp_set_default_device
+
+          function omp_get_num_devices()
+            use omp_lib_kinds
+            integer (kind=omp_integer_kind) omp_get_num_devices
+          end function omp_get_num_devices
+
+          function omp_get_num_teams()
+            use omp_lib_kinds
+            integer (kind=omp_integer_kind) omp_get_num_teams
+          end function omp_get_num_teams
+
+          function omp_get_team_num()
+            use omp_lib_kinds
+            integer (kind=omp_integer_kind) omp_get_team_num
+          end function omp_get_team_num
+
+          function omp_get_cancellation()
+            use omp_lib_kinds
+            integer (kind=omp_integer_kind) omp_get_cancellation
+          end function omp_get_cancellation
+
           subroutine omp_init_lock(lockvar)
+!DIR$ IF(__INTEL_COMPILER.GE.1400)
+!DIR$ attributes known_intrinsic :: omp_init_lock
+!DIR$ ENDIF
             use omp_lib_kinds
             integer (kind=omp_lock_kind) lockvar
           end subroutine omp_init_lock
 
           subroutine omp_destroy_lock(lockvar)
+!DIR$ IF(__INTEL_COMPILER.GE.1400)
+!DIR$ attributes known_intrinsic :: omp_destroy_lock
+!DIR$ ENDIF
             use omp_lib_kinds
             integer (kind=omp_lock_kind) lockvar
           end subroutine omp_destroy_lock
 
           subroutine omp_set_lock(lockvar)
+!DIR$ IF(__INTEL_COMPILER.GE.1400)
+!DIR$ attributes known_intrinsic :: omp_set_lock
+!DIR$ ENDIF
             use omp_lib_kinds
             integer (kind=omp_lock_kind) lockvar
           end subroutine omp_set_lock
 
           subroutine omp_unset_lock(lockvar)
+!DIR$ IF(__INTEL_COMPILER.GE.1400)
+!DIR$ attributes known_intrinsic :: omp_unset_lock
+!DIR$ ENDIF
             use omp_lib_kinds
             integer (kind=omp_lock_kind) lockvar
           end subroutine omp_unset_lock
 
           function omp_test_lock(lockvar)
+!DIR$ IF(__INTEL_COMPILER.GE.1400)
+!DIR$ attributes known_intrinsic :: omp_test_lock
+!DIR$ ENDIF
             use omp_lib_kinds
             logical (kind=omp_logical_kind) omp_test_lock
             integer (kind=omp_lock_kind) lockvar
           end function omp_test_lock
 
           subroutine omp_init_nest_lock(lockvar)
+!DIR$ IF(__INTEL_COMPILER.GE.1400)
+!DIR$ attributes known_intrinsic :: omp_init_nest_lock
+!DIR$ ENDIF
             use omp_lib_kinds
             integer (kind=omp_nest_lock_kind) lockvar
           end subroutine omp_init_nest_lock
 
           subroutine omp_destroy_nest_lock(lockvar)
+!DIR$ IF(__INTEL_COMPILER.GE.1400)
+!DIR$ attributes known_intrinsic :: omp_destroy_nest_lock
+!DIR$ ENDIF
             use omp_lib_kinds
             integer (kind=omp_nest_lock_kind) lockvar
           end subroutine omp_destroy_nest_lock
 
           subroutine omp_set_nest_lock(lockvar)
+!DIR$ IF(__INTEL_COMPILER.GE.1400)
+!DIR$ attributes known_intrinsic :: omp_set_nest_lock
+!DIR$ ENDIF
             use omp_lib_kinds
             integer (kind=omp_nest_lock_kind) lockvar
           end subroutine omp_set_nest_lock
 
           subroutine omp_unset_nest_lock(lockvar)
+!DIR$ IF(__INTEL_COMPILER.GE.1400)
+!DIR$ attributes known_intrinsic :: omp_unset_nest_lock
+!DIR$ ENDIF
             use omp_lib_kinds
             integer (kind=omp_nest_lock_kind) lockvar
           end subroutine omp_unset_nest_lock
 
           function omp_test_nest_lock(lockvar)
+!DIR$ IF(__INTEL_COMPILER.GE.1400)
+!DIR$ attributes known_intrinsic :: omp_test_nest_lock
+!DIR$ ENDIF
             use omp_lib_kinds
             integer (kind=omp_integer_kind) omp_test_nest_lock
             integer (kind=omp_nest_lock_kind) lockvar
@@ -391,6 +447,11 @@
           subroutine kmp_set_warnings_off()
           end subroutine kmp_set_warnings_off
 
+          function kmp_get_cancellation_status(cancelkind)
+            use omp_lib_kinds
+            integer (kind=kmp_cancel_kind) cancelkind
+            logical (kind=omp_logical_kind) kmp_get_cancellation_status
+          end function kmp_get_cancellation_status
         end interface
 
 !dec$ if defined(_WIN32)
@@ -428,6 +489,12 @@
 !dec$ attributes alias:'OMP_GET_PROC_BIND' :: omp_get_proc_bind
 !dec$ attributes alias:'OMP_GET_WTIME' :: omp_get_wtime
 !dec$ attributes alias:'OMP_GET_WTICK' :: omp_get_wtick
+!dec$ attributes alias:'OMP_GET_DEFAULT_DEVICE' :: omp_get_default_device
+!dec$ attributes alias:'OMP_SET_DEFAULT_DEVICE' :: omp_set_default_device
+!dec$ attributes alias:'OMP_GET_NUM_DEVICES' :: omp_get_num_devices
+!dec$ attributes alias:'OMP_GET_NUM_TEAMS' :: omp_get_num_teams
+!dec$ attributes alias:'OMP_GET_TEAM_NUM' :: omp_get_team_num
+!dec$ attributes alias:'OMP_GET_CANCELLATION' :: omp_get_cancellation
 
 !dec$ attributes alias:'omp_init_lock' :: omp_init_lock
 !dec$ attributes alias:'omp_destroy_lock' :: omp_destroy_lock
@@ -467,6 +534,8 @@
 !dec$ attributes alias:'KMP_SET_WARNINGS_ON'::kmp_set_warnings_on
 !dec$ attributes alias:'KMP_SET_WARNINGS_OFF'::kmp_set_warnings_off
 
+!dec$ attributes alias:'KMP_GET_CANCELLATION_STATUS' :: kmp_get_cancellation_status
+
 !dec$   else
 
 !***
@@ -495,6 +564,12 @@
 !dec$ attributes alias:'_OMP_GET_PROC_BIND' :: omp_get_proc_bind
 !dec$ attributes alias:'_OMP_GET_WTIME' :: omp_get_wtime
 !dec$ attributes alias:'_OMP_GET_WTICK' :: omp_get_wtick
+!dec$ attributes alias:'_OMP_GET_DEFAULT_DEVICE' :: omp_get_default_device
+!dec$ attributes alias:'_OMP_SET_DEFAULT_DEVICE' :: omp_set_default_device
+!dec$ attributes alias:'_OMP_GET_NUM_DEVICES' :: omp_get_num_devices
+!dec$ attributes alias:'_OMP_GET_NUM_TEAMS' :: omp_get_num_teams
+!dec$ attributes alias:'_OMP_GET_TEAM_NUM' :: omp_get_team_num
+!dec$ attributes alias:'_OMP_GET_CANCELLATION' :: omp_get_cancellation
 
 !dec$ attributes alias:'_omp_init_lock' :: omp_init_lock
 !dec$ attributes alias:'_omp_destroy_lock' :: omp_destroy_lock
@@ -534,6 +609,8 @@
 !dec$ attributes alias:'_KMP_SET_WARNINGS_ON'::kmp_set_warnings_on
 !dec$ attributes alias:'_KMP_SET_WARNINGS_OFF'::kmp_set_warnings_off
 
+!dec$ attributes alias:'_KMP_GET_CANCELLATION_STATUS' :: kmp_get_cancellation_status
+
 !dec$   endif
 !dec$ endif
 
@@ -565,6 +642,12 @@
 !dec$ attributes alias:'omp_get_proc_bind_' :: omp_get_proc_bind
 !dec$ attributes alias:'omp_get_wtime_'::omp_get_wtime
 !dec$ attributes alias:'omp_get_wtick_'::omp_get_wtick
+!dec$ attributes alias:'omp_get_default_device_'::omp_get_default_device
+!dec$ attributes alias:'omp_set_default_device_'::omp_set_default_device
+!dec$ attributes alias:'omp_get_num_devices_'::omp_get_num_devices
+!dec$ attributes alias:'omp_get_num_teams_'::omp_get_num_teams
+!dec$ attributes alias:'omp_get_team_num_'::omp_get_team_num
+!dec$ attributes alias:'omp_get_cancellation_'::omp_get_cancellation
 
 !dec$ attributes alias:'omp_init_lock_'::omp_init_lock
 !dec$ attributes alias:'omp_destroy_lock_'::omp_destroy_lock
@@ -603,6 +686,7 @@
 
 !dec$ attributes alias:'kmp_set_warnings_on_'::kmp_set_warnings_on
 !dec$ attributes alias:'kmp_set_warnings_off_'::kmp_set_warnings_off
+!dec$ attributes alias:'kmp_get_cancellation_status_'::kmp_get_cancellation_status
 
 !dec$ endif
 
@@ -635,6 +719,9 @@
 !dec$ attributes alias:'_omp_get_proc_bind_' :: omp_get_proc_bind
 !dec$ attributes alias:'_omp_get_wtime_'::omp_get_wtime
 !dec$ attributes alias:'_omp_get_wtick_'::omp_get_wtick
+!dec$ attributes alias:'_omp_get_num_teams_'::omp_get_num_teams
+!dec$ attributes alias:'_omp_get_team_num_'::omp_get_team_num
+!dec$ attributes alias:'_omp_get_cancellation_'::omp_get_cancellation
 
 !dec$ attributes alias:'_omp_init_lock_'::omp_init_lock
 !dec$ attributes alias:'_omp_destroy_lock_'::omp_destroy_lock
@@ -673,6 +760,8 @@
 
 !dec$ attributes alias:'_kmp_set_warnings_on_'::kmp_set_warnings_on
 !dec$ attributes alias:'_kmp_set_warnings_off_'::kmp_set_warnings_off
+
+!dec$ attributes alias:'_kmp_get_cancellation_status_'::kmp_get_cancellation_status
 
 !dec$ endif
 

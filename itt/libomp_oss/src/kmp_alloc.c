@@ -1,7 +1,7 @@
 /*
  * kmp_alloc.c -- private/shared dyanmic memory allocation and management
- * $Revision: 42195 $
- * $Date: 2013-03-27 16:10:35 -0500 (Wed, 27 Mar 2013) $
+ * $Revision: 42810 $
+ * $Date: 2013-11-07 12:06:33 -0600 (Thu, 07 Nov 2013) $
  */
 
 /* <copyright>
@@ -32,16 +32,6 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
 
 #include "kmp.h"
@@ -60,7 +50,7 @@ typedef void  (*bget_release_t)(void *);
 /* NOTE: bufsize must be a signed datatype */
 
 #if KMP_OS_WINDOWS
-# if KMP_ARCH_X86
+# if KMP_ARCH_X86 || KMP_ARCH_ARM
    typedef kmp_int32 bufsize;
 # else
    typedef kmp_int64 bufsize;
@@ -100,10 +90,10 @@ static int     bpoolv( kmp_info_t *th, void *pool);
                                          MUST be a power of two. */
 
                                       /* On IA-32 architecture with  Linux* OS,
-					 malloc() does not
+                                         malloc() does not
                                          ensure 16 byte alignmnent */
 
-#if KMP_ARCH_X86
+#if KMP_ARCH_X86 || !KMP_HAVE_QUAD
 
 #define SizeQuant   8
 #define AlignType   double
@@ -168,15 +158,15 @@ static bufsize bget_bin_size[ ] = {
     1 << 17,
     1 << 18,
     1 << 19,
-    1 << 20,	/*  1MB */
-    1 << 21,	/*  2MB */
-    1 << 22,	/*  4MB */
-    1 << 23,	/*  8MB */
-    1 << 24,	/* 16MB */
-    1 << 25,	/* 32MB */
+    1 << 20,    /*  1MB */
+    1 << 21,    /*  2MB */
+    1 << 22,    /*  4MB */
+    1 << 23,    /*  8MB */
+    1 << 24,    /* 16MB */
+    1 << 25,    /* 32MB */
 };
 
-#define MAX_BGET_BINS	(sizeof(bget_bin_size) / sizeof(bufsize))
+#define MAX_BGET_BINS   (int)(sizeof(bget_bin_size) / sizeof(bufsize))
 
 struct bfhead;
 
@@ -243,7 +233,7 @@ typedef struct thr_data {
     bget_acquire_t acqfcn;
     bget_release_t relfcn;
 
-    bget_mode_t    mode;	      /* what allocation mode to use? */
+    bget_mode_t    mode;              /* what allocation mode to use? */
 
     bufsize exp_incr;                 /* Expansion block size */
     bufsize pool_len;                 /* 0: no bpool calls have been made
@@ -252,7 +242,7 @@ typedef struct thr_data {
                                          >0: (common) block size for all
                                              bpool calls made so far
                                       */
-    bfhead_t * last_pool;	      /* Last pool owned by this thread (delay dealocation) */
+    bfhead_t * last_pool;             /* Last pool owned by this thread (delay dealocation) */
 } thr_data_t;
 
 /*  Minimum allocation quantum: */
@@ -281,11 +271,11 @@ bget_get_bin( bufsize size )
     KMP_DEBUG_ASSERT( size > 0 );
 
     while ( (hi - lo) > 1 ) {
-	int mid = (lo + hi) >> 1;
-	if (size < bget_bin_size[ mid ])
-	    hi = mid - 1;
-	else
-	    lo = mid;
+        int mid = (lo + hi) >> 1;
+        if (size < bget_bin_size[ mid ])
+            hi = mid - 1;
+        else
+            lo = mid;
     }
 
     KMP_DEBUG_ASSERT( (lo >= 0) && (lo < MAX_BGET_BINS) );
@@ -307,8 +297,8 @@ set_thr_data( kmp_info_t *th )
     memset( data, '\0', sizeof( *data ) );
 
     for (i = 0; i < MAX_BGET_BINS; ++i) {
-	data->freelist[ i ].ql.flink = & data->freelist[ i ];
-	data->freelist[ i ].ql.blink = & data->freelist[ i ];
+        data->freelist[ i ].ql.flink = & data->freelist[ i ];
+        data->freelist[ i ].ql.blink = & data->freelist[ i ];
     }
 
     th->th.th_local.bget_data = data;
@@ -345,10 +335,10 @@ __kmp_bget_validate_queue( kmp_info_t *th )
     void *p = (void *) th->th.th_local.bget_list;
 
     while (p != 0) {
-	bfhead_t *b = BFH(((char *) p) - sizeof(bhead_t));
+        bfhead_t *b = BFH(((char *) p) - sizeof(bhead_t));
 
-	KMP_DEBUG_ASSERT(b->bh.bb.bsize != 0);
-	p = (void *) b->ql.flink;
+        KMP_DEBUG_ASSERT(b->bh.bb.bsize != 0);
+        p = (void *) b->ql.flink;
     }
 }
 
@@ -362,35 +352,35 @@ __kmp_bget_dequeue( kmp_info_t *th )
     void *p = TCR_SYNC_PTR(th->th.th_local.bget_list);
 
     if (p != 0) {
-	#if USE_CMP_XCHG_FOR_BGET
-	    {
-		volatile void *old_value = TCR_SYNC_PTR(th->th.th_local.bget_list);
+        #if USE_CMP_XCHG_FOR_BGET
+            {
+                volatile void *old_value = TCR_SYNC_PTR(th->th.th_local.bget_list);
                 while ( ! KMP_COMPARE_AND_STORE_PTR(
-		    & th->th.th_local.bget_list, old_value, NULL ) )
+                    & th->th.th_local.bget_list, old_value, NULL ) )
                 {
                     KMP_CPU_PAUSE();
                     old_value = TCR_SYNC_PTR(th->th.th_local.bget_list);
                 }
                 p = (void *) old_value;
-	    }
-	#else /* ! USE_CMP_XCHG_FOR_BGET */
-	    #ifdef USE_QUEUING_LOCK_FOR_BGET
-		__kmp_acquire_lock( & th->th.th_local.bget_lock,
-				    __kmp_gtid_from_thread(th) );
-	    #else
-		__kmp_acquire_bootstrap_lock( & th->th.th_local.bget_lock );
-	    #endif /* USE_QUEUING_LOCK_FOR_BGET */
+            }
+        #else /* ! USE_CMP_XCHG_FOR_BGET */
+            #ifdef USE_QUEUING_LOCK_FOR_BGET
+                __kmp_acquire_lock( & th->th.th_local.bget_lock,
+                                    __kmp_gtid_from_thread(th) );
+            #else
+                __kmp_acquire_bootstrap_lock( & th->th.th_local.bget_lock );
+            #endif /* USE_QUEUING_LOCK_FOR_BGET */
 
-	     p = (void *) th->th.th_local.bget_list;
-	     th->th.th_local.bget_list = 0;
+             p = (void *) th->th.th_local.bget_list;
+             th->th.th_local.bget_list = 0;
 
-	    #ifdef USE_QUEUING_LOCK_FOR_BGET
-		__kmp_release_lock( & th->th.th_local.bget_lock,
-				    __kmp_gtid_from_thread(th) );
-	    #else
-		__kmp_release_bootstrap_lock( & th->th.th_local.bget_lock );
-	    #endif
-	#endif /* USE_CMP_XCHG_FOR_BGET */
+            #ifdef USE_QUEUING_LOCK_FOR_BGET
+                __kmp_release_lock( & th->th.th_local.bget_lock,
+                                    __kmp_gtid_from_thread(th) );
+            #else
+                __kmp_release_bootstrap_lock( & th->th.th_local.bget_lock );
+            #endif
+        #endif /* USE_CMP_XCHG_FOR_BGET */
 
         /* Check again to make sure the list is not empty */
 
@@ -398,10 +388,10 @@ __kmp_bget_dequeue( kmp_info_t *th )
             void *buf = p;
             bfhead_t *b = BFH(((char *) p) - sizeof(bhead_t));
 
-	    KMP_DEBUG_ASSERT( b->bh.bb.bsize != 0 );
+            KMP_DEBUG_ASSERT( b->bh.bb.bsize != 0 );
             KMP_DEBUG_ASSERT( ( (kmp_uintptr_t)TCR_PTR(b->bh.bb.bthr) & ~1 ) ==
                                 (kmp_uintptr_t)th ); // clear possible mark
-	    KMP_DEBUG_ASSERT( b->ql.blink == 0 );
+            KMP_DEBUG_ASSERT( b->ql.blink == 0 );
 
             p = (void *) b->ql.flink;
 
@@ -415,7 +405,7 @@ __kmp_bget_dequeue( kmp_info_t *th )
 static void
 __kmp_bget_enqueue( kmp_info_t *th, void *buf
 #ifdef USE_QUEUING_LOCK_FOR_BGET
-		    , kmp_int32 rel_gtid
+                    , kmp_int32 rel_gtid
 #endif
                   )
 {
@@ -430,38 +420,39 @@ __kmp_bget_enqueue( kmp_info_t *th, void *buf
     KC_TRACE( 10, ( "__kmp_bget_enqueue: moving buffer to T#%d list\n",
                     __kmp_gtid_from_thread( th ) ) );
 
-    #if USE_CMP_XCHG_FOR_BGET
-	{
-	    volatile void *old_value = TCR_PTR(th->th.th_local.bget_list);
-	    /* the next pointer must be set before setting bget_list to buf to avoid
-	       exposing a broken list to other threads, even for an instant. */
-	    b->ql.flink = BFH( old_value );
-            while ( ! KMP_COMPARE_AND_STORE_PTR(
-	        & th->th.th_local.bget_list, old_value, buf ) )
-            {
-                KMP_CPU_PAUSE();
-                old_value = TCR_PTR(th->th.th_local.bget_list);
-                /* the next pointer must be set before setting bget_list to buf to avoid
-                   exposing a broken list to other threads, even for an instant. */
-                b->ql.flink = BFH( old_value );
-            }
-	}
-    #else /* ! USE_CMP_XCHG_FOR_BGET */
-	#ifdef USE_QUEUING_LOCK_FOR_BGET
-	    __kmp_acquire_lock( & th->th.th_local.bget_lock, rel_gtid );
-	#else
-	    __kmp_acquire_bootstrap_lock( & th->th.th_local.bget_lock );
-	#endif
+#if USE_CMP_XCHG_FOR_BGET
+    {
+        volatile void *old_value = TCR_PTR(th->th.th_local.bget_list);
+        /* the next pointer must be set before setting bget_list to buf to avoid
+           exposing a broken list to other threads, even for an instant. */
+        b->ql.flink = BFH( old_value );
 
-	    b->ql.flink = BFH( th->th.th_local.bget_list );
-	    th->th.th_local.bget_list = (void *) buf;
+        while ( ! KMP_COMPARE_AND_STORE_PTR(
+            & th->th.th_local.bget_list, old_value, buf ) )
+        {
+            KMP_CPU_PAUSE();
+            old_value = TCR_PTR(th->th.th_local.bget_list);
+            /* the next pointer must be set before setting bget_list to buf to avoid
+               exposing a broken list to other threads, even for an instant. */
+            b->ql.flink = BFH( old_value );
+        }
+    }
+#else /* ! USE_CMP_XCHG_FOR_BGET */
+# ifdef USE_QUEUING_LOCK_FOR_BGET
+    __kmp_acquire_lock( & th->th.th_local.bget_lock, rel_gtid );
+# else
+    __kmp_acquire_bootstrap_lock( & th->th.th_local.bget_lock );
+ # endif
 
-	#ifdef USE_QUEUING_LOCK_FOR_BGET
-	    __kmp_release_lock( & th->th.th_local.bget_lock, rel_gtid );
-	#else
-	    __kmp_release_bootstrap_lock( & th->th.th_local.bget_lock );
-	#endif
-    #endif /* USE_CMP_XCHG_FOR_BGET */
+    b->ql.flink = BFH( th->th.th_local.bget_list );
+    th->th.th_local.bget_list = (void *) buf;
+
+# ifdef USE_QUEUING_LOCK_FOR_BGET
+    __kmp_release_lock( & th->th.th_local.bget_lock, rel_gtid );
+# else
+    __kmp_release_bootstrap_lock( & th->th.th_local.bget_lock );
+# endif
+#endif /* USE_CMP_XCHG_FOR_BGET */
 }
 
 /* insert buffer back onto a new freelist */
@@ -511,26 +502,26 @@ bcheck(  kmp_info_t *th, bufsize *max_free, bufsize *total_free )
     *total_free = *max_free = 0;
 
     for (bin = 0; bin < MAX_BGET_BINS; ++bin) {
-	bfhead_t *b, *best;
+        bfhead_t *b, *best;
 
-	best = &thr->freelist[ bin ];
-	b = best->ql.flink;
+        best = &thr->freelist[ bin ];
+        b = best->ql.flink;
 
-	while (b != &thr->freelist[ bin ]) {
-	    *total_free += (b->bh.bb.bsize - sizeof( bhead_t ));
-	    if ((best == &thr->freelist[ bin ]) || (b->bh.bb.bsize < best->bh.bb.bsize))
-		best = b;
+        while (b != &thr->freelist[ bin ]) {
+            *total_free += (b->bh.bb.bsize - sizeof( bhead_t ));
+            if ((best == &thr->freelist[ bin ]) || (b->bh.bb.bsize < best->bh.bb.bsize))
+                best = b;
 
-	    /* Link to next buffer */
-	    b = b->ql.flink;
-	}
+            /* Link to next buffer */
+            b = b->ql.flink;
+        }
 
-	if (*max_free < best->bh.bb.bsize)
-	    *max_free = best->bh.bb.bsize;
+        if (*max_free < best->bh.bb.bsize)
+            *max_free = best->bh.bb.bsize;
     }
 
-    if (*max_free > sizeof( bhead_t ))
-	*max_free -= sizeof( bhead_t );
+    if (*max_free > (bufsize)sizeof( bhead_t ))
+        *max_free -= sizeof( bhead_t );
 }
 
 /* ------------------------------------------------------------------------ */
@@ -555,7 +546,7 @@ bget(  kmp_info_t *th, bufsize requested_size )
 
     __kmp_bget_dequeue( th );         /* Release any queued buffers */
 
-    if (size < SizeQ) {               /* Need at least room for the */
+    if (size < (bufsize)SizeQ) {      /* Need at least room for the */
         size = SizeQ;                 /*    queue links.  */
     }
     #if defined( SizeQuant ) && ( SizeQuant > 1 )
@@ -574,110 +565,110 @@ bget(  kmp_info_t *th, bufsize requested_size )
        intervene in case we don't find a suitable buffer in the chain. */
 
     for (;;) {
-	int bin;
+        int bin;
 
-	for (bin = bget_get_bin( size ); bin < MAX_BGET_BINS; ++bin) {
-	    /* Link to next buffer */
-	    b = ( use_blink ? thr->freelist[ bin ].ql.blink : thr->freelist[ bin ].ql.flink );
+        for (bin = bget_get_bin( size ); bin < MAX_BGET_BINS; ++bin) {
+            /* Link to next buffer */
+            b = ( use_blink ? thr->freelist[ bin ].ql.blink : thr->freelist[ bin ].ql.flink );
 
-	    if (thr->mode == bget_mode_best) {
-		best = &thr->freelist[ bin ];
+            if (thr->mode == bget_mode_best) {
+                best = &thr->freelist[ bin ];
 
-		/* Scan the free list searching for the first buffer big enough
-		   to hold the requested size buffer. */
+                /* Scan the free list searching for the first buffer big enough
+                   to hold the requested size buffer. */
 
-		while (b != &thr->freelist[ bin ]) {
-		    if (b->bh.bb.bsize >= (bufsize) size) {
-			if ((best == &thr->freelist[ bin ]) || (b->bh.bb.bsize < best->bh.bb.bsize)) {
-			    best = b;
-			}
-		    }
+                while (b != &thr->freelist[ bin ]) {
+                    if (b->bh.bb.bsize >= (bufsize) size) {
+                        if ((best == &thr->freelist[ bin ]) || (b->bh.bb.bsize < best->bh.bb.bsize)) {
+                            best = b;
+                        }
+                    }
 
-		    /* Link to next buffer */
-		    b = ( use_blink ? b->ql.blink : b->ql.flink );
-		}
-		b = best;
-	    }
+                    /* Link to next buffer */
+                    b = ( use_blink ? b->ql.blink : b->ql.flink );
+                }
+                b = best;
+            }
 
-	    while (b != &thr->freelist[ bin ]) {
-		if ((bufsize) b->bh.bb.bsize >= (bufsize) size) {
+            while (b != &thr->freelist[ bin ]) {
+                if ((bufsize) b->bh.bb.bsize >= (bufsize) size) {
 
-		    /* Buffer  is big enough to satisfy  the request.  Allocate it
-		       to the caller.  We must decide whether the buffer is  large
-		       enough  to  split  into  the part given to the caller and a
-		       free buffer that remains on the free list, or  whether  the
-		       entire  buffer  should  be  removed  from the free list and
-		       given to the caller in its entirety.   We  only  split  the
-		       buffer if enough room remains for a header plus the minimum
-		       quantum of allocation. */
+                    /* Buffer  is big enough to satisfy  the request.  Allocate it
+                       to the caller.  We must decide whether the buffer is  large
+                       enough  to  split  into  the part given to the caller and a
+                       free buffer that remains on the free list, or  whether  the
+                       entire  buffer  should  be  removed  from the free list and
+                       given to the caller in its entirety.   We  only  split  the
+                       buffer if enough room remains for a header plus the minimum
+                       quantum of allocation. */
 
-		    if ((b->bh.bb.bsize - (bufsize) size) > (SizeQ + (sizeof(bhead_t)))) {
-			bhead_t *ba, *bn;
+                    if ((b->bh.bb.bsize - (bufsize) size) > (bufsize)(SizeQ + (sizeof(bhead_t)))) {
+                        bhead_t *ba, *bn;
 
-			ba = BH(((char *) b) + (b->bh.bb.bsize - (bufsize) size));
-			bn = BH(((char *) ba) + size);
+                        ba = BH(((char *) b) + (b->bh.bb.bsize - (bufsize) size));
+                        bn = BH(((char *) ba) + size);
 
-			KMP_DEBUG_ASSERT(bn->bb.prevfree == b->bh.bb.bsize);
+                        KMP_DEBUG_ASSERT(bn->bb.prevfree == b->bh.bb.bsize);
 
-			/* Subtract size from length of free block. */
-			b->bh.bb.bsize -= (bufsize) size;
+                        /* Subtract size from length of free block. */
+                        b->bh.bb.bsize -= (bufsize) size;
 
-			/* Link allocated buffer to the previous free buffer. */
-			ba->bb.prevfree = b->bh.bb.bsize;
+                        /* Link allocated buffer to the previous free buffer. */
+                        ba->bb.prevfree = b->bh.bb.bsize;
 
-			/* Plug negative size into user buffer. */
-			ba->bb.bsize = -size;
+                        /* Plug negative size into user buffer. */
+                        ba->bb.bsize = -size;
 
-			/* Mark this buffer as owned by this thread. */
-			TCW_PTR(ba->bb.bthr, th);   // not an allocated address (do not mark it)
-			/* Mark buffer after this one not preceded by free block. */
-			bn->bb.prevfree = 0;
+                        /* Mark this buffer as owned by this thread. */
+                        TCW_PTR(ba->bb.bthr, th);   // not an allocated address (do not mark it)
+                        /* Mark buffer after this one not preceded by free block. */
+                        bn->bb.prevfree = 0;
 
-			/* unlink the buffer from the old freelist, and reinsert it into the new freelist */
-			__kmp_bget_remove_from_freelist( b );
-			__kmp_bget_insert_into_freelist( thr, b );
+                        /* unlink the buffer from the old freelist, and reinsert it into the new freelist */
+                        __kmp_bget_remove_from_freelist( b );
+                        __kmp_bget_insert_into_freelist( thr, b );
 #if BufStats
-			thr->totalloc += (size_t) size;
-			thr->numget++;        /* Increment number of bget() calls */
+                        thr->totalloc += (size_t) size;
+                        thr->numget++;        /* Increment number of bget() calls */
 #endif
-			buf = (void *) ((((char *) ba) + sizeof(bhead_t)));
+                        buf = (void *) ((((char *) ba) + sizeof(bhead_t)));
                         KMP_DEBUG_ASSERT( ((size_t)buf) % SizeQuant == 0 );
-			return buf;
-		    } else {
-			bhead_t *ba;
+                        return buf;
+                    } else {
+                        bhead_t *ba;
 
-			ba = BH(((char *) b) + b->bh.bb.bsize);
+                        ba = BH(((char *) b) + b->bh.bb.bsize);
 
-			KMP_DEBUG_ASSERT(ba->bb.prevfree == b->bh.bb.bsize);
+                        KMP_DEBUG_ASSERT(ba->bb.prevfree == b->bh.bb.bsize);
 
-			/* The buffer isn't big enough to split.  Give  the  whole
-			   shebang to the caller and remove it from the free list. */
+                        /* The buffer isn't big enough to split.  Give  the  whole
+                           shebang to the caller and remove it from the free list. */
 
-		       __kmp_bget_remove_from_freelist( b );
+                       __kmp_bget_remove_from_freelist( b );
 #if BufStats
-			thr->totalloc += (size_t) b->bh.bb.bsize;
-			thr->numget++;        /* Increment number of bget() calls */
+                        thr->totalloc += (size_t) b->bh.bb.bsize;
+                        thr->numget++;        /* Increment number of bget() calls */
 #endif
-			/* Negate size to mark buffer allocated. */
-			b->bh.bb.bsize = -(b->bh.bb.bsize);
+                        /* Negate size to mark buffer allocated. */
+                        b->bh.bb.bsize = -(b->bh.bb.bsize);
 
-			/* Mark this buffer as owned by this thread. */
-			TCW_PTR(ba->bb.bthr, th);   // not an allocated address (do not mark it)
-			/* Zero the back pointer in the next buffer in memory
-			   to indicate that this buffer is allocated. */
-			ba->bb.prevfree = 0;
+                        /* Mark this buffer as owned by this thread. */
+                        TCW_PTR(ba->bb.bthr, th);   // not an allocated address (do not mark it)
+                        /* Zero the back pointer in the next buffer in memory
+                           to indicate that this buffer is allocated. */
+                        ba->bb.prevfree = 0;
 
-			/* Give user buffer starting at queue links. */
-			buf =  (void *) &(b->ql);
+                        /* Give user buffer starting at queue links. */
+                        buf =  (void *) &(b->ql);
                         KMP_DEBUG_ASSERT( ((size_t)buf) % SizeQuant == 0 );
-			return buf;
-		    }
-		}
+                        return buf;
+                    }
+                }
 
-		/* Link to next buffer */
-		b = ( use_blink ? b->ql.blink : b->ql.flink );
-	    }
-	}
+                /* Link to next buffer */
+                b = ( use_blink ? b->ql.blink : b->ql.flink );
+            }
+        }
 
         /* We failed to find a buffer.  If there's a compact  function
            defined,  notify  it  of the size requested.  If it returns
@@ -702,10 +693,10 @@ bget(  kmp_info_t *th, bufsize requested_size )
 
             size += sizeof(bdhead_t) - sizeof(bhead_t);
 
-	    KE_TRACE( 10, ("%%%%%% MALLOC( %d )\n", (int) size ) );
+            KE_TRACE( 10, ("%%%%%% MALLOC( %d )\n", (int) size ) );
 
-	    /* richryan */
-	    bdh = BDH((*thr->acqfcn)((bufsize) size));
+            /* richryan */
+            bdh = BDH((*thr->acqfcn)((bufsize) size));
             if (bdh != NULL) {
 
                 /*  Mark the buffer special by setting the size field
@@ -733,10 +724,10 @@ bget(  kmp_info_t *th, bufsize requested_size )
 
             void *newpool;
 
-	    KE_TRACE( 10, ("%%%%%% MALLOCB( %d )\n", (int) thr->exp_incr ) );
+            KE_TRACE( 10, ("%%%%%% MALLOCB( %d )\n", (int) thr->exp_incr ) );
 
-	    /* richryan */
-	    newpool = (*thr->acqfcn)((bufsize) thr->exp_incr);
+            /* richryan */
+            newpool = (*thr->acqfcn)((bufsize) thr->exp_incr);
             KMP_DEBUG_ASSERT( ((size_t)newpool) % SizeQuant == 0 );
             if (newpool != NULL) {
                 bpool( th, newpool, thr->exp_incr);
@@ -844,14 +835,14 @@ brel(  kmp_info_t *th, void *buf )
 #if BufStats
         thr->totalloc -= (size_t) bdh->tsize;
         thr->numdrel++;               /* Number of direct releases */
-	thr->numrel++;                /* Increment number of brel() calls */
+        thr->numrel++;                /* Increment number of brel() calls */
 #endif /* BufStats */
 #ifdef FreeWipe
         (void) memset((char *) buf, 0x55,
                  (size_t) (bdh->tsize - sizeof(bdhead_t)));
 #endif /* FreeWipe */
 
-	KE_TRACE( 10, ("%%%%%% FREE( %p )\n", (void *) bdh ) );
+        KE_TRACE( 10, ("%%%%%% FREE( %p )\n", (void *) bdh ) );
 
         KMP_DEBUG_ASSERT( thr->relfcn != 0 );
         (*thr->relfcn)((void *) bdh);      /* Release it directly. */
@@ -863,9 +854,9 @@ brel(  kmp_info_t *th, void *buf )
         /* Add this buffer to be released by the owning thread later */
         __kmp_bget_enqueue( bth, buf
 #ifdef USE_QUEUING_LOCK_FOR_BGET
-		            , __kmp_gtid_from_thread( th )
+                            , __kmp_gtid_from_thread( th )
 #endif
-	);
+        );
         return;
     }
 
@@ -903,13 +894,13 @@ brel(  kmp_info_t *th, void *buf )
         b = BFH(((char *) b) - b->bh.bb.prevfree);
         b->bh.bb.bsize -= size;
 
-	/* unlink the buffer from the old freelist */
-	__kmp_bget_remove_from_freelist( b );
+        /* unlink the buffer from the old freelist */
+        __kmp_bget_remove_from_freelist( b );
     }
     else {
         /* The previous buffer isn't allocated.  Mark this buffer
            size as positive (i.e. free) and fall throught to place
-	   the buffer on the free list as an isolated free block. */
+           the buffer on the free list as an isolated free block. */
 
         b->bh.bb.bsize = -b->bh.bb.bsize;
     }
@@ -931,14 +922,14 @@ brel(  kmp_info_t *th, void *buf )
 
         KMP_DEBUG_ASSERT(BH((char *) bn + bn->bh.bb.bsize)->bb.prevfree == bn->bh.bb.bsize);
 
-	__kmp_bget_remove_from_freelist( bn );
+        __kmp_bget_remove_from_freelist( bn );
 
         b->bh.bb.bsize += bn->bh.bb.bsize;
 
-	/* unlink the buffer from the old freelist, and reinsert it into the new freelist */
+        /* unlink the buffer from the old freelist, and reinsert it into the new freelist */
 
-	__kmp_bget_remove_from_freelist( b );
-	__kmp_bget_insert_into_freelist( thr, b );
+        __kmp_bget_remove_from_freelist( b );
+        __kmp_bget_insert_into_freelist( thr, b );
 
         /* Finally,  advance  to   the  buffer  that   follows  the  newly
            consolidated free block.  We must set its  backpointer  to  the
@@ -969,30 +960,30 @@ brel(  kmp_info_t *th, void *buf )
         b->bh.bb.bsize == (bufsize)(thr->pool_len - sizeof(bhead_t)))
     {
 #if BufStats
-	if (thr->numpblk != 1) {	/* Do not release the last buffer until finalization time */
+        if (thr->numpblk != 1) {        /* Do not release the last buffer until finalization time */
 #endif
 
-	    KMP_DEBUG_ASSERT(b->bh.bb.prevfree == 0);
-	    KMP_DEBUG_ASSERT(BH((char *) b + b->bh.bb.bsize)->bb.bsize == ESent);
-	    KMP_DEBUG_ASSERT(BH((char *) b + b->bh.bb.bsize)->bb.prevfree == b->bh.bb.bsize);
+            KMP_DEBUG_ASSERT(b->bh.bb.prevfree == 0);
+            KMP_DEBUG_ASSERT(BH((char *) b + b->bh.bb.bsize)->bb.bsize == ESent);
+            KMP_DEBUG_ASSERT(BH((char *) b + b->bh.bb.bsize)->bb.prevfree == b->bh.bb.bsize);
 
-	    /*  Unlink the buffer from the free list  */
-	    __kmp_bget_remove_from_freelist( b );
+            /*  Unlink the buffer from the free list  */
+            __kmp_bget_remove_from_freelist( b );
 
-	    KE_TRACE( 10, ("%%%%%% FREE( %p )\n", (void *) b ) );
+            KE_TRACE( 10, ("%%%%%% FREE( %p )\n", (void *) b ) );
 
-	    (*thr->relfcn)(b);
+            (*thr->relfcn)(b);
 #if BufStats
-	    thr->numprel++;               /* Nr of expansion block releases */
-	    thr->numpblk--;               /* Total number of blocks */
-	    KMP_DEBUG_ASSERT(thr->numpblk == thr->numpget - thr->numprel);
+            thr->numprel++;               /* Nr of expansion block releases */
+            thr->numpblk--;               /* Total number of blocks */
+            KMP_DEBUG_ASSERT(thr->numpblk == thr->numpget - thr->numprel);
 
             /* avoid leaving stale last_pool pointer around if it is being dealloced */
-	    if (thr->last_pool == b) thr->last_pool = 0;
-	}
-	else {
-	    thr->last_pool = b;
-	}
+            if (thr->last_pool == b) thr->last_pool = 0;
+        }
+        else {
+            thr->last_pool = b;
+        }
 #endif /* BufStats */
     }
 }
@@ -1090,40 +1081,40 @@ bfreed(  kmp_info_t *th )
 #if BufStats
     __kmp_printf_no_lock("__kmp_printpool: T#%d total=%" KMP_UINT64_SPEC " get=%" KMP_INT64_SPEC " rel=%" \
            KMP_INT64_SPEC " pblk=%" KMP_INT64_SPEC " pget=%" KMP_INT64_SPEC " prel=%" KMP_INT64_SPEC \
-	   " dget=%" KMP_INT64_SPEC " drel=%" KMP_INT64_SPEC "\n",
-	   gtid, (kmp_uint64) thr->totalloc,
-	   (kmp_int64) thr->numget,  (kmp_int64) thr->numrel,
-	   (kmp_int64) thr->numpblk,
-	   (kmp_int64) thr->numpget, (kmp_int64) thr->numprel,
-	   (kmp_int64) thr->numdget, (kmp_int64) thr->numdrel );
+           " dget=%" KMP_INT64_SPEC " drel=%" KMP_INT64_SPEC "\n",
+           gtid, (kmp_uint64) thr->totalloc,
+           (kmp_int64) thr->numget,  (kmp_int64) thr->numrel,
+           (kmp_int64) thr->numpblk,
+           (kmp_int64) thr->numpget, (kmp_int64) thr->numprel,
+           (kmp_int64) thr->numdget, (kmp_int64) thr->numdrel );
 #endif
 
     for (bin = 0; bin < MAX_BGET_BINS; ++bin) {
-	bfhead_t *b;
+        bfhead_t *b;
 
-	for (b = thr->freelist[ bin ].ql.flink; b != &thr->freelist[ bin ]; b = b->ql.flink) {
-	    bufsize bs = b->bh.bb.bsize;
+        for (b = thr->freelist[ bin ].ql.flink; b != &thr->freelist[ bin ]; b = b->ql.flink) {
+            bufsize bs = b->bh.bb.bsize;
 
             KMP_DEBUG_ASSERT( b->ql.blink->ql.flink == b );
-	    KMP_DEBUG_ASSERT( b->ql.flink->ql.blink == b );
+            KMP_DEBUG_ASSERT( b->ql.flink->ql.blink == b );
             KMP_DEBUG_ASSERT( bs > 0 );
 
-	    count += 1;
+            count += 1;
 
             __kmp_printf_no_lock("__kmp_printpool: T#%d Free block: 0x%p size %6ld bytes.\n", gtid, b, (long) bs );
 #ifdef FreeWipe
             {
-		char *lerr = ((char *) b) + sizeof(bfhead_t);
-		if ((bs > sizeof(bfhead_t)) && ((*lerr != 0x55) || (memcmp(lerr, lerr + 1, (size_t) (bs - (sizeof(bfhead_t) + 1))) != 0))) {
-		    __kmp_printf_no_lock( "__kmp_printpool: T#%d     (Contents of above free block have been overstored.)\n", gtid );
-		}
-	    }
+                char *lerr = ((char *) b) + sizeof(bfhead_t);
+                if ((bs > sizeof(bfhead_t)) && ((*lerr != 0x55) || (memcmp(lerr, lerr + 1, (size_t) (bs - (sizeof(bfhead_t) + 1))) != 0))) {
+                    __kmp_printf_no_lock( "__kmp_printpool: T#%d     (Contents of above free block have been overstored.)\n", gtid );
+                }
+            }
 #endif
-	}
+        }
     }
 
     if (count == 0)
-	__kmp_printf_no_lock("__kmp_printpool: T#%d No free blocks\n", gtid );
+        __kmp_printf_no_lock("__kmp_printpool: T#%d No free blocks\n", gtid );
 }
 
 /* ------------------------------------------------------------------------ */
@@ -1147,16 +1138,16 @@ bstats(  kmp_info_t *th, bufsize *curalloc,  bufsize *totfree,  bufsize *maxfree
     *maxfree = -1;
 
     for (bin = 0; bin < MAX_BGET_BINS; ++bin) {
-	bfhead_t *b = thr->freelist[ bin ].ql.flink;
+        bfhead_t *b = thr->freelist[ bin ].ql.flink;
 
-	while (b != &thr->freelist[ bin ]) {
-	    KMP_DEBUG_ASSERT(b->bh.bb.bsize > 0);
-	    *totfree += b->bh.bb.bsize;
-	    if (b->bh.bb.bsize > *maxfree) {
-		*maxfree = b->bh.bb.bsize;
-	    }
-	    b = b->ql.flink;              /* Link to next buffer */
-	}
+        while (b != &thr->freelist[ bin ]) {
+            KMP_DEBUG_ASSERT(b->bh.bb.bsize > 0);
+            *totfree += b->bh.bb.bsize;
+            if (b->bh.bb.bsize > *maxfree) {
+                *maxfree = b->bh.bb.bsize;
+            }
+            b = b->ql.flink;              /* Link to next buffer */
+        }
     }
 }
 
@@ -1209,10 +1200,10 @@ bufdump(  kmp_info_t *th, void *buf )
 
         for (i = 0; i < l; i++) {
             (void) sprintf(bhex + i * 3, "%02X ", bdump[i]);
-	    if (bdump[i] > 0x20 && bdump[i] < 0x7F)
-		bascii[ i ] = bdump[ i ];
-	    else
-		bascii[ i ] = ' ';
+            if (bdump[i] > 0x20 && bdump[i] < 0x7F)
+                bascii[ i ] = bdump[ i ];
+            else
+                bascii[ i ] = ' ';
         }
         bascii[i] = 0;
         (void) __kmp_printf_no_lock("%-48s   %s\n", bhex, bascii);
@@ -1364,19 +1355,19 @@ __kmp_finalize_bget( kmp_info_t *th )
     if (thr->relfcn != 0 && b != 0 && thr->numpblk != 0 &&
         b->bh.bb.bsize == (bufsize)(thr->pool_len - sizeof(bhead_t)))
     {
-	KMP_DEBUG_ASSERT(b->bh.bb.prevfree == 0);
-	KMP_DEBUG_ASSERT(BH((char *) b + b->bh.bb.bsize)->bb.bsize == ESent);
-	KMP_DEBUG_ASSERT(BH((char *) b + b->bh.bb.bsize)->bb.prevfree == b->bh.bb.bsize);
+        KMP_DEBUG_ASSERT(b->bh.bb.prevfree == 0);
+        KMP_DEBUG_ASSERT(BH((char *) b + b->bh.bb.bsize)->bb.bsize == ESent);
+        KMP_DEBUG_ASSERT(BH((char *) b + b->bh.bb.bsize)->bb.prevfree == b->bh.bb.bsize);
 
-	/*  Unlink the buffer from the free list  */
-	__kmp_bget_remove_from_freelist( b );
+        /*  Unlink the buffer from the free list  */
+        __kmp_bget_remove_from_freelist( b );
 
-	KE_TRACE( 10, ("%%%%%% FREE( %p )\n", (void *) b ) );
+        KE_TRACE( 10, ("%%%%%% FREE( %p )\n", (void *) b ) );
 
-	(*thr->relfcn)(b);
-	thr->numprel++;               /* Nr of expansion block releases */
-	thr->numpblk--;               /* Total number of blocks */
-	KMP_DEBUG_ASSERT(thr->numpblk == thr->numpget - thr->numprel);
+        (*thr->relfcn)(b);
+        thr->numprel++;               /* Nr of expansion block releases */
+        thr->numpblk--;               /* Total number of blocks */
+        KMP_DEBUG_ASSERT(thr->numpblk == thr->numpget - thr->numprel);
     }
 #endif /* BufStats */
 
@@ -1410,8 +1401,8 @@ kmpc_set_poolmode( int mode )
     thr_data_t *p;
 
     if (mode == bget_mode_fifo || mode == bget_mode_lifo || mode == bget_mode_best) {
-	p = get_thr_data( __kmp_get_thread() );
-	p->mode = (bget_mode_t) mode;
+        p = get_thr_data( __kmp_get_thread() );
+        p->mode = (bget_mode_t) mode;
     }
 }
 
@@ -1632,7 +1623,11 @@ ___kmp_allocate_align( size_t size, size_t alignment KMP_SRC_LOC_DECL )
     descr.size_aligned = size;
     descr.size_allocated = descr.size_aligned + sizeof( kmp_mem_descr_t ) + alignment;
 
+    #if KMP_DEBUG
+        descr.ptr_allocated = _malloc_src_loc( descr.size_allocated, _file_, _line_ );
+    #else
     descr.ptr_allocated = malloc_src_loc( descr.size_allocated KMP_SRC_LOC_PARM );
+    #endif
     KE_TRACE( 10, (
         "   malloc( %d ) returned %p\n",
         (int) descr.size_allocated,
@@ -1976,7 +1971,6 @@ ___kmp_fast_free( kmp_info_t *this_thr, void * ptr KMP_SRC_LOC_DECL )
                     tail = next;   // remember tail node
                     next = *((void **)next);
                 }
-
                 KMP_DEBUG_ASSERT( q_th != NULL );
                 // push block to owner's sync free list
                 old_ptr = TCR_PTR( q_th->th.th_free_lists[index].th_free_list_sync );
@@ -2043,13 +2037,13 @@ __kmp_free_fast_memory( kmp_info_t *th )
     // Dig through free lists and extract all allocated blocks
     for ( bin = 0; bin < MAX_BGET_BINS; ++bin ) {
         bfhead_t * b = thr->freelist[ bin ].ql.flink;
-	while ( b != &thr->freelist[ bin ] ) {
+        while ( b != &thr->freelist[ bin ] ) {
             if ( (kmp_uintptr_t)b->bh.bb.bthr & 1 ) {   // if the buffer is an allocated address?
                 *((void**)b) = lst;   // link the list (override bthr, but keep flink yet)
                 lst = (void**)b;      // push b into lst
             }
             b = b->ql.flink;          // get next buffer
-	}
+        }
     }
     while ( lst != NULL ) {
         void * next = *lst;

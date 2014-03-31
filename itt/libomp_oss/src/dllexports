@@ -26,16 +26,6 @@
 #    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-#
-#------------------------------------------------------------------------
-#
-#    Portions of this software are protected under the following patents:
-#        U.S. Patent 5,812,852
-#        U.S. Patent 6,792,599
-#        U.S. Patent 7,069,556
-#        U.S. Patent 7,328,433
-#        U.S. Patent 7,500,242
-#
 # </copyright>
 
 # Deprecated entry points (numbers are reserved):
@@ -382,6 +372,13 @@ kmpc_set_defaults                           224
         __kmpc_push_proc_bind               237
         __kmpc_taskgroup                    238
         __kmpc_end_taskgroup                239
+        __kmpc_push_num_teams               240
+        __kmpc_fork_teams                   241
+        __kmpc_omp_task_with_deps           242
+        __kmpc_omp_wait_deps                243
+        __kmpc_cancel                       244
+        __kmpc_cancellationpoint            245
+        __kmpc_cancel_barrier               246
     %endif # OMP_40
 %endif
 
@@ -478,6 +475,10 @@ kmp_set_warnings_off                        780
     omp_get_proc_bind                       862
    #omp_set_proc_bind                       863
    #omp_curr_proc_bind                      864
+    omp_get_num_teams                       865
+    omp_get_team_num                        866
+    omp_get_cancellation                    867
+    kmp_get_cancellation_status             868
 %endif # OMP_40
 
 %ifndef stub

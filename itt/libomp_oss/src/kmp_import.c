@@ -1,7 +1,7 @@
 /*
  * kmp_import.c
- * $Revision: 42181 $
- * $Date: 2013-03-26 15:04:45 -0500 (Tue, 26 Mar 2013) $
+ * $Revision: 42286 $
+ * $Date: 2013-04-18 10:53:26 -0500 (Thu, 18 Apr 2013) $
  */
 
 /* <copyright>
@@ -32,19 +32,7 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
-
-#include "kmp.h"
 
 /*
     ------------------------------------------------------------------------------------------------
@@ -55,6 +43,10 @@
     ------------------------------------------------------------------------------------------------
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
     These symbols are required for mutual exclusion with Microsoft OpenMP RTL (and compatibility
     with MS Compiler).
@@ -62,8 +54,10 @@
 
 int _You_must_link_with_exactly_one_OpenMP_library = 1;
 int _You_must_link_with_Intel_OpenMP_library       = 1;
-#if KMP_OS_WINDOWS && ( KMP_VERSION_MAJOR > 4 )
-    int _You_must_link_with_Microsoft_OpenMP_library = 1;
+int _You_must_link_with_Microsoft_OpenMP_library = 1;
+
+#ifdef __cplusplus
+}
 #endif
 
 // end of file //

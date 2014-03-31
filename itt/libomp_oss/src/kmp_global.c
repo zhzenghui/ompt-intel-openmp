@@ -1,7 +1,7 @@
 /*
  * kmp_global.c -- KPTS global variables for runtime support library
- * $Revision: 42181 $
- * $Date: 2013-03-26 15:04:45 -0500 (Tue, 26 Mar 2013) $
+ * $Revision: 42816 $
+ * $Date: 2013-11-11 15:33:37 -0600 (Mon, 11 Nov 2013) $
  */
 
 /* <copyright>
@@ -32,16 +32,6 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
 
 #include "kmp.h"
@@ -53,7 +43,6 @@ char __kmp_setversion_string[] = VERSION_STRING;
 kmp_key_t __kmp_gtid_threadprivate_key;
 
 kmp_cpuinfo_t   __kmp_cpuinfo = { 0 }; // Not initialized
-kmp_uint64      __kmp_cpu_frequency = 0;
 
 
 /* ----------------------------------------------------- */
@@ -135,7 +124,7 @@ int     __kmp_generate_warnings = kmp_warnings_low;
 int          __kmp_reserve_warn = 0;
 int                 __kmp_xproc = 0;
 int            __kmp_avail_proc = 0;
-int       __kmp_sys_min_stksize = KMP_MIN_STKSIZE;
+size_t    __kmp_sys_min_stksize = KMP_MIN_STKSIZE;
 int           __kmp_sys_max_nth = KMP_MAX_NTH;
 int               __kmp_max_nth = 0;
 int      __kmp_threads_capacity = 0;
@@ -197,6 +186,22 @@ double  __kmp_load_balance_interval   = 1.0;
 
 kmp_nested_nthreads_t __kmp_nested_nth  = { NULL, 0, 0 };
 
+#if KMP_USE_ADAPTIVE_LOCKS
+
+kmp_adaptive_backoff_params_t __kmp_adaptive_backoff_params = { 1, 1024 }; // TODO: tune it!
+
+#if KMP_DEBUG_ADAPTIVE_LOCKS
+char * __kmp_speculative_statsfile = "-";
+#endif
+
+#endif // KMP_USE_ADAPTIVE_LOCKS
+
+#if OMP_40_ENABLED
+int __kmp_display_env           = FALSE;
+int __kmp_display_env_verbose   = FALSE;
+int __kmp_omp_cancellation      = FALSE;
+#endif
+
 /* map OMP 3.0 schedule types with our internal schedule types */
 enum sched_type __kmp_sch_map[ kmp_sched_upper - kmp_sched_lower_ext + kmp_sched_upper_std - kmp_sched_lower - 2 ] = {
     kmp_sch_static_chunked,     // ==> kmp_sched_static            = 1
@@ -213,7 +218,7 @@ enum clock_function_type __kmp_clock_function;
 int __kmp_clock_function_param;
 #endif /* KMP_OS_LINUX */
 
-#if KMP_OS_LINUX || KMP_OS_WINDOWS 
+#if KMP_OS_LINUX || KMP_OS_WINDOWS
 
 # if KMP_OS_WINDOWS && KMP_ARCH_X86_64
 
@@ -277,7 +282,10 @@ int         __kmp_suspend_count = 0;
 
 int     __kmp_settings = FALSE;
 int     __kmp_duplicate_library_ok = 0;
-int     __kmp_forkjoin_frames = 0;
+#if USE_ITT_BUILD
+int     __kmp_forkjoin_frames = 1;
+int     __kmp_forkjoin_frames_mode = 0;
+#endif
 PACKED_REDUCTION_METHOD_T __kmp_force_reduction_method = reduction_method_not_defined;
 int     __kmp_determ_red = FALSE;
 

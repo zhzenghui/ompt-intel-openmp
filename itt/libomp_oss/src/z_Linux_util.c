@@ -1,7 +1,7 @@
 /*
  * z_Linux_util.c -- platform specific routines.
- * $Revision: 42254 $
- * $Date: 2013-04-03 09:03:10 -0500 (Wed, 03 Apr 2013) $
+ * $Revision: 42847 $
+ * $Date: 2013-11-26 09:10:01 -0600 (Tue, 26 Nov 2013) $
  */
 
 /* <copyright>
@@ -32,20 +32,11 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
 
 #include "kmp.h"
 #include "kmp_wrapper_getpid.h"
+#include "kmp_itt.h"
 #include "kmp_str.h"
 #include "kmp_i18n.h"
 #include "kmp_io.h"
@@ -60,9 +51,9 @@
 
 #if KMP_OS_LINUX
 # include <sys/sysinfo.h>
-# if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+# if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
 // We should really include <futex.h>, but that causes compatibility problems on different
-// Linux* OS distributions that either require that you include (or break when you try to include) 
+// Linux* OS distributions that either require that you include (or break when you try to include)
 // <pci/types.h>.
 // Since all we need is the two macros below (which are part of the kernel ABI, so can't change)
 // we just define the constants here and don't include <futex.h>
@@ -82,6 +73,12 @@
 #include <dirent.h>
 #include <ctype.h>
 #include <fcntl.h>
+
+// For non-x86 architecture
+#if KMP_COMPILER_GCC && !(KMP_ARCH_X86 || KMP_ARCH_X86_64)
+# include <stdbool.h>
+# include <ffi.h>
+#endif
 
 /* ------------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------ */
@@ -140,7 +137,7 @@ __kmp_print_cond( char *buffer, kmp_cond_align_t *cond )
  * stone forever.
  */
 
-#  if KMP_ARCH_X86
+#  if KMP_ARCH_X86 || KMP_ARCH_ARM
 #   ifndef __NR_sched_setaffinity
 #    define __NR_sched_setaffinity  241
 #   elif __NR_sched_setaffinity != 241
@@ -462,7 +459,7 @@ __kmp_change_thread_affinity_mask( int gtid, kmp_affin_mask_t *new_mask,
 /* ------------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------ */
 
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
 
 int
 __kmp_futex_determine_capable()
@@ -479,14 +476,14 @@ __kmp_futex_determine_capable()
     return retval;
 }
 
-#endif // KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#endif // KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
 
 /* ------------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------ */
 
-#if (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if (KMP_ARCH_X86 || KMP_ARCH_X86_64) && (! KMP_ASM_INTRINS)
 /*
- * Only 32-bit "add-exchange" instruction on IA-32 architecture causes us to 
+ * Only 32-bit "add-exchange" instruction on IA-32 architecture causes us to
  * use compare_and_store for these routines
  */
 
@@ -575,7 +572,7 @@ __kmp_test_then_and64( volatile kmp_int64 *p, kmp_int64 d )
     return old_value;
 }
 
-#endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
+#endif /* (KMP_ARCH_X86 || KMP_ARCH_X86_64) && (! KMP_ASM_INTRINS) */
 
 void
 __kmp_terminate_thread( int gtid )
@@ -681,8 +678,11 @@ __kmp_launch_worker( void *thr )
     __kmp_gtid = gtid;
 #endif
 
+#if USE_ITT_BUILD
+    __kmp_itt_thread_name( gtid );
+#endif /* USE_ITT_BUILD */
 
-#if KMP_OS_LINUX   
+#if KMP_OS_LINUX
     __kmp_affinity_set_init_mask( gtid, FALSE );
 #elif KMP_OS_DARWIN
     // affinity not supported
@@ -763,6 +763,9 @@ __kmp_launch_monitor( void *thr )
 
     KMP_MB();
 
+#if USE_ITT_BUILD
+    __kmp_itt_thread_ignore();    // Instruct Intel(R) Threading Tools to ignore monitor thread.
+#endif /* USE_ITT_BUILD */
 
     __kmp_set_stack_info( ((kmp_info_t*)thr)->th.th_info.ds.ds_gtid, (kmp_info_t*)thr );
 
@@ -972,14 +975,14 @@ __kmp_create_worker( int gtid, kmp_info_t *th, size_t stack_size )
                           __kmp_msg_null
                           );
             }; // if
-            
+
             /* Set stack size for this thread now. */
             stack_size += gtid * __kmp_stkoffset;
-            
+
             KA_TRACE( 10, ( "__kmp_create_worker: T#%d, default stacksize = %lu bytes, "
                             "__kmp_stksize = %lu bytes, final stacksize = %lu bytes\n",
                             gtid, KMP_DEFAULT_STKSIZE, __kmp_stksize, stack_size ) );
-            
+
 # ifdef _POSIX_THREAD_ATTR_STACKSIZE
                 status = pthread_attr_setstacksize( & thread_attr, stack_size );
 #  ifdef KMP_BACKUP_STKSIZE
@@ -1043,7 +1046,7 @@ __kmp_create_worker( int gtid, kmp_info_t *th, size_t stack_size )
                 }; // if
                 KMP_SYSFAIL( "pthread_create", status );
             }; // if
-            
+
             th->th.th_info.ds.ds_thread = handle;
         }
 
@@ -1301,11 +1304,11 @@ __kmp_reap_worker( kmp_info_t *th )
             if (status == ESRCH) {
                 KA_TRACE( 10, ("__kmp_reap_worker: worker T#%d does not exist, returning\n",
                                th->th.th_info.ds.ds_gtid ) );
-            } 
+            }
             else {
                 KA_TRACE( 10, ("__kmp_reap_worker: try to join with worker T#%d\n",
                                th->th.th_info.ds.ds_gtid ) );
-                
+
                 status = pthread_join( th->th.th_info.ds.ds_thread, & exit_val);
 #ifdef KMP_DEBUG
                 /* Don't expose these to the user until we understand when they trigger */
@@ -1662,14 +1665,14 @@ __kmp_suspend( int th_gtid, volatile kmp_uint *spinner, kmp_uint checker )
     /* TODO: shouldn't this use release semantics to ensure that __kmp_suspend_initialize_thread
        gets called first?
     */
-    old_spin = __kmp_test_then_or32( (volatile kmp_int32 *) spinner,
+    old_spin = KMP_TEST_THEN_OR32( (volatile kmp_int32 *) spinner,
                                      KMP_BARRIER_SLEEP_STATE );
 
     KF_TRACE( 5, ( "__kmp_suspend: T#%d set sleep bit for spin(%p)==%d\n",
                    th_gtid, spinner, *spinner ) );
 
     if ( old_spin == checker ) {
-        __kmp_test_then_and32( (volatile kmp_int32 *) spinner, ~(KMP_BARRIER_SLEEP_STATE) );
+        KMP_TEST_THEN_AND32( (volatile kmp_int32 *) spinner, ~(KMP_BARRIER_SLEEP_STATE) );
 
         KF_TRACE( 5, ( "__kmp_suspend: T#%d false alarm, reset sleep bit for spin(%p)\n",
                        th_gtid, spinner) );
@@ -1814,7 +1817,7 @@ __kmp_resume( int target_gtid, volatile kmp_uint *spin )
         }
     }
 
-    old_spin = __kmp_test_then_and32( (kmp_int32 volatile *) spin,
+    old_spin = KMP_TEST_THEN_AND32( (kmp_int32 volatile *) spin,
       ~( KMP_BARRIER_SLEEP_STATE ) );
     if ( ( old_spin & KMP_BARRIER_SLEEP_STATE ) == 0 ) {
         KF_TRACE( 5, ( "__kmp_resume: T#%d exiting, thread T#%d already awake -  spin(%p): "
@@ -2026,43 +2029,21 @@ __kmp_get_xproc( void ) {
 
 } // __kmp_get_xproc
 
-/*
-    Parse /proc/cpuinfo file for processor frequency, return frequency in Hz, or ~ 0 in case of
-    error.
-*/
-static
-kmp_uint64
-__kmp_get_frequency_from_proc(
-) {
+int
+__kmp_read_from_file( char const *path, char const *format, ... )
+{
+    int result;
+    va_list args;
 
-    kmp_uint64 result = ~ 0;
-    FILE *     file   = NULL;
-    double     freq   = HUGE_VAL;
-    int        rc;
+    va_start(args, format);
+    FILE *f = fopen(path, "rb");
+    if ( f == NULL )
+        return 0;
+    result = vfscanf(f, format, args);
+    fclose(f);
 
-    //
-    // FIXME - use KMP_CPUINFO_FILE here if it is set!!!
-    //
-    file = fopen( "/proc/cpuinfo", "r" );
-    if ( file == NULL ) {
-        return result;
-    }; // if
-    for ( ; ; ) {
-        rc = fscanf( file, "cpu MHz : %lf\n", & freq );  // Try to scan frequency.
-        if ( rc == 1 ) {                                 // Success.
-            break;
-        }; // if
-        fscanf( file, "%*[^\n]\n" );                     // Failure -- skip line.
-    }; // for
-    fclose( file );
-    if ( freq == HUGE_VAL || freq <= 0 ) {
-        return result;
-    }; // if
-    result = (kmp_uint64)( freq * 1.0E+6 );
-    KA_TRACE( 5, ( "cpu frequency from /proc/cpuinfo: %" KMP_UINT64_SPEC "\n", result ) );
     return result;
-} // func __kmp_get_frequency_from_proc
-
+}
 
 void
 __kmp_runtime_initialize( void )
@@ -2080,15 +2061,6 @@ __kmp_runtime_initialize( void )
             __kmp_query_cpuid( &__kmp_cpuinfo );
         }; // if
     #endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
-
-    if ( __kmp_cpu_frequency == 0 ) {
-        // First try nominal frequency.
-        __kmp_cpu_frequency = __kmp_cpuinfo.frequency;
-        if ( __kmp_cpu_frequency == 0 || __kmp_cpu_frequency == ~ 0 ) {
-            // Next Try to get CPU frequency from /proc/cpuinfo.
-            __kmp_cpu_frequency = __kmp_get_frequency_from_proc();
-        }; // if
-    }; // if
 
     __kmp_xproc = __kmp_get_xproc();
 
@@ -2133,6 +2105,9 @@ __kmp_runtime_initialize( void )
     KMP_CHECK_SYSFAIL( "pthread_condattr_init", status );
     status = pthread_cond_init( & __kmp_wait_cv.c_cond, & cond_attr );
     KMP_CHECK_SYSFAIL( "pthread_cond_init", status );
+#if USE_ITT_BUILD
+    __kmp_itt_initialize();
+#endif /* USE_ITT_BUILD */
 
     __kmp_init_runtime = TRUE;
 }
@@ -2146,6 +2121,9 @@ __kmp_runtime_destroy( void )
         return; // Nothing to do.
     };
 
+#if USE_ITT_BUILD
+    __kmp_itt_destroy();
+#endif /* USE_ITT_BUILD */
 
     status = pthread_key_delete( __kmp_gtid_threadprivate_key );
     KMP_CHECK_SYSFAIL( "pthread_key_delete", status );
@@ -2551,6 +2529,43 @@ __kmp_get_load_balance( int max )
 # endif // KMP_OS_DARWIN
 
 #endif // USE_LOAD_BALANCE
+
+
+#if KMP_COMPILER_GCC && !(KMP_ARCH_X86 || KMP_ARCH_X86_64)
+
+int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int tid, int argc,
+        void *p_argv[] )
+{
+    int argc_full = argc + 2;
+    int i;
+    ffi_cif cif;
+    ffi_type *types[argc_full];
+    void *args[argc_full];
+    void *idp[2];
+
+    /* We're only passing pointers to the target. */
+    for (i = 0; i < argc_full; i++)
+        types[i] = &ffi_type_pointer;
+
+    /* Ugly double-indirection, but that's how it goes... */
+    idp[0] = &gtid;
+    idp[1] = &tid;
+    args[0] = &idp[0];
+    args[1] = &idp[1];
+
+    for (i = 0; i < argc; i++)
+        args[2 + i] = &p_argv[i];
+
+    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, argc_full,
+                &ffi_type_void, types) != FFI_OK)
+        abort();
+
+    ffi_call(&cif, (void (*)(void))pkfn, NULL, args);
+
+    return 1;
+}
+
+#endif // KMP_COMPILER_GCC && !(KMP_ARCH_X86 || KMP_ARCH_X86_64)
 
 // end of file //
 

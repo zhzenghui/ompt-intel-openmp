@@ -1,7 +1,7 @@
 /*
  * kmp_csupport.c -- kfront linkage support for OpenMP.
- * $Revision: 42263 $
- * $Date: 2013-04-04 11:03:19 -0500 (Thu, 04 Apr 2013) $
+ * $Revision: 42826 $
+ * $Date: 2013-11-20 03:39:45 -0600 (Wed, 20 Nov 2013) $
  */
 
 /* <copyright>
@@ -32,21 +32,12 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
 
 #include "omp.h"        /* extern "C" declarations of user-visible routines */
 #include "kmp.h"
 #include "kmp_i18n.h"
+#include "kmp_itt.h"
 #include "kmp_error.h"
 
 #define MAX_MESSAGE 512
@@ -59,7 +50,7 @@
 
 /*!
  * @ingroup STARTUP_SHUTDOWN
- * @param loc   in   source location information 
+ * @param loc   in   source location information
  * @param flags in   for future use (currently ignored)
  *
  * Initialize the runtime library. This call is optional; if it is not made then
@@ -79,7 +70,7 @@ __kmpc_begin(ident_t *loc, kmp_int32 flags)
 
 /*!
  * @ingroup STARTUP_SHUTDOWN
- * @param loc source location information 
+ * @param loc source location information
  *
  * Shutdown the runtime library. This is also optional, and even if called will not
  * do anything unless the `KMP_IGNORE_MPPEND` environment variable is set to zero.
@@ -100,11 +91,11 @@ __kmpc_end(ident_t *loc)
 }
 
 /*!
-@ingroup THREAD_STATES 
+@ingroup THREAD_STATES
 @param loc Source location information.
-@return The global thread index of the active thread. 
+@return The global thread index of the active thread.
 
-This function can be called in any context. 
+This function can be called in any context.
 
 If the runtime has ony been entered at the outermost level from a
 single (necessarily non-OpenMP<sup>*</sup>) thread, then the thread number is that
@@ -129,16 +120,16 @@ __kmpc_global_thread_num(ident_t *loc)
 }
 
 /*!
-@ingroup THREAD_STATES 
+@ingroup THREAD_STATES
 @param loc Source location information.
 @return The number of threads under control of the OpenMP<sup>*</sup> runtime
 
-This function can be called in any context. 
+This function can be called in any context.
 It returns the total number of threads under the control of the OpenMP runtime. That is
-not a number that can be determined by any OpenMP standard calls, since the library may be 
+not a number that can be determined by any OpenMP standard calls, since the library may be
 called from more than one non-OpenMP thread, and this reflects the total over all such calls.
 Similarly the runtime maintains underlying threads even when they are not active (since the cost
-of creating and destroying OS threads is high), this call counts all such threads even if they are not 
+of creating and destroying OS threads is high), this call counts all such threads even if they are not
 waiting for work.
 */
 kmp_int32
@@ -150,7 +141,7 @@ __kmpc_global_num_threads(ident_t *loc)
 }
 
 /*!
-@ingroup THREAD_STATES 
+@ingroup THREAD_STATES
 @param loc Source location information.
 @return The thread number of the calling thread in the innermost active parallel construct.
 
@@ -163,7 +154,7 @@ __kmpc_bound_thread_num(ident_t *loc)
 }
 
 /*!
-@ingroup THREAD_STATES 
+@ingroup THREAD_STATES
 @param loc Source location information.
 @return The number of threads in the innermost active parallel construct.
 */
@@ -241,7 +232,7 @@ __kmpc_ok_to_fork(ident_t *loc)
 }
 
 /*!
-@ingroup THREAD_STATES 
+@ingroup THREAD_STATES
 @param loc Source location information.
 @return 1 if this thread is executing inside an active parallel region, zero if not.
 */
@@ -253,9 +244,9 @@ __kmpc_in_parallel( ident_t *loc )
 
 /*!
 @ingroup PARALLEL
-@param loc source location information 
-@param global_tid global thread number 
-@param num_threads number of threads requested for this parallel construct 
+@param loc source location information
+@param global_tid global thread number
+@param num_threads number of threads requested for this parallel construct
 
 Set the number of threads to be used by the next fork spawned by this thread.
 This call is only required if the parallel construct has a `num_threads` clause.
@@ -294,10 +285,10 @@ __kmpc_push_proc_bind(ident_t *loc, kmp_int32 global_tid, kmp_int32 proc_bind )
 
 /*!
 @ingroup PARALLEL
-@param loc  source location information 
+@param loc  source location information
 @param argc  total number of arguments in the ellipsis
-@param microtask  pointer to callback routine consisting of outlined parallel construct 
-@param ...  pointers to shared variables that aren't global 
+@param microtask  pointer to callback routine consisting of outlined parallel construct
+@param ...  pointers to shared variables that aren't global
 
 Do the actual fork and call the microtask in the relevant number of threads.
 */
@@ -315,7 +306,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
             VOLATILE_CAST(microtask_t) microtask,
             VOLATILE_CAST(launch_t)    __kmp_invoke_task_func,
 /* TODO: revert workaround for Intel(R) 64 tracker #96 */
-#if KMP_ARCH_X86_64 && KMP_OS_LINUX
+#if (KMP_ARCH_X86_64 || KMP_ARCH_ARM) && KMP_OS_LINUX
             &ap
 #else
             ap
@@ -326,6 +317,72 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     va_end( ap );
   }
 }
+
+#if OMP_40_ENABLED
+/*!
+@ingroup PARALLEL
+@param loc source location information
+@param global_tid global thread number
+@param num_teams number of teams requested for the teams construct
+
+Set the number of teams to be used by the teams construct.
+This call is only required if the teams construct has a `num_teams` clause
+or a `thread_limit` clause (or both).
+*/
+void
+__kmpc_push_num_teams(ident_t *loc, kmp_int32 global_tid, kmp_int32 num_teams, kmp_int32 num_threads )
+{
+    KA_TRACE( 20, ("__kmpc_push_num_teams: enter T#%d num_teams=%d num_threads=%d\n",
+      global_tid, num_teams, num_threads ) );
+
+    __kmp_push_num_teams( loc, global_tid, num_teams, num_threads );
+}
+
+/*!
+@ingroup PARALLEL
+@param loc  source location information
+@param argc  total number of arguments in the ellipsis
+@param microtask  pointer to callback routine consisting of outlined teams construct
+@param ...  pointers to shared variables that aren't global
+
+Do the actual fork and call the microtask in the relevant number of threads.
+*/
+void
+__kmpc_fork_teams(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
+{
+    int         gtid = __kmp_entry_gtid();
+    kmp_info_t *this_thr = __kmp_threads[ gtid ];
+    va_list     ap;
+    va_start(   ap, microtask );
+
+    // remember teams entry point and nesting level
+    this_thr->th.th_team_microtask = microtask;
+    this_thr->th.th_teams_level = this_thr->th.th_team->t.t_level; // AC: can be >0 on host
+
+    // check if __kmpc_push_num_teams called, set default number of teams otherwise
+    if ( this_thr->th.th_set_nth_teams == 0 ) {
+        __kmp_push_num_teams( loc, gtid, 0, 0 );
+    }
+    KMP_DEBUG_ASSERT(this_thr->th.th_set_nproc >= 1);
+    KMP_DEBUG_ASSERT(this_thr->th.th_set_nth_teams >= 1);
+
+    __kmp_fork_call( loc, gtid, TRUE,
+            argc,
+            VOLATILE_CAST(microtask_t) __kmp_teams_master,
+            VOLATILE_CAST(launch_t)    __kmp_invoke_teams_master,
+#if (KMP_ARCH_X86_64 || KMP_ARCH_ARM) && KMP_OS_LINUX
+            &ap
+#else
+            ap
+#endif
+            );
+    __kmp_join_call( loc, gtid );
+    this_thr->th.th_team_microtask = NULL;
+    this_thr->th.th_teams_level = 0;
+
+    va_end( ap );
+}
+#endif /* OMP_40_ENABLED */
 
 
 //
@@ -341,11 +398,16 @@ __kmpc_invoke_task_func( int gtid )
 }
 
 /*!
-@ingroup DEPRECATED
-@param loc  source location information 
-@param global_tid  global thread number 
+@ingroup PARALLEL
+@param loc  source location information
+@param global_tid  global thread number
 
-Enter a serialized parallel construct.
+Enter a serialized parallel construct. This interface is used to handle a
+conditional parallel region, like this,
+@code
+#pragma omp parallel if (condition)
+@endcode
+when the condition is false.
 */
 void
 __kmpc_serialized_parallel(ident_t *loc, kmp_int32 global_tid)
@@ -355,236 +417,253 @@ __kmpc_serialized_parallel(ident_t *loc, kmp_int32 global_tid)
 
     KC_TRACE( 10, ("__kmpc_serialized_parallel: called by T#%d\n", global_tid ) );
 
-    /* skip all this code for autopar serialized loops since it results in
+    /* Skip all this code for autopar serialized loops since it results in
        unacceptable overhead */
-    if( loc == NULL || !(loc->flags & KMP_IDENT_AUTOPAR ) )
-    {
+    if( loc != NULL && (loc->flags & KMP_IDENT_AUTOPAR ) )
+        return;
 
-        if( ! TCR_4( __kmp_init_parallel ) )
-            __kmp_parallel_initialize();
+    if( ! TCR_4( __kmp_init_parallel ) )
+        __kmp_parallel_initialize();
 
-        this_thr     = __kmp_threads[ global_tid ];
-        serial_team  = this_thr -> th.th_serial_team;
+    this_thr     = __kmp_threads[ global_tid ];
+    serial_team  = this_thr -> th.th_serial_team;
 
-        /* utilize the serialized team held by this thread */
-        KMP_DEBUG_ASSERT( serial_team );
-        KMP_MB();
+    /* utilize the serialized team held by this thread */
+    KMP_DEBUG_ASSERT( serial_team );
+    KMP_MB();
 
 #if OMP_30_ENABLED
-        if ( __kmp_tasking_mode != tskm_immediate_exec ) {
-            KMP_DEBUG_ASSERT( this_thr -> th.th_task_team == this_thr -> th.th_team -> t.t_task_team );
-            KMP_DEBUG_ASSERT( serial_team -> t.t_task_team == NULL );
-            KA_TRACE( 20, ( "__kmpc_serialized_parallel: T#%d pushing task_team %p / team %p, new task_team = NULL\n",
-                global_tid, this_thr -> th.th_task_team, this_thr -> th.th_team ) );
-            this_thr -> th.th_task_team = NULL;
-        }
+    if ( __kmp_tasking_mode != tskm_immediate_exec ) {
+        KMP_DEBUG_ASSERT( this_thr -> th.th_task_team == this_thr -> th.th_team -> t.t_task_team );
+        KMP_DEBUG_ASSERT( serial_team -> t.t_task_team == NULL );
+        KA_TRACE( 20, ( "__kmpc_serialized_parallel: T#%d pushing task_team %p / team %p, new task_team = NULL\n",
+                        global_tid, this_thr -> th.th_task_team, this_thr -> th.th_team ) );
+        this_thr -> th.th_task_team = NULL;
+    }
 #endif // OMP_30_ENABLED
 
 #if OMP_40_ENABLED
-        kmp_proc_bind_t proc_bind = this_thr->th.th_set_proc_bind;
-        if ( this_thr->th.th_current_task->td_icvs.proc_bind == proc_bind_false ) {
-             proc_bind = proc_bind_false;
-        }
-        else if ( proc_bind == proc_bind_default ) {
-            //
-            // No proc_bind clause was specified, so use the current value
-            // of proc-bind-var for this parallel region.
-            //
-            proc_bind = this_thr->th.th_current_task->td_icvs.proc_bind;
-        }
+    kmp_proc_bind_t proc_bind = this_thr->th.th_set_proc_bind;
+    if ( this_thr->th.th_current_task->td_icvs.proc_bind == proc_bind_false ) {
+        proc_bind = proc_bind_false;
+    }
+    else if ( proc_bind == proc_bind_default ) {
         //
-        // Reset for next parallel region
+        // No proc_bind clause was specified, so use the current value
+        // of proc-bind-var for this parallel region.
         //
-        this_thr->th.th_set_proc_bind = proc_bind_default;
+        proc_bind = this_thr->th.th_current_task->td_icvs.proc_bind;
+    }
+    //
+    // Reset for next parallel region
+    //
+    this_thr->th.th_set_proc_bind = proc_bind_default;
 #endif /* OMP_3_ENABLED */
 
-        if( this_thr -> th.th_team != serial_team ) {
+    if( this_thr -> th.th_team != serial_team ) {
 #if OMP_30_ENABLED
-            // Nested level will be an index in the nested nthreads array
-            int level = this_thr->th.th_team->t.t_level;
+        // Nested level will be an index in the nested nthreads array
+        int level = this_thr->th.th_team->t.t_level;
 #endif
-            if( serial_team -> t.t_serialized ) {
-                /* this serial team was already used
-                 * TODO increase performance by making this locks more specific */
-                kmp_team_t *new_team;
-                int tid = this_thr->th.th_info.ds.ds_tid;
+        if( serial_team -> t.t_serialized ) {
+            /* this serial team was already used
+             * TODO increase performance by making this locks more specific */
+            kmp_team_t *new_team;
+            int tid = this_thr->th.th_info.ds.ds_tid;
 
-                __kmp_acquire_bootstrap_lock( &__kmp_forkjoin_lock );
+            __kmp_acquire_bootstrap_lock( &__kmp_forkjoin_lock );
 
-                new_team = __kmp_allocate_team(this_thr->th.th_root, 1, 1,
+            new_team = __kmp_allocate_team(this_thr->th.th_root, 1, 1,
 #if OMP_40_ENABLED
-                                               proc_bind,
+                                           proc_bind,
 #endif
 #if OMP_30_ENABLED
-                                               & this_thr->th.th_current_task->td_icvs,
+                                           & this_thr->th.th_current_task->td_icvs,
 #else
-                                               this_thr->th.th_team->t.t_set_nproc[tid],
-                                               this_thr->th.th_team->t.t_set_dynamic[tid],
-                                               this_thr->th.th_team->t.t_set_nested[tid],
-                                               this_thr->th.th_team->t.t_set_blocktime[tid],
-                                               this_thr->th.th_team->t.t_set_bt_intervals[tid],
-                                               this_thr->th.th_team->t.t_set_bt_set[tid],
+                                           this_thr->th.th_team->t.t_set_nproc[tid],
+                                           this_thr->th.th_team->t.t_set_dynamic[tid],
+                                           this_thr->th.th_team->t.t_set_nested[tid],
+                                           this_thr->th.th_team->t.t_set_blocktime[tid],
+                                           this_thr->th.th_team->t.t_set_bt_intervals[tid],
+                                           this_thr->th.th_team->t.t_set_bt_set[tid],
 #endif // OMP_30_ENABLED
-                                               0);
-                __kmp_release_bootstrap_lock( &__kmp_forkjoin_lock );
-                KMP_ASSERT( new_team );
+                                           0);
+            __kmp_release_bootstrap_lock( &__kmp_forkjoin_lock );
+            KMP_ASSERT( new_team );
 
-                /* setup new serialized team and install it */
-                new_team -> t.t_threads[0] = this_thr;
-                new_team -> t.t_parent = this_thr -> th.th_team;
-                serial_team = new_team;
-                this_thr -> th.th_serial_team = serial_team;
+            /* setup new serialized team and install it */
+            new_team -> t.t_threads[0] = this_thr;
+            new_team -> t.t_parent = this_thr -> th.th_team;
+            serial_team = new_team;
+            this_thr -> th.th_serial_team = serial_team;
 
-                KF_TRACE( 10, ( "__kmpc_serialized_parallel: T#%d allocated new serial team %p\n",
-                    global_tid, serial_team ) );
+            KF_TRACE( 10, ( "__kmpc_serialized_parallel: T#%d allocated new serial team %p\n",
+                            global_tid, serial_team ) );
 
 
-                /* TODO the above breaks the requirement that if we run out of
-                 * resources, then we can still guarantee that serialized teams
-                 * are ok, since we may need to allocate a new one */
-            } else {
-                KF_TRACE( 10, ( "__kmpc_serialized_parallel: T#%d reusing cached serial team %p\n",
-                    global_tid, serial_team ) );
-            }
+            /* TODO the above breaks the requirement that if we run out of
+             * resources, then we can still guarantee that serialized teams
+             * are ok, since we may need to allocate a new one */
+        } else {
+            KF_TRACE( 10, ( "__kmpc_serialized_parallel: T#%d reusing cached serial team %p\n",
+                            global_tid, serial_team ) );
+        }
 
-            /* we have to initialize this serial team */
-            KMP_DEBUG_ASSERT( serial_team->t.t_threads );
-            KMP_DEBUG_ASSERT( serial_team->t.t_threads[0] == this_thr );
-            KMP_DEBUG_ASSERT( this_thr->th.th_team != serial_team );
-            serial_team -> t.t_ident         = loc;
-            serial_team -> t.t_serialized    = 1;
-            serial_team -> t.t_nproc         = 1;
-            serial_team -> t.t_parent        = this_thr->th.th_team;
+        /* we have to initialize this serial team */
+        KMP_DEBUG_ASSERT( serial_team->t.t_threads );
+        KMP_DEBUG_ASSERT( serial_team->t.t_threads[0] == this_thr );
+        KMP_DEBUG_ASSERT( this_thr->th.th_team != serial_team );
+        serial_team -> t.t_ident         = loc;
+        serial_team -> t.t_serialized    = 1;
+        serial_team -> t.t_nproc         = 1;
+        serial_team -> t.t_parent        = this_thr->th.th_team;
 #if OMP_30_ENABLED
-            serial_team -> t.t_sched         = this_thr->th.th_team->t.t_sched;
+        serial_team -> t.t_sched         = this_thr->th.th_team->t.t_sched;
 #endif // OMP_30_ENABLED
-            this_thr -> th.th_team           = serial_team;
-            serial_team -> t.t_master_tid    = this_thr->th.th_info.ds.ds_tid;
+        this_thr -> th.th_team           = serial_team;
+        serial_team -> t.t_master_tid    = this_thr->th.th_info.ds.ds_tid;
 
 #if OMP_30_ENABLED
-            KF_TRACE( 10, ( "__kmpc_serialized_parallel: T#d curtask=%p\n",
-                global_tid, this_thr->th.th_current_task ) );
-            KMP_ASSERT( this_thr->th.th_current_task->td_flags.executing == 1 );
-            this_thr->th.th_current_task->td_flags.executing = 0;
+        KF_TRACE( 10, ( "__kmpc_serialized_parallel: T#d curtask=%p\n",
+                        global_tid, this_thr->th.th_current_task ) );
+        KMP_ASSERT( this_thr->th.th_current_task->td_flags.executing == 1 );
+        this_thr->th.th_current_task->td_flags.executing = 0;
 
-            __kmp_push_current_task_to_thread( this_thr, serial_team, 0 );
+        __kmp_push_current_task_to_thread( this_thr, serial_team, 0 );
 
-            /* TODO: GEH: do the ICVs work for nested serialized teams?  Don't we need an implicit task for
-                          each serialized task represented by team->t.t_serialized? */
-            copy_icvs(
-                & this_thr->th.th_current_task->td_icvs,
-                & this_thr->th.th_current_task->td_parent->td_icvs );
+        /* TODO: GEH: do the ICVs work for nested serialized teams?  Don't we need an implicit task for
+           each serialized task represented by team->t.t_serialized? */
+        copy_icvs(
+                  & this_thr->th.th_current_task->td_icvs,
+                  & this_thr->th.th_current_task->td_parent->td_icvs );
 
-            // Thread value exists in the nested nthreads array for the next nested level
-            if ( __kmp_nested_nth.used && ( level + 1 < __kmp_nested_nth.used ) ) {
-                this_thr->th.th_current_task->td_icvs.nproc = __kmp_nested_nth.nth[ level + 1 ];
-            }
+        // Thread value exists in the nested nthreads array for the next nested level
+        if ( __kmp_nested_nth.used && ( level + 1 < __kmp_nested_nth.used ) ) {
+            this_thr->th.th_current_task->td_icvs.nproc = __kmp_nested_nth.nth[ level + 1 ];
+        }
 
 #if OMP_40_ENABLED
-            if ( __kmp_nested_proc_bind.used && ( level + 1 < __kmp_nested_proc_bind.used ) ) {
-                this_thr->th.th_current_task->td_icvs.proc_bind
-                  = __kmp_nested_proc_bind.bind_types[ level + 1 ];
-            }
+        if ( __kmp_nested_proc_bind.used && ( level + 1 < __kmp_nested_proc_bind.used ) ) {
+            this_thr->th.th_current_task->td_icvs.proc_bind
+                = __kmp_nested_proc_bind.bind_types[ level + 1 ];
+        }
 #endif /* OMP_40_ENABLED */
 
 #else /* pre-3.0 icv's */
-            serial_team -> t.t_set_nproc[0]  = serial_team->t.t_parent->
-                                               t.t_set_nproc[serial_team->
-                                               t.t_master_tid];
-            serial_team -> t.t_set_dynamic[0] = serial_team->t.t_parent->
-                                               t.t_set_dynamic[serial_team->
-                                               t.t_master_tid];
-            serial_team -> t.t_set_nested[0] = serial_team->t.t_parent->
-                                               t.t_set_nested[serial_team->
-                                               t.t_master_tid];
-            serial_team -> t.t_set_blocktime[0]  = serial_team->t.t_parent->
-                                               t.t_set_blocktime[serial_team->
-                                               t.t_master_tid];
-            serial_team -> t.t_set_bt_intervals[0] = serial_team->t.t_parent->
-                                               t.t_set_bt_intervals[serial_team->
-                                               t.t_master_tid];
-            serial_team -> t.t_set_bt_set[0] = serial_team->t.t_parent->
-                                               t.t_set_bt_set[serial_team->
-                                               t.t_master_tid];
+        serial_team -> t.t_set_nproc[0]  = serial_team->t.t_parent->
+            t.t_set_nproc[serial_team->
+                          t.t_master_tid];
+        serial_team -> t.t_set_dynamic[0] = serial_team->t.t_parent->
+            t.t_set_dynamic[serial_team->
+                            t.t_master_tid];
+        serial_team -> t.t_set_nested[0] = serial_team->t.t_parent->
+            t.t_set_nested[serial_team->
+                           t.t_master_tid];
+        serial_team -> t.t_set_blocktime[0]  = serial_team->t.t_parent->
+            t.t_set_blocktime[serial_team->
+                              t.t_master_tid];
+        serial_team -> t.t_set_bt_intervals[0] = serial_team->t.t_parent->
+            t.t_set_bt_intervals[serial_team->
+                                 t.t_master_tid];
+        serial_team -> t.t_set_bt_set[0] = serial_team->t.t_parent->
+            t.t_set_bt_set[serial_team->
+                           t.t_master_tid];
 #endif // OMP_30_ENABLED
-            this_thr -> th.th_info.ds.ds_tid = 0;
+        this_thr -> th.th_info.ds.ds_tid = 0;
 
-            /* set thread cache values */
-            this_thr -> th.th_team_nproc     = 1;
-            this_thr -> th.th_team_master    = this_thr;
-            this_thr -> th.th_team_serialized = 1;
+        /* set thread cache values */
+        this_thr -> th.th_team_nproc     = 1;
+        this_thr -> th.th_team_master    = this_thr;
+        this_thr -> th.th_team_serialized = 1;
 
 #if OMP_30_ENABLED
-            serial_team -> t.t_level        = serial_team -> t.t_parent -> t.t_level + 1;
-            serial_team -> t.t_active_level = serial_team -> t.t_parent -> t.t_active_level;
+        serial_team -> t.t_level        = serial_team -> t.t_parent -> t.t_level + 1;
+        serial_team -> t.t_active_level = serial_team -> t.t_parent -> t.t_active_level;
 #endif // OMP_30_ENABLED
 
 #if KMP_ARCH_X86 || KMP_ARCH_X86_64
-            if ( __kmp_inherit_fp_control ) {
-                __kmp_store_x87_fpu_control_word( &serial_team->t.t_x87_fpu_control_word );
-                __kmp_store_mxcsr( &serial_team->t.t_mxcsr );
-                serial_team->t.t_mxcsr &= KMP_X86_MXCSR_MASK;
-                serial_team->t.t_fp_control_saved = TRUE;
-            } else {
-                serial_team->t.t_fp_control_saved = FALSE;
-            }
-#endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
-            /* check if we need to allocate dispatch buffers stack */
-            KMP_DEBUG_ASSERT(serial_team->t.t_dispatch);
-            if ( !serial_team->t.t_dispatch->th_disp_buffer ) {
-                serial_team->t.t_dispatch->th_disp_buffer = (dispatch_private_info_t *)
-                        __kmp_allocate( sizeof( dispatch_private_info_t ) );
-            }
-            this_thr -> th.th_dispatch = serial_team->t.t_dispatch;
-
-            KMP_MB();
-
+        if ( __kmp_inherit_fp_control ) {
+            __kmp_store_x87_fpu_control_word( &serial_team->t.t_x87_fpu_control_word );
+            __kmp_store_mxcsr( &serial_team->t.t_mxcsr );
+            serial_team->t.t_mxcsr &= KMP_X86_MXCSR_MASK;
+            serial_team->t.t_fp_control_saved = TRUE;
         } else {
-            /* this serialized team is already being used,
-             * that's fine, just add another nested level */
-            KMP_DEBUG_ASSERT( this_thr->th.th_team == serial_team );
-            KMP_DEBUG_ASSERT( serial_team -> t.t_threads );
-            KMP_DEBUG_ASSERT( serial_team -> t.t_threads[0] == this_thr );
-            ++ serial_team -> t.t_serialized;
-            this_thr -> th.th_team_serialized = serial_team -> t.t_serialized;
+            serial_team->t.t_fp_control_saved = FALSE;
+        }
+#endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
+        /* check if we need to allocate dispatch buffers stack */
+        KMP_DEBUG_ASSERT(serial_team->t.t_dispatch);
+        if ( !serial_team->t.t_dispatch->th_disp_buffer ) {
+            serial_team->t.t_dispatch->th_disp_buffer = (dispatch_private_info_t *)
+                __kmp_allocate( sizeof( dispatch_private_info_t ) );
+        }
+        this_thr -> th.th_dispatch = serial_team->t.t_dispatch;
+
+        KMP_MB();
+
+    } else {
+        /* this serialized team is already being used,
+         * that's fine, just add another nested level */
+        KMP_DEBUG_ASSERT( this_thr->th.th_team == serial_team );
+        KMP_DEBUG_ASSERT( serial_team -> t.t_threads );
+        KMP_DEBUG_ASSERT( serial_team -> t.t_threads[0] == this_thr );
+        ++ serial_team -> t.t_serialized;
+        this_thr -> th.th_team_serialized = serial_team -> t.t_serialized;
 
 #if OMP_30_ENABLED
-            // Nested level will be an index in the nested nthreads array
-            int level = this_thr->th.th_team->t.t_level;
-            // Thread value exists in the nested nthreads array for the next nested level
-            if ( __kmp_nested_nth.used && ( level + 1 < __kmp_nested_nth.used ) ) {
-                this_thr->th.th_current_task->td_icvs.nproc = __kmp_nested_nth.nth[ level + 1 ];
-            }
-            serial_team -> t.t_level++;
-            KF_TRACE( 10, ( "__kmpc_serialized_parallel: T#%d increasing nesting level of serial team %p to %d\n",
-                 global_tid, serial_team, serial_team -> t.t_level ) );
+        // Nested level will be an index in the nested nthreads array
+        int level = this_thr->th.th_team->t.t_level;
+        // Thread value exists in the nested nthreads array for the next nested level
+        if ( __kmp_nested_nth.used && ( level + 1 < __kmp_nested_nth.used ) ) {
+            this_thr->th.th_current_task->td_icvs.nproc = __kmp_nested_nth.nth[ level + 1 ];
+        }
+        serial_team -> t.t_level++;
+        KF_TRACE( 10, ( "__kmpc_serialized_parallel: T#%d increasing nesting level of serial team %p to %d\n",
+                        global_tid, serial_team, serial_team -> t.t_level ) );
 #else
-            KF_TRACE( 10, ( "__kmpc_serialized_parallel: T#%d reusing team %p for nested serialized parallel region\n",
-                global_tid, serial_team ) );
+        KF_TRACE( 10, ( "__kmpc_serialized_parallel: T#%d reusing team %p for nested serialized parallel region\n",
+                        global_tid, serial_team ) );
 #endif // OMP_30_ENABLED
 
-            /* allocate/push dispatch buffers stack */
-            KMP_DEBUG_ASSERT(serial_team->t.t_dispatch);
-            {
-                dispatch_private_info_t * disp_buffer = (dispatch_private_info_t *)
-                        __kmp_allocate( sizeof( dispatch_private_info_t ) );
-                disp_buffer->next = serial_team->t.t_dispatch->th_disp_buffer;
-                serial_team->t.t_dispatch->th_disp_buffer = disp_buffer;
-            }
-            this_thr -> th.th_dispatch = serial_team->t.t_dispatch;
-
-            KMP_MB();
+        /* allocate/push dispatch buffers stack */
+        KMP_DEBUG_ASSERT(serial_team->t.t_dispatch);
+        {
+            dispatch_private_info_t * disp_buffer = (dispatch_private_info_t *)
+                __kmp_allocate( sizeof( dispatch_private_info_t ) );
+            disp_buffer->next = serial_team->t.t_dispatch->th_disp_buffer;
+            serial_team->t.t_dispatch->th_disp_buffer = disp_buffer;
         }
+        this_thr -> th.th_dispatch = serial_team->t.t_dispatch;
 
-        if ( __kmp_env_consistency_check )
-            __kmp_push_parallel( global_tid, NULL );
+        KMP_MB();
     }
+
+    if ( __kmp_env_consistency_check )
+        __kmp_push_parallel( global_tid, NULL );
+
+// t_level is not available in 2.5 build, so check for OMP_30_ENABLED
+#if USE_ITT_BUILD && OMP_30_ENABLED
+    // Mark the start of the "parallel" region for VTune. Only use one of frame notification scheme at the moment.
+    if ( ( __itt_frame_begin_v3_ptr && __kmp_forkjoin_frames && ! __kmp_forkjoin_frames_mode ) || KMP_ITT_DEBUG )
+    {
+        __kmp_itt_region_forking( global_tid, 1 );
+    }
+    if( ( __kmp_forkjoin_frames_mode == 1 || __kmp_forkjoin_frames_mode == 3 ) && __itt_frame_submit_v3_ptr && __itt_get_timestamp_ptr )
+    {
+#if USE_ITT_NOTIFY
+        if( this_thr->th.th_team->t.t_level == 1 ) {
+            this_thr->th.th_frame_time_serialized = __itt_get_timestamp();
+        }
+#endif
+    }
+#endif /* USE_ITT_BUILD */
+
 }
 
 /*!
-@ingroup DEPRECATED
-@param loc  source location information 
-@param global_tid  global thread number 
+@ingroup PARALLEL
+@param loc  source location information
+@param global_tid  global thread number
 
 Leave a serialized parallel construct.
 */
@@ -599,119 +678,134 @@ __kmpc_end_serialized_parallel(ident_t *loc, kmp_int32 global_tid)
 
     /* skip all this code for autopar serialized loops since it results in
        unacceptable overhead */
-    if( loc == NULL || !(loc->flags & KMP_IDENT_AUTOPAR ) )
-    {
+    if( loc != NULL && (loc->flags & KMP_IDENT_AUTOPAR ) )
+        return;
 
-        if( ! TCR_4( __kmp_init_parallel ) )
-            __kmp_parallel_initialize();
+    // Not autopar code
+    if( ! TCR_4( __kmp_init_parallel ) )
+        __kmp_parallel_initialize();
 
-        this_thr    = __kmp_threads[ global_tid ];
-        serial_team = this_thr->th.th_serial_team;
+    this_thr    = __kmp_threads[ global_tid ];
+    serial_team = this_thr->th.th_serial_team;
 
-        KMP_MB();
-        KMP_DEBUG_ASSERT( serial_team );
-        KMP_ASSERT(       serial_team -> t.t_serialized );
-        KMP_DEBUG_ASSERT( this_thr -> th.th_team == serial_team );
-        KMP_DEBUG_ASSERT( serial_team != this_thr->th.th_root->r.r_root_team );
-        KMP_DEBUG_ASSERT( serial_team -> t.t_threads );
-        KMP_DEBUG_ASSERT( serial_team -> t.t_threads[0] == this_thr );
+    KMP_MB();
+    KMP_DEBUG_ASSERT( serial_team );
+    KMP_ASSERT(       serial_team -> t.t_serialized );
+    KMP_DEBUG_ASSERT( this_thr -> th.th_team == serial_team );
+    KMP_DEBUG_ASSERT( serial_team != this_thr->th.th_root->r.r_root_team );
+    KMP_DEBUG_ASSERT( serial_team -> t.t_threads );
+    KMP_DEBUG_ASSERT( serial_team -> t.t_threads[0] == this_thr );
 
-        /* If necessary, pop the internal control stack values and replace the team values */
-        top = serial_team -> t.t_control_stack_top;
-        if ( top && top -> serial_nesting_level == serial_team -> t.t_serialized ) {
+    /* If necessary, pop the internal control stack values and replace the team values */
+    top = serial_team -> t.t_control_stack_top;
+    if ( top && top -> serial_nesting_level == serial_team -> t.t_serialized ) {
 #if OMP_30_ENABLED
-                copy_icvs(
-                    &serial_team -> t.t_threads[0] -> th.th_current_task -> td_icvs,
-                    top );
+        copy_icvs(
+                  &serial_team -> t.t_threads[0] -> th.th_current_task -> td_icvs,
+                  top );
 #else
-                serial_team -> t.t_set_nproc[0]   = top -> nproc;
-                serial_team -> t.t_set_dynamic[0] = top -> dynamic;
-                serial_team -> t.t_set_nested[0]  = top -> nested;
-                serial_team -> t.t_set_blocktime[0]   = top -> blocktime;
-                serial_team -> t.t_set_bt_intervals[0] = top -> bt_intervals;
-                serial_team -> t.t_set_bt_set[0]  = top -> bt_set;
+        serial_team -> t.t_set_nproc[0]   = top -> nproc;
+        serial_team -> t.t_set_dynamic[0] = top -> dynamic;
+        serial_team -> t.t_set_nested[0]  = top -> nested;
+        serial_team -> t.t_set_blocktime[0]   = top -> blocktime;
+        serial_team -> t.t_set_bt_intervals[0] = top -> bt_intervals;
+        serial_team -> t.t_set_bt_set[0]  = top -> bt_set;
 #endif // OMP_30_ENABLED
-            serial_team -> t.t_control_stack_top = top -> next;
-            __kmp_free(top);
-        }
+        serial_team -> t.t_control_stack_top = top -> next;
+        __kmp_free(top);
+    }
 
 #if OMP_30_ENABLED
-        //if( serial_team -> t.t_serialized > 1 )
-        serial_team -> t.t_level--;
+    //if( serial_team -> t.t_serialized > 1 )
+    serial_team -> t.t_level--;
 #endif // OMP_30_ENABLED
 
-        /* pop dispatch buffers stack */
-        KMP_DEBUG_ASSERT(serial_team->t.t_dispatch->th_disp_buffer);
-        {
-            dispatch_private_info_t * disp_buffer = serial_team->t.t_dispatch->th_disp_buffer;
-            serial_team->t.t_dispatch->th_disp_buffer =
-                serial_team->t.t_dispatch->th_disp_buffer->next;
-            __kmp_free( disp_buffer );
-        }
+    /* pop dispatch buffers stack */
+    KMP_DEBUG_ASSERT(serial_team->t.t_dispatch->th_disp_buffer);
+    {
+        dispatch_private_info_t * disp_buffer = serial_team->t.t_dispatch->th_disp_buffer;
+        serial_team->t.t_dispatch->th_disp_buffer =
+            serial_team->t.t_dispatch->th_disp_buffer->next;
+        __kmp_free( disp_buffer );
+    }
 
-        -- serial_team -> t.t_serialized;
-        if ( serial_team -> t.t_serialized == 0 ) {
+    -- serial_team -> t.t_serialized;
+    if ( serial_team -> t.t_serialized == 0 ) {
 
-            /* return to the parallel section */
+        /* return to the parallel section */
 
 #if KMP_ARCH_X86 || KMP_ARCH_X86_64
-            if ( __kmp_inherit_fp_control && serial_team->t.t_fp_control_saved ) {
-                __kmp_clear_x87_fpu_status_word();
-                __kmp_load_x87_fpu_control_word( &serial_team->t.t_x87_fpu_control_word );
-                __kmp_load_mxcsr( &serial_team->t.t_mxcsr );
-            }
+        if ( __kmp_inherit_fp_control && serial_team->t.t_fp_control_saved ) {
+            __kmp_clear_x87_fpu_status_word();
+            __kmp_load_x87_fpu_control_word( &serial_team->t.t_x87_fpu_control_word );
+            __kmp_load_mxcsr( &serial_team->t.t_mxcsr );
+        }
 #endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
-            this_thr -> th.th_team           = serial_team -> t.t_parent;
-            this_thr -> th.th_info.ds.ds_tid = serial_team -> t.t_master_tid;
+        this_thr -> th.th_team           = serial_team -> t.t_parent;
+        this_thr -> th.th_info.ds.ds_tid = serial_team -> t.t_master_tid;
 
-            /* restore values cached in the thread */
-            this_thr -> th.th_team_nproc     = serial_team -> t.t_parent -> t.t_nproc;          /*  JPH */
-            this_thr -> th.th_team_master    = serial_team -> t.t_parent -> t.t_threads[0];     /* JPH */
-            this_thr -> th.th_team_serialized = this_thr -> th.th_team -> t.t_serialized;
+        /* restore values cached in the thread */
+        this_thr -> th.th_team_nproc     = serial_team -> t.t_parent -> t.t_nproc;          /*  JPH */
+        this_thr -> th.th_team_master    = serial_team -> t.t_parent -> t.t_threads[0];     /* JPH */
+        this_thr -> th.th_team_serialized = this_thr -> th.th_team -> t.t_serialized;
 
-            /* TODO the below shouldn't need to be adjusted for serialized teams */
-            this_thr -> th.th_dispatch       = & this_thr -> th.th_team ->
-                         t.t_dispatch[ serial_team -> t.t_master_tid ];
-
-#if OMP_30_ENABLED
-            __kmp_pop_current_task_from_thread( this_thr );
-
-            KMP_ASSERT( this_thr -> th.th_current_task -> td_flags.executing == 0 );
-            this_thr -> th.th_current_task -> td_flags.executing = 1;
-
-            if ( __kmp_tasking_mode != tskm_immediate_exec ) {
-                //
-                // Copy the task team from the new child / old parent team
-                // to the thread.  If non-NULL, copy the state flag also.
-                //
-                if ( ( this_thr -> th.th_task_team = this_thr -> th.th_team -> t.t_task_team ) != NULL ) {
-                    this_thr -> th.th_task_state = this_thr -> th.th_task_team -> tt.tt_state;
-                }
-                KA_TRACE( 20, ( "__kmpc_end_serialized_parallel: T#%d restoring task_team %p / team %p\n",
-                  global_tid, this_thr -> th.th_task_team, this_thr -> th.th_team ) );
-            }
-#endif // OMP_30_ENABLED
-
-        }
-        else {
+        /* TODO the below shouldn't need to be adjusted for serialized teams */
+        this_thr -> th.th_dispatch       = & this_thr -> th.th_team ->
+            t.t_dispatch[ serial_team -> t.t_master_tid ];
 
 #if OMP_30_ENABLED
-            if ( __kmp_tasking_mode != tskm_immediate_exec ) {
-                KA_TRACE( 20, ( "__kmpc_end_serialized_parallel: T#%d decreasing nesting depth of serial team %p to %d\n",
-                  global_tid, serial_team, serial_team -> t.t_serialized ) );
+        __kmp_pop_current_task_from_thread( this_thr );
+
+        KMP_ASSERT( this_thr -> th.th_current_task -> td_flags.executing == 0 );
+        this_thr -> th.th_current_task -> td_flags.executing = 1;
+
+        if ( __kmp_tasking_mode != tskm_immediate_exec ) {
+            //
+            // Copy the task team from the new child / old parent team
+            // to the thread.  If non-NULL, copy the state flag also.
+            //
+            if ( ( this_thr -> th.th_task_team = this_thr -> th.th_team -> t.t_task_team ) != NULL ) {
+                this_thr -> th.th_task_state = this_thr -> th.th_task_team -> tt.tt_state;
             }
+            KA_TRACE( 20, ( "__kmpc_end_serialized_parallel: T#%d restoring task_team %p / team %p\n",
+                            global_tid, this_thr -> th.th_task_team, this_thr -> th.th_team ) );
+        }
 #endif // OMP_30_ENABLED
 
+    }
+    else {
+
+#if OMP_30_ENABLED
+        if ( __kmp_tasking_mode != tskm_immediate_exec ) {
+            KA_TRACE( 20, ( "__kmpc_end_serialized_parallel: T#%d decreasing nesting depth of serial team %p to %d\n",
+                            global_tid, serial_team, serial_team -> t.t_serialized ) );
         }
+#endif // OMP_30_ENABLED
+
+    }
+
+// t_level is not available in 2.5 build, so check for OMP_30_ENABLED
+#if USE_ITT_BUILD && OMP_30_ENABLED
+    // Mark the end of the "parallel" region for VTune. Only use one of frame notification scheme at the moment.
+    if ( ( __itt_frame_end_v3_ptr && __kmp_forkjoin_frames && ! __kmp_forkjoin_frames_mode ) || KMP_ITT_DEBUG )
+    {
+        this_thr->th.th_ident = loc;
+        __kmp_itt_region_joined( global_tid, 1 );
+    }
+    if( ( __kmp_forkjoin_frames_mode == 1 || __kmp_forkjoin_frames_mode == 3 ) && __itt_frame_submit_v3_ptr ) {
+        if( this_thr->th.th_team->t.t_level == 0 ) {
+            __kmp_itt_frame_submit( global_tid, this_thr->th.th_frame_time_serialized, __itt_timestamp_none, 0, loc );
+        }
+    }
+#endif /* USE_ITT_BUILD */
 
     if ( __kmp_env_consistency_check )
         __kmp_pop_parallel( global_tid, NULL );
-    }
 }
 
 /*!
-@ingroup SYNCHRONIZATION 
+@ingroup SYNCHRONIZATION
 @param loc  source location information.
 @param ...  pointers to the variables to be synchronized.
 
@@ -753,13 +847,15 @@ __kmpc_flush(ident_t *loc, ...)
                 if ( ! __kmp_cpuinfo.sse2 ) {
                     // CPU cannot execute SSE2 instructions.
                 } else {
-                    #if defined( __GNUC__ ) && !defined( __INTEL_COMPILER )
-                    __sync_synchronize();
-                    #else
+                    #if KMP_COMPILER_ICC
                     _mm_mfence();
-                    #endif // __GNUC__
+                    #else
+                    __sync_synchronize();
+                    #endif // KMP_COMPILER_ICC
                 }; // if
             #endif // KMP_MIC
+        #elif KMP_ARCH_ARM
+            // Nothing yet
         #else
             #error Unknown or unsupported architecture
         #endif
@@ -773,7 +869,7 @@ __kmpc_flush(ident_t *loc, ...)
 
 /*!
 @ingroup SYNCHRONIZATION
-@param loc source location information 
+@param loc source location information
 @param global_tid thread id.
 
 Execute a barrier.
@@ -879,6 +975,10 @@ __kmpc_ordered( ident_t * loc, kmp_int32 gtid )
     if (! TCR_4(__kmp_init_parallel))
         __kmp_parallel_initialize();
 
+#if USE_ITT_BUILD
+    __kmp_itt_ordered_prep( gtid );
+    // TODO: ordered_wait_id
+#endif /* USE_ITT_BUILD */
 
     th = __kmp_threads[ gtid ];
 
@@ -887,6 +987,9 @@ __kmpc_ordered( ident_t * loc, kmp_int32 gtid )
     else
         __kmp_parallel_deo( & gtid, & cid, loc );
 
+#if USE_ITT_BUILD
+    __kmp_itt_ordered_start( gtid );
+#endif /* USE_ITT_BUILD */
 }
 
 /*!
@@ -904,6 +1007,10 @@ __kmpc_end_ordered( ident_t * loc, kmp_int32 gtid )
 
     KC_TRACE( 10, ("__kmpc_end_ordered: called T#%d\n", gtid ) );
 
+#if USE_ITT_BUILD
+    __kmp_itt_ordered_end( gtid );
+    // TODO: ordered_wait_id
+#endif /* USE_ITT_BUILD */
 
     th = __kmp_threads[ gtid ];
 
@@ -937,6 +1044,13 @@ __kmp_get_critical_section_ptr( kmp_critical_name * crit, ident_t const * loc, k
         lck = __kmp_user_lock_allocate( &idx, gtid, kmp_lf_critical_section );
         __kmp_init_user_lock_with_checks( lck );
         __kmp_set_user_lock_location( lck, loc );
+#if USE_ITT_BUILD
+        __kmp_itt_critical_creating( lck );
+            // __kmp_itt_critical_creating() should be called *before* the first usage of underlying
+            // lock. It is the only place where we can guarantee it. There are chances the lock will
+            // destroyed with no usage, but it is not a problem, because this is not real event seen
+            // by user but rather setting name for object (lock). See more details in kmp_itt.h.
+#endif /* USE_ITT_BUILD */
 
         //
         // Use a cmpxchg instruction to slam the start of the critical
@@ -948,6 +1062,11 @@ __kmp_get_critical_section_ptr( kmp_critical_name * crit, ident_t const * loc, k
 
         if ( status == 0 ) {
             // Deallocate the lock and reload the value.
+#if USE_ITT_BUILD
+            __kmp_itt_critical_destroyed( lck );
+                // Let ITT know the lock is destroyed and the same memory location may be reused for
+                // another purpose.
+#endif /* USE_ITT_BUILD */
             __kmp_destroy_user_lock_with_checks( lck );
             __kmp_user_lock_free( &idx, gtid, lck );
             lck = (kmp_user_lock_p)TCR_PTR( *lck_pp );
@@ -961,7 +1080,7 @@ __kmp_get_critical_section_ptr( kmp_critical_name * crit, ident_t const * loc, k
 @ingroup WORK_SHARING
 @param loc  source location information.
 @param global_tid  global thread number .
-@param crit identity of the critical section. This could be a pointer to a lock associated with the critical section, or 
+@param crit identity of the critical section. This could be a pointer to a lock associated with the critical section, or
 some other suitably unique value.
 
 Enter code protected by a `critical` construct.
@@ -982,7 +1101,7 @@ __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit )
       && ( sizeof( lck->tas.lk.poll ) <= OMP_CRITICAL_SIZE ) ) {
         lck = (kmp_user_lock_p)crit;
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
       && ( sizeof( lck->futex.lk.poll ) <= OMP_CRITICAL_SIZE ) ) {
         lck = (kmp_user_lock_p)crit;
@@ -991,7 +1110,7 @@ __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit )
     else { // ticket, queuing or drdpa
         lck = __kmp_get_critical_section_ptr( crit, loc, global_tid );
     }
-    
+
     if ( __kmp_env_consistency_check )
         __kmp_push_sync( global_tid, ct_critical, loc, lck );
 
@@ -1001,10 +1120,16 @@ __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit )
     /* also, even if we are the uber thread, we still have to conduct the lock,
      * as we have to contend with sibling threads */
 
+#if USE_ITT_BUILD
+    __kmp_itt_critical_acquiring( lck );
+#endif /* USE_ITT_BUILD */
     // Value of 'crit' should be good for using as a critical_id of the critical section directive.
 
     __kmp_acquire_user_lock_with_checks( lck, global_tid );
 
+#if USE_ITT_BUILD
+    __kmp_itt_critical_acquired( lck );
+#endif /* USE_ITT_BUILD */
 
     KA_TRACE( 15, ("__kmpc_critical: done T#%d\n", global_tid ));
 } // __kmpc_critical
@@ -1013,7 +1138,7 @@ __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit )
 @ingroup WORK_SHARING
 @param loc  source location information.
 @param global_tid  global thread number .
-@param crit identity of the critical section. This could be a pointer to a lock associated with the critical section, or 
+@param crit identity of the critical section. This could be a pointer to a lock associated with the critical section, or
 some other suitably unique value.
 
 Leave a critical section, releasing any lock that was held during its execution.
@@ -1029,7 +1154,7 @@ __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit)
       && ( sizeof( lck->tas.lk.poll ) <= OMP_CRITICAL_SIZE ) ) {
         lck = (kmp_user_lock_p)crit;
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
       && ( sizeof( lck->futex.lk.poll ) <= OMP_CRITICAL_SIZE ) ) {
         lck = (kmp_user_lock_p)crit;
@@ -1044,6 +1169,9 @@ __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit)
     if ( __kmp_env_consistency_check )
         __kmp_pop_sync( global_tid, ct_critical, loc );
 
+#if USE_ITT_BUILD
+    __kmp_itt_critical_releasing( lck );
+#endif /* USE_ITT_BUILD */
     // Value of 'crit' should be good for using as a critical_id of the critical section directive.
 
     __kmp_release_user_lock_with_checks( lck, global_tid );
@@ -1053,7 +1181,7 @@ __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit)
 
 /*!
 @ingroup SYNCHRONIZATION
-@param loc source location information 
+@param loc source location information
 @param global_tid thread id.
 @return one if the thread should execute the master block, zero otherwise
 
@@ -1079,7 +1207,7 @@ __kmpc_barrier_master(ident_t *loc, kmp_int32 global_tid)
 
 /*!
 @ingroup SYNCHRONIZATION
-@param loc source location information 
+@param loc source location information
 @param global_tid thread id.
 
 Complete the execution of a combined barrier and master. This function should
@@ -1096,13 +1224,13 @@ __kmpc_end_barrier_master(ident_t *loc, kmp_int32 global_tid)
 
 /*!
 @ingroup SYNCHRONIZATION
-@param loc source location information 
+@param loc source location information
 @param global_tid thread id.
 @return one if the thread should execute the master block, zero otherwise
 
 Start execution of a combined barrier and master(nowait) construct.
 The barrier is executed inside this function.
-There is no equivalent "end" function, since the 
+There is no equivalent "end" function, since the
 */
 kmp_int32
 __kmpc_barrier_master_nowait( ident_t * loc, kmp_int32 global_tid )
@@ -1146,8 +1274,8 @@ __kmpc_barrier_master_nowait( ident_t * loc, kmp_int32 global_tid )
 /* The BARRIER for a SINGLE process section is always explicit   */
 /*!
 @ingroup WORK_SHARING
-@param loc  source location information 
-@param global_tid  global thread number 
+@param loc  source location information
+@param global_tid  global thread number
 @return One if this thread should execute the single construct, zero otherwise.
 
 Test whether to execute a <tt>single</tt> construct.
@@ -1164,8 +1292,8 @@ __kmpc_single(ident_t *loc, kmp_int32 global_tid)
 
 /*!
 @ingroup WORK_SHARING
-@param loc  source location information 
-@param global_tid  global thread number 
+@param loc  source location information
+@param global_tid  global thread number
 
 Mark the end of a <tt>single</tt> construct.  This function should
 only be called by the thread that executed the block of code protected
@@ -1351,43 +1479,43 @@ kmpc_get_affinity_mask_proc( int proc, void **mask )
 /* -------------------------------------------------------------------------- */
 /*!
 @ingroup THREADPRIVATE
-@param loc       source location information 
-@param gtid      global thread number 
-@param cpy_size  size of the cpy_data buffer 
-@param cpy_data  pointer to data to be copied 
-@param cpy_func  helper function to call for copying data 
-@param didit     flag variable: 1=single thread; 0=not single thread 
+@param loc       source location information
+@param gtid      global thread number
+@param cpy_size  size of the cpy_data buffer
+@param cpy_data  pointer to data to be copied
+@param cpy_func  helper function to call for copying data
+@param didit     flag variable: 1=single thread; 0=not single thread
 
-__kmpc_copyprivate implements the interface for the private data broadcast needed for 
-the copyprivate clause associated with a single region in an OpenMP<sup>*</sup> program (both C and Fortran). 
-All threads participating in the parallel region call this routine. 
-One of the threads (called the single thread) should have the <tt>didit</tt> variable set to 1 
-and all other threads should have that variable set to 0. 
-All threads pass a pointer to a data buffer (cpy_data) that they have built. 
+__kmpc_copyprivate implements the interface for the private data broadcast needed for
+the copyprivate clause associated with a single region in an OpenMP<sup>*</sup> program (both C and Fortran).
+All threads participating in the parallel region call this routine.
+One of the threads (called the single thread) should have the <tt>didit</tt> variable set to 1
+and all other threads should have that variable set to 0.
+All threads pass a pointer to a data buffer (cpy_data) that they have built.
 
-The OpenMP specification forbids the use of nowait on the single region when a copyprivate 
-clause is present. However, @ref __kmpc_copyprivate implements a barrier internally to avoid 
-race conditions, so the code generation for the single region should avoid generating a barrier 
-after the call to @ref __kmpc_copyprivate. 
+The OpenMP specification forbids the use of nowait on the single region when a copyprivate
+clause is present. However, @ref __kmpc_copyprivate implements a barrier internally to avoid
+race conditions, so the code generation for the single region should avoid generating a barrier
+after the call to @ref __kmpc_copyprivate.
 
-The <tt>gtid</tt> parameter is the global thread id for the current thread. 
-The <tt>loc</tt> parameter is a pointer to source location information. 
+The <tt>gtid</tt> parameter is the global thread id for the current thread.
+The <tt>loc</tt> parameter is a pointer to source location information.
 
-Internal implementation: The single thread will first copy its descriptor address (cpy_data) 
-to a team-private location, then the other threads will each call the function pointed to by 
-the parameter cpy_func, which carries out the copy by copying the data using the cpy_data buffer. 
+Internal implementation: The single thread will first copy its descriptor address (cpy_data)
+to a team-private location, then the other threads will each call the function pointed to by
+the parameter cpy_func, which carries out the copy by copying the data using the cpy_data buffer.
 
-The cpy_func routine used for the copy and the contents of the data area defined by cpy_data 
-and cpy_size may be built in any fashion that will allow the copy to be done. For instance, 
-the cpy_data buffer can hold the actual data to be copied or it may hold a list of pointers 
-to the data. The cpy_func routine must interpret the cpy_data buffer appropriately. 
+The cpy_func routine used for the copy and the contents of the data area defined by cpy_data
+and cpy_size may be built in any fashion that will allow the copy to be done. For instance,
+the cpy_data buffer can hold the actual data to be copied or it may hold a list of pointers
+to the data. The cpy_func routine must interpret the cpy_data buffer appropriately.
 
-The interface to cpy_func is as follows: 
+The interface to cpy_func is as follows:
 @code
-void cpy_func( void *destination, void *source ) 
+void cpy_func( void *destination, void *source )
 @endcode
-where void *destination is the cpy_data pointer for the thread being copied to 
-and void *source is the cpy_data pointer for the thread being copied from. 
+where void *destination is the cpy_data pointer for the thread being copied to
+and void *source is the cpy_data pointer for the thread being copied from.
 */
 void
 __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, void *cpy_data, void(*cpy_func)(void*,void*), kmp_int32 didit )
@@ -1461,18 +1589,21 @@ __kmpc_init_lock( ident_t * loc, kmp_int32 gtid,  void ** user_lock ) {
       && ( sizeof( lck->tas.lk.poll ) <= OMP_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
       && ( sizeof( lck->futex.lk.poll ) <= OMP_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
     }
 #endif
     else {
-        lck = __kmp_user_lock_allocate( user_lock, gtid );
+        lck = __kmp_user_lock_allocate( user_lock, gtid, 0 );
     }
     INIT_LOCK( lck );
     __kmp_set_user_lock_location( lck, loc );
 
+#if USE_ITT_BUILD
+    __kmp_itt_lock_creating( lck );
+#endif /* USE_ITT_BUILD */
 } // __kmpc_init_lock
 
 /* initialize the lock */
@@ -1494,7 +1625,7 @@ __kmpc_init_nest_lock( ident_t * loc, kmp_int32 gtid, void ** user_lock ) {
       + sizeof( lck->tas.lk.depth_locked ) <= OMP_NEST_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
      && ( sizeof( lck->futex.lk.poll ) + sizeof( lck->futex.lk.depth_locked )
      <= OMP_NEST_LOCK_T_SIZE ) ) {
@@ -1502,12 +1633,15 @@ __kmpc_init_nest_lock( ident_t * loc, kmp_int32 gtid, void ** user_lock ) {
     }
 #endif
     else {
-        lck = __kmp_user_lock_allocate( user_lock, gtid );
+        lck = __kmp_user_lock_allocate( user_lock, gtid, 0 );
     }
 
     INIT_NESTED_LOCK( lck );
     __kmp_set_user_lock_location( lck, loc );
 
+#if USE_ITT_BUILD
+    __kmp_itt_lock_creating( lck );
+#endif /* USE_ITT_BUILD */
 } // __kmpc_init_nest_lock
 
 void
@@ -1519,7 +1653,7 @@ __kmpc_destroy_lock( ident_t * loc, kmp_int32 gtid, void ** user_lock ) {
       && ( sizeof( lck->tas.lk.poll ) <= OMP_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
       && ( sizeof( lck->futex.lk.poll ) <= OMP_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
@@ -1529,13 +1663,16 @@ __kmpc_destroy_lock( ident_t * loc, kmp_int32 gtid, void ** user_lock ) {
         lck = __kmp_lookup_user_lock( user_lock, "omp_destroy_lock" );
     }
 
+#if USE_ITT_BUILD
+    __kmp_itt_lock_destroyed( lck );
+#endif /* USE_ITT_BUILD */
     DESTROY_LOCK( lck );
 
     if ( ( __kmp_user_lock_kind == lk_tas )
       && ( sizeof( lck->tas.lk.poll ) <= OMP_LOCK_T_SIZE ) ) {
         ;
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
       && ( sizeof( lck->futex.lk.poll ) <= OMP_LOCK_T_SIZE ) ) {
         ;
@@ -1556,7 +1693,7 @@ __kmpc_destroy_nest_lock( ident_t * loc, kmp_int32 gtid, void ** user_lock ) {
       + sizeof( lck->tas.lk.depth_locked ) <= OMP_NEST_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
      && ( sizeof( lck->futex.lk.poll ) + sizeof( lck->futex.lk.depth_locked )
      <= OMP_NEST_LOCK_T_SIZE ) ) {
@@ -1567,6 +1704,9 @@ __kmpc_destroy_nest_lock( ident_t * loc, kmp_int32 gtid, void ** user_lock ) {
         lck = __kmp_lookup_user_lock( user_lock, "omp_destroy_nest_lock" );
     }
 
+#if USE_ITT_BUILD
+    __kmp_itt_lock_destroyed( lck );
+#endif /* USE_ITT_BUILD */
 
     DESTROY_NESTED_LOCK( lck );
 
@@ -1574,7 +1714,7 @@ __kmpc_destroy_nest_lock( ident_t * loc, kmp_int32 gtid, void ** user_lock ) {
      + sizeof( lck->tas.lk.depth_locked ) <= OMP_NEST_LOCK_T_SIZE ) ) {
         ;
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
      && ( sizeof( lck->futex.lk.poll ) + sizeof( lck->futex.lk.depth_locked )
      <= OMP_NEST_LOCK_T_SIZE ) ) {
@@ -1594,7 +1734,7 @@ __kmpc_set_lock( ident_t * loc, kmp_int32 gtid, void ** user_lock ) {
       && ( sizeof( lck->tas.lk.poll ) <= OMP_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
       && ( sizeof( lck->futex.lk.poll ) <= OMP_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
@@ -1604,9 +1744,15 @@ __kmpc_set_lock( ident_t * loc, kmp_int32 gtid, void ** user_lock ) {
         lck = __kmp_lookup_user_lock( user_lock, "omp_set_lock" );
     }
 
+#if USE_ITT_BUILD
+    __kmp_itt_lock_acquiring( lck );
+#endif /* USE_ITT_BUILD */
 
     ACQUIRE_LOCK( lck, gtid );
 
+#if USE_ITT_BUILD
+    __kmp_itt_lock_acquired( lck );
+#endif /* USE_ITT_BUILD */
 }
 
 
@@ -1618,7 +1764,7 @@ __kmpc_set_nest_lock( ident_t * loc, kmp_int32 gtid, void ** user_lock ) {
       + sizeof( lck->tas.lk.depth_locked ) <= OMP_NEST_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
      && ( sizeof( lck->futex.lk.poll ) + sizeof( lck->futex.lk.depth_locked )
      <= OMP_NEST_LOCK_T_SIZE ) ) {
@@ -1629,9 +1775,15 @@ __kmpc_set_nest_lock( ident_t * loc, kmp_int32 gtid, void ** user_lock ) {
         lck = __kmp_lookup_user_lock( user_lock, "omp_set_nest_lock" );
     }
 
+#if USE_ITT_BUILD
+    __kmp_itt_lock_acquiring( lck );
+#endif /* USE_ITT_BUILD */
 
     ACQUIRE_NESTED_LOCK( lck, gtid );
 
+#if USE_ITT_BUILD
+    __kmp_itt_lock_acquired( lck );
+#endif /* USE_ITT_BUILD */
 }
 
 void
@@ -1644,8 +1796,11 @@ __kmpc_unset_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
 
     if ( ( __kmp_user_lock_kind == lk_tas )
       && ( sizeof( lck->tas.lk.poll ) <= OMP_LOCK_T_SIZE ) ) {
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
         // "fast" path implemented to fix customer performance issue
+#if USE_ITT_BUILD
+        __kmp_itt_lock_releasing( (kmp_user_lock_p)user_lock );
+#endif /* USE_ITT_BUILD */
         TCW_4(((kmp_user_lock_p)user_lock)->tas.lk.poll, 0);
         KMP_MB();
         return;
@@ -1653,7 +1808,7 @@ __kmpc_unset_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
         lck = (kmp_user_lock_p)user_lock;
 #endif
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
       && ( sizeof( lck->futex.lk.poll ) <= OMP_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
@@ -1663,6 +1818,9 @@ __kmpc_unset_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
         lck = __kmp_lookup_user_lock( user_lock, "omp_unset_lock" );
     }
 
+#if USE_ITT_BUILD
+    __kmp_itt_lock_releasing( lck );
+#endif /* USE_ITT_BUILD */
 
     RELEASE_LOCK( lck, gtid );
 }
@@ -1677,9 +1835,12 @@ __kmpc_unset_nest_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
 
     if ( ( __kmp_user_lock_kind == lk_tas ) && ( sizeof( lck->tas.lk.poll )
       + sizeof( lck->tas.lk.depth_locked ) <= OMP_NEST_LOCK_T_SIZE ) ) {
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
         // "fast" path implemented to fix customer performance issue
         kmp_tas_lock_t *tl = (kmp_tas_lock_t*)user_lock;
+#if USE_ITT_BUILD
+        __kmp_itt_lock_releasing( (kmp_user_lock_p)user_lock );
+#endif /* USE_ITT_BUILD */
         if ( --(tl->lk.depth_locked) == 0 ) {
             TCW_4(tl->lk.poll, 0);
         }
@@ -1689,7 +1850,7 @@ __kmpc_unset_nest_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
         lck = (kmp_user_lock_p)user_lock;
 #endif
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
      && ( sizeof( lck->futex.lk.poll ) + sizeof( lck->futex.lk.depth_locked )
      <= OMP_NEST_LOCK_T_SIZE ) ) {
@@ -1700,6 +1861,9 @@ __kmpc_unset_nest_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
         lck = __kmp_lookup_user_lock( user_lock, "omp_unset_nest_lock" );
     }
 
+#if USE_ITT_BUILD
+    __kmp_itt_lock_releasing( lck );
+#endif /* USE_ITT_BUILD */
 
     RELEASE_NESTED_LOCK( lck, gtid );
 }
@@ -1715,7 +1879,7 @@ __kmpc_test_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
       && ( sizeof( lck->tas.lk.poll ) <= OMP_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
       && ( sizeof( lck->futex.lk.poll ) <= OMP_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
@@ -1725,8 +1889,18 @@ __kmpc_test_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
         lck = __kmp_lookup_user_lock( user_lock, "omp_test_lock" );
     }
 
+#if USE_ITT_BUILD
+    __kmp_itt_lock_acquiring( lck );
+#endif /* USE_ITT_BUILD */
 
     rc = TEST_LOCK( lck, gtid );
+#if USE_ITT_BUILD
+    if ( rc ) {
+        __kmp_itt_lock_acquired( lck );
+    } else {
+        __kmp_itt_lock_cancelled( lck );
+    }
+#endif /* USE_ITT_BUILD */
     return ( rc ? FTN_TRUE : FTN_FALSE );
 
     /* Can't use serial interval since not block structured */
@@ -1743,7 +1917,7 @@ __kmpc_test_nest_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
       + sizeof( lck->tas.lk.depth_locked ) <= OMP_NEST_LOCK_T_SIZE ) ) {
         lck = (kmp_user_lock_p)user_lock;
     }
-#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64)
+#if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
     else if ( ( __kmp_user_lock_kind == lk_futex )
      && ( sizeof( lck->futex.lk.poll ) + sizeof( lck->futex.lk.depth_locked )
      <= OMP_NEST_LOCK_T_SIZE ) ) {
@@ -1754,8 +1928,18 @@ __kmpc_test_nest_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
         lck = __kmp_lookup_user_lock( user_lock, "omp_test_nest_lock" );
     }
 
+#if USE_ITT_BUILD
+    __kmp_itt_lock_acquiring( lck );
+#endif /* USE_ITT_BUILD */
 
     rc = TEST_NESTED_LOCK( lck, gtid );
+#if USE_ITT_BUILD
+    if ( rc ) {
+        __kmp_itt_lock_acquired( lck );
+    } else {
+        __kmp_itt_lock_cancelled( lck );
+    }
+#endif /* USE_ITT_BUILD */
     return rc;
 
     /* Can't use serial interval since not block structured */
@@ -1833,16 +2017,16 @@ __kmp_end_critical_section_reduce_block( ident_t * loc, kmp_int32 global_tid, km
 /* 2.a.i. Reduce Block without a terminating barrier */
 /*!
 @ingroup SYNCHRONIZATION
-@param loc source location information 
-@param global_tid global thread number 
-@param num_vars number of items (variables) to be reduced 
-@param reduce_size size of data in bytes to be reduced 
-@param reduce_data pointer to data to be reduced 
-@param reduce_func callback function providing reduction operation on two operands and returning result of reduction in lhs_data 
-@param lck pointer to the unique lock data structure 
-@result 1 for the master thread, 0 for all other team threads, 2 for all team threads if atomic reduction needed 
+@param loc source location information
+@param global_tid global thread number
+@param num_vars number of items (variables) to be reduced
+@param reduce_size size of data in bytes to be reduced
+@param reduce_data pointer to data to be reduced
+@param reduce_func callback function providing reduction operation on two operands and returning result of reduction in lhs_data
+@param lck pointer to the unique lock data structure
+@result 1 for the master thread, 0 for all other team threads, 2 for all team threads if atomic reduction needed
 
-The nowait version is used for a reduce clause with the nowait argument. 
+The nowait version is used for a reduce clause with the nowait argument.
 */
 kmp_int32
 __kmpc_reduce_nowait(
@@ -1938,9 +2122,9 @@ __kmpc_reduce_nowait(
 
 /*!
 @ingroup SYNCHRONIZATION
-@param loc source location information 
+@param loc source location information
 @param global_tid global thread id.
-@param lck pointer to the unique lock data structure 
+@param lck pointer to the unique lock data structure
 
 Finish the execution of a reduce nowait.
 */
@@ -1991,23 +2175,23 @@ __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 global_tid, kmp_critical_name 
 
 /*!
 @ingroup SYNCHRONIZATION
-@param loc source location information 
-@param global_tid global thread number 
-@param num_vars number of items (variables) to be reduced 
-@param reduce_size size of data in bytes to be reduced 
-@param reduce_data pointer to data to be reduced 
-@param reduce_func callback function providing reduction operation on two operands and returning result of reduction in lhs_data 
-@param lck pointer to the unique lock data structure 
-@result 1 for the master thread, 0 for all other team threads, 2 for all team threads if atomic reduction needed 
+@param loc source location information
+@param global_tid global thread number
+@param num_vars number of items (variables) to be reduced
+@param reduce_size size of data in bytes to be reduced
+@param reduce_data pointer to data to be reduced
+@param reduce_func callback function providing reduction operation on two operands and returning result of reduction in lhs_data
+@param lck pointer to the unique lock data structure
+@result 1 for the master thread, 0 for all other team threads, 2 for all team threads if atomic reduction needed
 
 A blocking reduce that includes an implicit barrier.
 */
 kmp_int32
 __kmpc_reduce(
     ident_t *loc, kmp_int32 global_tid,
-    kmp_int32 num_vars, size_t reduce_size, void *reduce_data, 
-    void (*reduce_func)(void *lhs_data, void *rhs_data), 
-    kmp_critical_name *lck ) 
+    kmp_int32 num_vars, size_t reduce_size, void *reduce_data,
+    void (*reduce_func)(void *lhs_data, void *rhs_data),
+    kmp_critical_name *lck )
 {
     int retval;
     PACKED_REDUCTION_METHOD_T packed_reduction_method;
@@ -2075,9 +2259,9 @@ __kmpc_reduce(
 
 /*!
 @ingroup SYNCHRONIZATION
-@param loc source location information 
+@param loc source location information
 @param global_tid global thread id.
-@param lck pointer to the unique lock data structure 
+@param lck pointer to the unique lock data structure
 
 Finish the execution of a blocking reduce.
 The <tt>lck</tt> pointer must be the same as that used in the corresponding start function.

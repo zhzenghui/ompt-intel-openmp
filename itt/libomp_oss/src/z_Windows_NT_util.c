@@ -1,7 +1,7 @@
 /*
  * z_Windows_NT_util.c -- platform specific routines.
- * $Revision: 42248 $
- * $Date: 2013-04-03 07:08:13 -0500 (Wed, 03 Apr 2013) $
+ * $Revision: 42816 $
+ * $Date: 2013-11-11 15:33:37 -0600 (Mon, 11 Nov 2013) $
  */
 
 /* <copyright>
@@ -32,19 +32,10 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
 
 #include "kmp.h"
+#include "kmp_itt.h"
 #include "kmp_i18n.h"
 #include "kmp_io.h"
 
@@ -211,6 +202,9 @@ void
 __kmp_win32_mutex_init( kmp_win32_mutex_t *mx )
 {
     InitializeCriticalSection( & mx->cs );
+#if USE_ITT_BUILD
+    __kmp_itt_system_object_created( & mx->cs, "Critical Section" );
+#endif /* USE_ITT_BUILD */
 }
 
 void
@@ -246,6 +240,9 @@ __kmp_win32_cond_init( kmp_win32_cond_t *cv )
                               TRUE,     // manual-reset
                               FALSE,    // non-signaled initially
                               NULL );   // unnamed
+#if USE_ITT_BUILD
+    __kmp_itt_system_object_created( cv->event_, "Event" );
+#endif /* USE_ITT_BUILD */
 }
 
 void
@@ -413,14 +410,14 @@ __kmp_suspend( int th_gtid, volatile kmp_uint *spinner, kmp_uint checker )
     /* TODO: shouldn't this use release semantics to ensure that __kmp_suspend_initialize_thread
        gets called first?
     */
-    old_spin = __kmp_test_then_or32( (volatile kmp_int32 *) spinner,
+    old_spin = KMP_TEST_THEN_OR32( (volatile kmp_int32 *) spinner,
                                      KMP_BARRIER_SLEEP_STATE );
 
     KF_TRACE( 5, ( "__kmp_suspend: T#%d set sleep bit for spin(%p)==%d\n",
                                    th_gtid, spinner, *spinner ) );
 
     if ( old_spin == checker ) {
-        __kmp_test_then_and32( (volatile kmp_int32 *) spinner, ~(KMP_BARRIER_SLEEP_STATE) );
+        KMP_TEST_THEN_AND32( (volatile kmp_int32 *) spinner, ~(KMP_BARRIER_SLEEP_STATE) );
 
         KF_TRACE( 5, ( "__kmp_suspend: T#%d false alarm, reset sleep bit for spin(%p)\n",
                        th_gtid, spinner) );
@@ -523,7 +520,7 @@ __kmp_resume( int target_gtid, volatile kmp_uint *spin )
     }
 
     TCW_PTR(th->th.th_sleep_loc, NULL);
-    old_spin = __kmp_test_then_and32( (kmp_int32 volatile *) spin, ~( KMP_BARRIER_SLEEP_STATE ) );
+    old_spin = KMP_TEST_THEN_AND32( (kmp_int32 volatile *) spin, ~( KMP_BARRIER_SLEEP_STATE ) );
 
     if ( ( old_spin & KMP_BARRIER_SLEEP_STATE ) == 0 ) {
         KF_TRACE( 5, ( "__kmp_resume: T#%d exiting, thread T#%d already awake - spin(%p): "
@@ -885,6 +882,9 @@ __kmp_runtime_initialize( void )
     };
 
     InitializeCriticalSection( & __kmp_win32_section );
+#if USE_ITT_BUILD
+    __kmp_itt_system_object_created( & __kmp_win32_section, "Critical Section" );
+#endif /* USE_ITT_BUILD */
     __kmp_initialize_system_tick();
 
     #if (KMP_ARCH_X86 || KMP_ARCH_X86_64)
@@ -892,24 +892,6 @@ __kmp_runtime_initialize( void )
             __kmp_query_cpuid( & __kmp_cpuinfo );
         }; // if
     #endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
-
-    if ( __kmp_cpu_frequency == 0 ) {
-        // __kmp_hardware_timestamp() calls to QueryPerformanceCounter(). If
-        // __kmp_hardware_timestamp() rewritten to use RDTSC instruction (or its 64 analog),
-        // probably we should try to get frequency from __kmp_cpuinfo.frequency first (see
-        // z_Linux_util.c).
-        LARGE_INTEGER freq;
-        BOOL          rc;
-        rc = QueryPerformanceFrequency( & freq );
-        if ( rc ) {
-            KMP_DEBUG_ASSERT( sizeof( __kmp_cpu_frequency ) >= sizeof( freq.QuadPart ) );
-            KMP_DEBUG_ASSERT( freq.QuadPart >= 0 );
-            __kmp_cpu_frequency = freq.QuadPart;
-            KA_TRACE( 5, ( "cpu frequency: %" KMP_UINT64_SPEC "\n", __kmp_cpu_frequency ) );
-        } else {
-            __kmp_cpu_frequency = ~ 0;
-        }; // if
-    }; // if
 
     /* Set up minimum number of threads to switch to TLS gtid */
     #if KMP_OS_WINDOWS && ! defined GUIDEDLL_EXPORTS 
@@ -1061,6 +1043,9 @@ __kmp_runtime_initialize( void )
 
     __kmp_str_buf_free( & path );
 
+#if USE_ITT_BUILD
+    __kmp_itt_initialize();
+#endif /* USE_ITT_BUILD */
 
     __kmp_init_runtime = TRUE;
 } // __kmp_runtime_initialize
@@ -1072,6 +1057,9 @@ __kmp_runtime_destroy( void )
         return;
     }
 
+#if USE_ITT_BUILD
+    __kmp_itt_destroy();
+#endif /* USE_ITT_BUILD */
 
     /* we can't DeleteCriticalsection( & __kmp_win32_section ); */
     /* due to the KX_TRACE() commands */
@@ -1246,6 +1234,9 @@ __kmp_launch_worker( void *arg )
     //__kmp_gtid = gtid;
 #endif
 
+#if USE_ITT_BUILD
+    __kmp_itt_thread_name( gtid );
+#endif /* USE_ITT_BUILD */
 
     __kmp_affinity_set_init_mask( gtid, FALSE );
 
@@ -1263,6 +1254,7 @@ __kmp_launch_worker( void *arg )
         padding = _alloca( gtid * __kmp_stkoffset );
     }
 
+    KMP_FSYNC_RELEASING( &this_thr -> th.th_info.ds.ds_alive );
     this_thr -> th.th_info.ds.ds_thread_id = GetCurrentThreadId();
     TCW_4( this_thr -> th.th_info.ds.ds_alive, TRUE );
 
@@ -1273,6 +1265,7 @@ __kmp_launch_worker( void *arg )
     }
     KMP_MB();
     exit_val = __kmp_launch_thread( this_thr );
+    KMP_FSYNC_RELEASING( &this_thr -> th.th_info.ds.ds_alive );
     TCW_4( this_thr -> th.th_info.ds.ds_alive, FALSE );
     KMP_MB();
     return exit_val;
@@ -1322,6 +1315,9 @@ __kmp_launch_monitor( void *arg )
     //__kmp_gtid = KMP_GTID_MONITOR;
 #endif
 
+#if USE_ITT_BUILD
+    __kmp_itt_thread_ignore();    // Instruct Intel(R) Threading Tools to ignore monitor thread.
+#endif /* USE_ITT_BUILD */
 
     KMP_MB();       /* Flush all pending memory write invalidates.  */
 
@@ -1508,6 +1504,9 @@ __kmp_create_monitor( kmp_info_t *th )
             __kmp_msg_null
         );
     }; // if
+#if USE_ITT_BUILD
+    __kmp_itt_system_object_created( __kmp_monitor_ev, "Event" );
+#endif /* USE_ITT_BUILD */
 
     th->th.th_info.ds.ds_tid  = KMP_GTID_MONITOR;
     th->th.th_info.ds.ds_gtid = KMP_GTID_MONITOR;
@@ -1612,13 +1611,26 @@ __kmp_reap_common( kmp_info_t * th )
         // cover this usage also.
         void * obj = NULL;
         register kmp_uint32 spins;
+#if USE_ITT_BUILD
+        KMP_FSYNC_SPIN_INIT( obj, (void*) & th->th.th_info.ds.ds_alive );
+#endif /* USE_ITT_BUILD */
         KMP_INIT_YIELD( spins );
         do {
+#if USE_ITT_BUILD
+            KMP_FSYNC_SPIN_PREPARE( obj );
+#endif /* USE_ITT_BUILD */
             __kmp_is_thread_alive( th, &exit_val );
             __kmp_static_delay( TRUE );
             KMP_YIELD( TCR_4(__kmp_nth) > __kmp_avail_proc );
             KMP_YIELD_SPIN( spins );
         } while ( exit_val == STILL_ACTIVE && TCR_4( th->th.th_info.ds.ds_alive ) );
+#if USE_ITT_BUILD
+        if ( exit_val == STILL_ACTIVE ) {
+            KMP_FSYNC_CANCEL( obj );
+        } else {
+            KMP_FSYNC_SPIN_ACQUIRED( obj );
+        }; // if
+#endif /* USE_ITT_BUILD */
     }
 
     __kmp_free_handle( th->th.th_info.ds.ds_thread );

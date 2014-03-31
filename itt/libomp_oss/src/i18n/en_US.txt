@@ -1,6 +1,6 @@
 # en_US.txt #
-# $Revision: 42181 $
-# $Date: 2013-03-26 15:04:45 -0500 (Tue, 26 Mar 2013) $
+# $Revision: 42659 $
+# $Date: 2013-09-12 09:22:48 -0500 (Thu, 12 Sep 2013) $
 
 # <copyright>
 #    Copyright (c) 1997-2013 Intel Corporation.  All Rights Reserved.
@@ -29,16 +29,6 @@
 #    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 #    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-#
-#------------------------------------------------------------------------
-#
-#    Portions of this software are protected under the following patents:
-#        U.S. Patent 5,812,852
-#        U.S. Patent 6,792,599
-#        U.S. Patent 7,069,556
-#        U.S. Patent 7,328,433
-#        U.S. Patent 7,500,242
 #
 # </copyright>
 
@@ -69,7 +59,7 @@ Language "English"
 Country  "USA"
 LangId   "1033"
 Version  "2"
-Revision "20130225"
+Revision "20130911"
 
 
 
@@ -130,6 +120,10 @@ ThreadIDsNotUnique           "thread ids not unique"
 UsingPthread                 "using pthread info"
 LegacyApicIDsNotUnique       "legacy APIC ids not unique"
 x2ApicIDsNotUnique           "x2APIC ids not unique"
+DisplayEnvBegin		     "OPENMP DISPLAY ENVIRONMENT BEGIN"
+DisplayEnvEnd		     "OPENMP DISPLAY ENVIRONMENT END"
+Device			     "[device]"
+Host			     "[host]"
 
 
 
@@ -420,6 +414,9 @@ AffThrPlaceInvalid           "%1$s: invalid value \"%2$s\", valid format is \"nC
 AffThrPlaceUnsupported       "KMP_PLACE_THREADS ignored: unsupported architecture."
 AffThrPlaceManyCores         "KMP_PLACE_THREADS ignored: too many cores requested."
 SyntaxErrorUsing             "%1$s: syntax error, using %2$s."
+AdaptiveNotSupported         "%1$s: Adaptive locks are not supported; using queuing." 
+EnvSyntaxError               "%1$s: Invalid symbols found. Check the value \"%2$s\"." 
+EnvSpacesNotAllowed          "%1$s: Spaces between digits are not allowed \"%2$s\"." 
 
 # --------------------------------------------------------------------------------------------------
 -*- HINTS -*-
@@ -440,11 +437,15 @@ ChangeStackLimit             "Please try changing the shell stack limit or adjus
 Unset_ALL_THREADS            "Consider unsetting KMP_ALL_THREADS and OMP_THREAD_LIMIT (if either is set)."
 Set_ALL_THREADPRIVATE        "Consider setting KMP_ALL_THREADPRIVATE to a value larger than %1$d."
 PossibleSystemLimitOnThreads "This could also be due to a system-related limit on the number of threads."
-DuplicateLibrary             "This may cause performance degradation and correctness issues. "
-                             "Set environment variable KMP_DUPLICATE_LIB_OK=TRUE to ignore "
-                             "this problem and force the program to continue anyway. "
-                             "Please note that the use of KMP_DUPLICATE_LIB_OK is unsupported "
-                             "and using it may cause undefined behavior. "
+DuplicateLibrary             "This means that multiple copies of the OpenMP runtime have been "
+                             "linked into the program. That is dangerous, since it can degrade "
+                             "performance or cause incorrect results. "
+                             "The best thing to do is to ensure that only a single OpenMP runtime is "
+                             "linked into the process, e.g. by avoiding static linking of the OpenMP "
+                             "runtime in any library. As an unsafe, unsupported, undocumented workaround "
+                             "you can set the environment variable KMP_DUPLICATE_LIB_OK=TRUE to allow "
+                             "the program to continue to execute, but that may cause crashes or "
+                             "silently produce incorrect results. "
                              "For more information, please see http://www.intel.com/software/products/support/."
 NameComesFrom_CPUINFO_FILE   "This name is specified in environment variable KMP_CPUINFO_FILE."
 NotEnoughMemory              "Seems application required too much memory."

@@ -1,7 +1,7 @@
 /*
  * kmp_str.h -- String manipulation routines.
- * $Revision: 42150 $
- * $Date: 2013-03-15 15:40:38 -0500 (Fri, 15 Mar 2013) $
+ * $Revision: 42613 $
+ * $Date: 2013-08-23 13:29:50 -0500 (Fri, 23 Aug 2013) $
  */
 
 /* <copyright>
@@ -32,16 +32,6 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
 
 #ifndef KMP_STR_H
@@ -66,10 +56,10 @@
 #define TOLOWER(c)	((((c) >= 'A') && ((c) <= 'Z')) ? ((c) + 'a' - 'A') : (c))
 
 struct kmp_str_buf {
-    char * str;             // Pointer to buffer content, read only.
-    int    size;            // Do not change this field!
-    int    used;            // Number of characters printed to buffer, read only.
-    char   bulk[ 512 ];     // Do not use this field!
+    char       * str;         // Pointer to buffer content, read only.
+    unsigned int size;        // Do not change this field!
+    int          used;        // Number of characters printed to buffer, read only.
+    char         bulk[ 512 ]; // Do not use this field!
 }; // struct kmp_str_buf
 typedef struct kmp_str_buf  kmp_str_buf_t;
 

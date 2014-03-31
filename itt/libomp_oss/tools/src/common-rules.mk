@@ -28,16 +28,6 @@
 #    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-#
-#------------------------------------------------------------------------
-#
-#    Portions of this software are protected under the following patents:
-#        U.S. Patent 5,812,852
-#        U.S. Patent 6,792,599
-#        U.S. Patent 7,069,556
-#        U.S. Patent 7,328,433
-#        U.S. Patent 7,500,242
-#
 # </copyright>
 
 # --------------------------------------------------------------------------------------------------
@@ -155,7 +145,7 @@ expand-vars = $(perl) $(tools_dir)expand-vars.pl --strict $(ev-flags) $< $@
 %$(lib) : %$(lib).lst .rebuild
 	$(target)
 	$(rm) $@
-	$(ar) $(ar-flags) $(ar-out)$@ $$(<$<)
+	$(ar) $(ar-flags) $(ar-out)$@ $$(cat $<)
         # strip debug info in case it is requested (works for Linux* OS only)
         ifneq "$(dbg_strip)" ""
             ifeq "$(DEBUG_INFO)" "off"
@@ -174,7 +164,7 @@ expand-vars = $(perl) $(tools_dir)expand-vars.pl --strict $(ev-flags) $< $@
 # Note: to workaround CQ215229 $ld-flags-extra introduced to keep options be placed after objects
 %$(dll) : %$(dll).lst $(def_file) $(res_file) .rebuild
 	$(target)
-	$(ld) $(ld-flags-dll) $(ld-flags) $(ld-out)$@ $$(<$<) $(ld-flags-extra) $(res_file)
+	$(ld) $(ld-flags-dll) $(ld-flags) $(ld-out)$@ $$(cat $<) $(ld-flags-extra) $(res_file)
         # If stripped pdb exist, rename it to normal pdb name. See devtools.mk for explanation.
         ifneq "$(pdb_file)" ""
             ifeq "$(DEBUG_INFO)" "off"

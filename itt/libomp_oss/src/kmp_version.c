@@ -1,7 +1,7 @@
 /*
  * kmp_version.c
- * $Revision: 42181 $
- * $Date: 2013-03-26 15:04:45 -0500 (Tue, 26 Mar 2013) $
+ * $Revision: 42806 $
+ * $Date: 2013-11-05 16:16:45 -0600 (Tue, 05 Nov 2013) $
  */
 
 /* <copyright>
@@ -32,16 +32,6 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
-
 </copyright> */
 
 #include "kmp.h"
@@ -56,7 +46,7 @@
 #define stringer( x )  _stringer( x )
 
 // Detect compiler.
-#ifdef __INTEL_COMPILER
+#if KMP_COMPILER_ICC
     #if   __INTEL_COMPILER == 1010
         #define KMP_COMPILER "Intel C++ Compiler 10.1"
     #elif __INTEL_COMPILER == 1100
@@ -71,10 +61,16 @@
         #define KMP_COMPILER "Intel C++ Compiler 13.0"
     #elif __INTEL_COMPILER == 1310
         #define KMP_COMPILER "Intel C++ Compiler 13.1"
+    #elif __INTEL_COMPILER == 1400
+        #define KMP_COMPILER "Intel C++ Compiler 14.0"
+    #elif __INTEL_COMPILER == 1410
+        #define KMP_COMPILER "Intel C++ Compiler 14.1"
     #elif __INTEL_COMPILER == 9999
         #define KMP_COMPILER "Intel C++ Compiler mainline"
     #endif
-#elif defined( __GNUC__ )
+#elif KMP_COMPILER_CLANG
+    #define KMP_COMPILER "Clang " stringer( __clang_major__ ) "." stringer( __clang_minor__ )
+#elif KMP_COMPILER_GCC
     #define KMP_COMPILER "GCC " stringer( __GNUC__ ) "." stringer( __GNUC_MINOR__ )
 #endif
 #ifndef KMP_COMPILER
@@ -104,7 +100,9 @@ int const __kmp_version_major = KMP_VERSION_MAJOR;
 int const __kmp_version_minor = KMP_VERSION_MINOR;
 int const __kmp_version_build = KMP_VERSION_BUILD;
 int const __kmp_openmp_version =
-    #if OMP_30_ENABLED
+    #if OMP_40_ENABLED
+        201307;
+    #elif OMP_30_ENABLED
         201107;
     #else
         200505;
@@ -125,10 +123,8 @@ char const __kmp_version_lib_ver[]        = KMP_VERSION_PREFIX "version: " strin
 char const __kmp_version_lib_type[]       = KMP_VERSION_PREFIX "library type: " KMP_LIB_TYPE;
 char const __kmp_version_link_type[]      = KMP_VERSION_PREFIX "link type: " KMP_LINK_TYPE;
 char const __kmp_version_build_time[]     = KMP_VERSION_PREFIX "build time: " _KMP_BUILD_TIME;
-#if __MIC__
-    char const __kmp_version_target_env[] = KMP_VERSION_PREFIX "target environment: MIC_";
-#elif __MIC2__
-    char const __kmp_version_target_env[] = KMP_VERSION_PREFIX "target environment: MIC__";
+#if KMP_MIC2
+    char const __kmp_version_target_env[] = KMP_VERSION_PREFIX "target environment: MIC2";
 #endif
 char const __kmp_version_build_compiler[] = KMP_VERSION_PREFIX "build compiler: " KMP_COMPILER;
 

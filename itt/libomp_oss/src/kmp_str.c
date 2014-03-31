@@ -1,7 +1,7 @@
 /*
  * kmp_str.c -- String manipulation routines.
- * $Revision: 42181 $
- * $Date: 2013-03-26 15:04:45 -0500 (Tue, 26 Mar 2013) $
+ * $Revision: 42810 $
+ * $Date: 2013-11-07 12:06:33 -0600 (Thu, 07 Nov 2013) $
  */
 
 /* <copyright>
@@ -31,16 +31,6 @@
     THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-------------------------------------------------------------------------
-
-    Portions of this software are protected under the following patents:
-        U.S. Patent 5,812,852
-        U.S. Patent 6,792,599
-        U.S. Patent 7,069,556
-        U.S. Patent 7,328,433
-        U.S. Patent 7,500,242
 
 </copyright> */
 
@@ -103,7 +93,7 @@
         KMP_DEBUG_ASSERT( (b)->str != NULL );                                                     \
         KMP_DEBUG_ASSERT( (b)->size >= sizeof( (b)->bulk ) );                                     \
         KMP_DEBUG_ASSERT( (b)->size % sizeof( (b)->bulk ) == 0 );                                 \
-        KMP_DEBUG_ASSERT( (b)->used < (b)->size );                                                \
+        KMP_DEBUG_ASSERT( (unsigned)(b)->used < (b)->size );                                      \
         KMP_DEBUG_ASSERT( (b)->size == sizeof( (b)->bulk ) ? (b)->str == & (b)->bulk[ 0 ] : 1 );  \
         KMP_DEBUG_ASSERT( (b)->size > sizeof( (b)->bulk ) ? (b)->str != & (b)->bulk[ 0 ] : 1 );   \
     }
@@ -130,12 +120,12 @@ __kmp_str_buf_reserve(
     KMP_STR_BUF_INVARIANT( buffer );
     KMP_DEBUG_ASSERT( size >= 0 );
 
-    if ( buffer->size < size ) {
+    if ( buffer->size < (unsigned int)size ) {
 
         // Calculate buffer size.
         do {
             buffer->size *= 2;
-        } while ( buffer->size < size );
+        } while ( buffer->size < (unsigned int)size );
 
         // Enlarge buffer.
         if ( buffer->str == & buffer->bulk[ 0 ] ) {
@@ -154,7 +144,7 @@ __kmp_str_buf_reserve(
     }; // if
 
     KMP_DEBUG_ASSERT( buffer->size > 0 );
-    KMP_DEBUG_ASSERT( buffer->size >= size );
+    KMP_DEBUG_ASSERT( buffer->size >= (unsigned)size );
     KMP_STR_BUF_INVARIANT( buffer );
 
 } // __kmp_str_buf_reserve
@@ -358,9 +348,9 @@ void
 __kmp_str_fname_free(
     kmp_str_fname_t * fname
 ) {
-    __kmp_str_free( const_cast< char const ** >( & fname->path ) );
-    __kmp_str_free( const_cast< char const ** >( & fname->dir  ) );
-    __kmp_str_free( const_cast< char const ** >( & fname->base ) );
+    __kmp_str_free( (char const **)( & fname->path ) );
+    __kmp_str_free( (char const **)( & fname->dir  ) );
+    __kmp_str_free( (char const **)( & fname->base ) );
 } // kmp_str_fname_free
 
 
