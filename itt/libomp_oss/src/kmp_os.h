@@ -39,6 +39,10 @@
 
 #include <stdlib.h>
 
+#ifndef OMPT_DISABLED
+#define OMPT_SUPPORT 1
+#endif
+
 #define KMP_FTN_PLAIN   1
 #define KMP_FTN_APPEND  2
 #define KMP_FTN_UPPER   3
@@ -380,6 +384,12 @@ extern "C" {
 # define KMP_DO_ALIGN(bytes)  __declspec( align(bytes) )
 # define KMP_ALIGN_CACHE      __declspec( align(CACHE_LINE) )
 # define KMP_ALIGN(bytes)     __declspec( align(bytes) )
+#endif
+
+#if defined(__KNC__) && !defined(__MIC2__)
+/* Intel(R) Composer XE (14.0) does not define __MIC2__ anymore.
+   Work around that issue by defining it here for use in all other files. */
+    #define __MIC2__ 1
 #endif
 
 #if defined(__MIC__) || defined(__MIC2__)

@@ -698,6 +698,11 @@ L44:
 				//	temp: -8(%ebp)
 				//
 	pushl %ebx		// save %ebx to use during this routine
+
+#if OMPT_SUPPORT
+   movl 28(%ebp),%ebx   // get exit_frame address
+   movl %ebp,(%ebx)  //save exit_frame
+#endif 
 				//
 	movl 20(%ebp),%ebx	// Stack alignment - # args
 	addl $2,%ebx		// #args +2  Always pass at least 2 args (gtid and tid)
@@ -1417,6 +1422,7 @@ L44:
 //	%edx:	tid
 //	%ecx:	argc
 //	%r8:	p_argv
+// %r9:  &exit_frame
 //
 // locals:
 //	__gtid:	gtid parm pushed on stack so can pass &gtid to pkfn
@@ -1443,6 +1449,10 @@ __tid = -24
 
 	pushq 	%rbp		// save base pointer
 	movq 	%rsp,%rbp	// establish the base pointer for this routine.
+#if OMPT_SUPPORT
+   movq  %rbp, (%r9) // save exit_frame
+#endif
+// end OMPT SUPPORT
 	pushq 	%rbx		// %rbx is callee-saved register
 
 	pushq	%rsi		// Put gtid on stack so can pass &tgid to pkfn
@@ -1502,6 +1512,13 @@ L_kmp_invoke_push_parms:	// push nth - 7th parms to pkfn on stack
 L_kmp_invoke_pass_parms:	// put 1st - 6th parms to pkfn in registers.
 				// order here is important to avoid trashing
 				// registers used for both input and output parms!
+
+// begin OMPT SUPPORT
+// leaq    -8(%rsp),%r11   // Address after the return address has been pushed (r11 unused here)
+// movq  %r11, (%r9) // save exit_frame
+// movq  %rsp, (%r9) // save exit_frame
+// end OMPT SUPPORT
+
 	movq	%rdi, %rbx	// pkfn -> %rbx
 	leaq	__gtid(%rbp), %rdi // &gtid -> %rdi (store 1st parm to pkfn)
 	leaq	__tid(%rbp), %rsi  // &tid -> %rsi (store 2nd parm to pkfn)

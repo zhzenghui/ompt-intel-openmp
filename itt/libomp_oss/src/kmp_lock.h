@@ -59,6 +59,10 @@ extern "C" {
 struct ident;
 typedef struct ident ident_t;
 
+#ifndef OMPT_DISABLED
+#define OMPT_SUPPORT 1
+#endif
+
 // End of copied code.
 // ----------------------------------------------------------------------------
 
@@ -95,6 +99,7 @@ typedef struct ident ident_t;
 typedef kmp_uint32 kmp_lock_flags_t;
 
 #define kmp_lf_critical_section 1
+#define kmp_lf_atomic           2
 
 //
 // When a lock table is used, the indices are of kmp_lock_index_t
@@ -188,9 +193,12 @@ extern void __kmp_destroy_tas_lock( kmp_tas_lock_t *lck );
 
 extern void __kmp_acquire_nested_tas_lock( kmp_tas_lock_t *lck, kmp_int32 gtid );
 extern int __kmp_test_nested_tas_lock( kmp_tas_lock_t *lck, kmp_int32 gtid );
-extern void __kmp_release_nested_tas_lock( kmp_tas_lock_t *lck, kmp_int32 gtid );
+extern int __kmp_release_nested_tas_lock( kmp_tas_lock_t *lck, kmp_int32 gtid );
 extern void __kmp_init_nested_tas_lock( kmp_tas_lock_t *lck );
 extern void __kmp_destroy_nested_tas_lock( kmp_tas_lock_t *lck );
+
+#define KMP_NESTED_LOCK_RELEASED 1
+#define KMP_NESTED_LOCK_HELD 0
 
 
 #if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
@@ -239,7 +247,7 @@ extern void __kmp_destroy_futex_lock( kmp_futex_lock_t *lck );
 
 extern void __kmp_acquire_nested_futex_lock( kmp_futex_lock_t *lck, kmp_int32 gtid );
 extern int __kmp_test_nested_futex_lock( kmp_futex_lock_t *lck, kmp_int32 gtid );
-extern void __kmp_release_nested_futex_lock( kmp_futex_lock_t *lck, kmp_int32 gtid );
+extern int __kmp_release_nested_futex_lock( kmp_futex_lock_t *lck, kmp_int32 gtid );
 extern void __kmp_init_nested_futex_lock( kmp_futex_lock_t *lck );
 extern void __kmp_destroy_nested_futex_lock( kmp_futex_lock_t *lck );
 
@@ -288,7 +296,7 @@ extern void __kmp_destroy_ticket_lock( kmp_ticket_lock_t *lck );
 
 extern void __kmp_acquire_nested_ticket_lock( kmp_ticket_lock_t *lck, kmp_int32 gtid );
 extern int __kmp_test_nested_ticket_lock( kmp_ticket_lock_t *lck, kmp_int32 gtid );
-extern void __kmp_release_nested_ticket_lock( kmp_ticket_lock_t *lck, kmp_int32 gtid );
+extern int __kmp_release_nested_ticket_lock( kmp_ticket_lock_t *lck, kmp_int32 gtid );
 extern void __kmp_init_nested_ticket_lock( kmp_ticket_lock_t *lck );
 extern void __kmp_destroy_nested_ticket_lock( kmp_ticket_lock_t *lck );
 
@@ -392,9 +400,14 @@ extern void __kmp_release_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid 
 extern void __kmp_init_queuing_lock( kmp_queuing_lock_t *lck );
 extern void __kmp_destroy_queuing_lock( kmp_queuing_lock_t *lck );
 
+#if OMPT_SUPPORT
+/* expose this so that locks for atomics can be tagged as such */
+extern void __kmp_set_queuing_lock_flags( kmp_queuing_lock_t *lck, kmp_lock_flags_t flags );
+#endif
+
 extern void __kmp_acquire_nested_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid );
 extern int __kmp_test_nested_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid );
-extern void __kmp_release_nested_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid );
+extern int __kmp_release_nested_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid );
 extern void __kmp_init_nested_queuing_lock( kmp_queuing_lock_t *lck );
 extern void __kmp_destroy_nested_queuing_lock( kmp_queuing_lock_t *lck );
 
@@ -474,7 +487,7 @@ extern void __kmp_destroy_drdpa_lock( kmp_drdpa_lock_t *lck );
 
 extern void __kmp_acquire_nested_drdpa_lock( kmp_drdpa_lock_t *lck, kmp_int32 gtid );
 extern int __kmp_test_nested_drdpa_lock( kmp_drdpa_lock_t *lck, kmp_int32 gtid );
-extern void __kmp_release_nested_drdpa_lock( kmp_drdpa_lock_t *lck, kmp_int32 gtid );
+extern int __kmp_release_nested_drdpa_lock( kmp_drdpa_lock_t *lck, kmp_int32 gtid );
 extern void __kmp_init_nested_drdpa_lock( kmp_drdpa_lock_t *lck );
 extern void __kmp_destroy_nested_drdpa_lock( kmp_drdpa_lock_t *lck );
 
@@ -847,13 +860,13 @@ __kmp_test_nested_user_lock_with_checks( kmp_user_lock_p lck, kmp_int32 gtid )
 }
 #endif
 
-extern void ( *__kmp_release_nested_user_lock_with_checks_ )( kmp_user_lock_p lck, kmp_int32 gtid );
+extern int ( *__kmp_release_nested_user_lock_with_checks_ )( kmp_user_lock_p lck, kmp_int32 gtid );
 
-static inline void
+static inline int
 __kmp_release_nested_user_lock_with_checks( kmp_user_lock_p lck, kmp_int32 gtid )
 {
     KMP_DEBUG_ASSERT( __kmp_release_nested_user_lock_with_checks_ != NULL );
-    ( *__kmp_release_nested_user_lock_with_checks_ )( lck, gtid );
+    return ( *__kmp_release_nested_user_lock_with_checks_ )( lck, gtid );
 }
 
 extern void ( *__kmp_init_nested_user_lock_with_checks_ )( kmp_user_lock_p lck );

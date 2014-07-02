@@ -55,6 +55,10 @@
     #include <float.h>
 #endif
 
+#if OMPT_SUPPORT
+#include "ompt-internal.h"
+#endif
+
 /* ------------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------ */
 
@@ -1155,6 +1159,17 @@ __kmp_dispatch_init(
       }
     }
     #endif // ( KMP_STATIC_STEAL_ENABLED && USE_STEALING )
+#if OMPT_SUPPORT
+    int  tid = __kmp_tid_from_gtid( gtid );
+    if ((ompt_status & ompt_status_track_callback)) {    
+        if (ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
+            ompt_callbacks.ompt_callback(ompt_event_loop_begin)(
+                team->t.ompt_team_info.parallel_id,
+                team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
+                (void*) team->t.t_pkfn);
+        }
+    }
+#endif
 }
 
 /*
@@ -1224,6 +1239,19 @@ __kmp_dispatch_finish( int gtid, ident_t *loc )
         } // if
     } // if
     KD_TRACE(100, ("__kmp_dispatch_finish: T#%d returned\n", gtid ) );
+#if OMPT_SUPPORT && 0
+    kmp_info_t  *this_thr        = __kmp_threads[ gtid ];
+    kmp_team_t  *team            = this_thr -> th.th_team;
+    int  tid = __kmp_tid_from_gtid( gtid );  
+    if ((ompt_status & ompt_status_track_callback)) {
+        if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) {
+            ompt_callbacks.ompt_callback(ompt_event_loop_end)(
+              team->t.ompt_team_info.parallel_id,      
+              team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
+              (void*) team->t.t_pkfn);
+        }
+    }
+#endif
 }
 
 #ifdef KMP_GOMP_COMPAT
@@ -1304,6 +1332,28 @@ __kmp_dispatch_finish_chunk( int gtid, ident_t *loc )
 }
 
 #endif /* KMP_GOMP_COMPAT */
+
+/* Define a macro for exiting __kmp_dispatch_next(). If status is 0
+ * (no more work), then tell OMPT the loop is over. In some cases
+ * kmp_dispatch_fini() is not called. */
+#if OMPT_SUPPORT
+#define OMPT_LOOP_END \                 
+    if (status == 0) { \
+        kmp_info_t  *this_thr        = __kmp_threads[ gtid ]; \
+        kmp_team_t  *team            = this_thr -> th.th_team; \
+        int  tid = __kmp_tid_from_gtid( gtid ); \
+        if ((ompt_status & ompt_status_track_callback)) { \
+            if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) { \
+              ompt_callbacks.ompt_callback(ompt_event_loop_end)( \
+                team->t.ompt_team_info.parallel_id,         \
+                team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id, \
+                (void*) team->t.t_pkfn); \
+            } \
+        }\
+    }
+#else
+#define OMPT_LOOP_END // no-op
+#endif  
 
 template< typename T >
 static int
@@ -1440,6 +1490,7 @@ __kmp_dispatch_next(
             __kmp_str_free( &buff );
         }
         #endif
+        OMPT_LOOP_END;
         return status;
     } else {
         kmp_int32 last = 0;
@@ -2081,6 +2132,7 @@ __kmp_dispatch_next(
         __kmp_str_free( &buff );
     }
     #endif
+    OMPT_LOOP_END;
     return status;
 }
 

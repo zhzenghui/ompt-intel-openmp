@@ -129,6 +129,10 @@
 # pragma weak clock_gettime
 #endif
 
+#if OMPT_SUPPORT
+#include "ompt-internal.h"
+#endif
+
 /*Select data placement in NUMA memory */
 #define NO_FIRST_TOUCH 0
 #define FIRST_TOUCH 1       /* Exploit SGI's first touch page placement algo */
@@ -2051,6 +2055,9 @@ struct kmp_taskdata {                                 /* aligned during dynamic 
     kmp_dephash_t *         td_dephash;           // Dependencies for children tasks are tracked from here
     kmp_depnode_t *         td_depnode;           // Pointer to graph node if this task has dependencies
 #endif
+#if OMPT_SUPPORT
+    ompt_task_info_t       ompt_task_info;
+#endif
 #if KMP_HAVE_QUAD
     _Quad                   td_dummy;             // Align structure 16-byte size since allocated just before kmp_task_t
 #else
@@ -2191,6 +2198,11 @@ typedef struct KMP_ALIGN_CACHE kmp_base_info {
 #endif /* USE_ITT_BUILD */
     kmp_local_t             th_local;
     struct private_common  *th_pri_head;
+
+#if OMPT_SUPPORT
+    ompt_thread_info_t     ompt_thread_info;
+#endif
+
 
 /*
  * Now the data only used by the worker (after initial allocation)
@@ -2364,6 +2376,10 @@ typedef struct KMP_ALIGN_CACHE kmp_base_team {
 #endif
     microtask_t              t_pkfn;
     launch_t                 t_invoke;       /* procedure to launch the microtask */
+
+#if OMPT_SUPPORT
+    ompt_team_info_t        ompt_team_info;
+#endif
 
 #if KMP_ARCH_X86 || KMP_ARCH_X86_64
     kmp_int8                 t_fp_control_saved;
@@ -3064,15 +3080,24 @@ extern kmp_info_t * __kmp_allocate_thread( kmp_root_t *root,
                                            kmp_team_t *team, int tid);
 #if OMP_40_ENABLED
 extern kmp_team_t * __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
+#if OMPT_SUPPORT
+                                         ompt_parallel_id_t ompt_parallel_id,
+#endif
                                          kmp_proc_bind_t proc_bind,
                                          kmp_internal_control_t *new_icvs,
                                          int argc );
 #elif OMP_30_ENABLED
 extern kmp_team_t * __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
+#if OMPT_SUPPORT
+                                         ompt_parallel_id_t ompt_parallel_id,
+#endif
                                          kmp_internal_control_t *new_icvs,
                                          int argc );
 #else
 extern kmp_team_t * __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
+#if OMPT_SUPPORT
+                                         ompt_parallel_id_t ompt_parallel_id,
+#endif
                                          int new_set_nproc, int new_set_dynamic, int new_set_nested,
                                          int new_set_blocktime, int new_bt_intervals, int new_bt_set,
                                          int argc );
@@ -3195,7 +3220,11 @@ extern void __kmp_clear_x87_fpu_status_word();
 
 #endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
-extern int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int npr, int argc, void *argv[] );
+extern int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int npr, int argc, void *argv[]
+#if OMPT_SUPPORT
+                                   , void **exit_frame_ptr
+#endif
+);
 
 
 /* ------------------------------------------------------------------------ */

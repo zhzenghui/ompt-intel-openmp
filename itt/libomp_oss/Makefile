@@ -30,19 +30,29 @@
 
 omp_root?=.
 include $(omp_root)/tools/common.inc
+linktype?=dynamic
+ompt_support?=enabled
 .PHONY: default all omp
 
 default: omp
 
 all: omp stubs
 
+#omp: info mkdir
+#	@echo $(omp_root)/tools/build.pl $(build_args) --arch=$(arch) --mode=$(mode) lib inc common
+#	$(omp_root)/tools/build.pl $(build_args) --arch=$(arch) --mode=$(mode) lib inc common
+
+#stubs: mkdir
+#	@echo $(omp_root)/tools/build.pl $(build_args) --arch=$(arch) --mode=$(mode) --stubs lib inc common 
+#	$(omp_root)/tools/build.pl $(build_args) --arch=$(arch) --mode=$(mode) --stubs lib inc common
+
 omp: info mkdir
-	@echo $(omp_root)/tools/build.pl $(build_args) --arch=$(arch) --mode=$(mode) lib inc common
-	$(omp_root)/tools/build.pl $(build_args) --arch=$(arch) --mode=$(mode) lib inc common
+	@echo $(omp_root)/tools/build.pl $(build_args)  --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) lib inc common
+	$(omp_root)/tools/build.pl $(build_args)  --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) lib inc common
 
 stubs: mkdir
-	@echo $(omp_root)/tools/build.pl $(build_args) --arch=$(arch) --mode=$(mode) --stubs lib inc common 
-	$(omp_root)/tools/build.pl $(build_args) --arch=$(arch) --mode=$(mode) --stubs lib inc common
+	@echo $(omp_root)/tools/build.pl $(build_args)  --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) --stubs lib inc common 
+	$(omp_root)/tools/build.pl $(build_args)  --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) --stubs lib inc common
 
 .PHONY: clean info
 
@@ -61,4 +71,4 @@ info:
 	@echo compiler=$(compiler)	
 	@echo mic=$(mic)
 	@echo mode=$(mode)
-
+	@echo ompt_support=$(ompt_support)

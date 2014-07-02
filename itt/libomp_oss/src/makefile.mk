@@ -116,6 +116,7 @@ define curr_config
     CXXFLAGS=$(subst $(space),_,$(CXXFLAGS))
     FFLAGS=$(subst $(space),_,$(FFLAGS))
     LDFLAGS=$(subst $(space),_,$(LDFLAGS))
+    OMPT_SUPPORT=$(ompt_support)
 endef
 # And check it.
 include $(tools_dir)src/common-checks.mk
@@ -131,6 +132,14 @@ endif
 # Form target directory name for MIC platforms
 ifeq "$(MIC_ARCH)" "knc"
     mic-postf1  = .knc
+else
+    ifeq "$(MIC_ARCH)" "knf"
+        mic-postf1  = .knf
+    else
+        ifeq "$(MIC_ARCH)" "knl"
+            mic-postf1  = .knl
+        endif
+    endif
 endif
 ifeq "$(MIC_OS)" "lin"
     mic-postfix = $(mic-postf1).lin
@@ -237,6 +246,8 @@ ifeq "$(filter gcc clang,$(c))" ""
     endif
 endif
 
+# Check here if we ware compiling for MIC no matter if for offload or native,
+# the library needs to be run on the MIC. Hence compile it with -mmic
 ifeq "$(os)" "lrb"
     c-flags    += -mmic
     cxx-flags  += -mmic
@@ -566,6 +577,10 @@ endif
 # changed to __kmp_itt_.
 cpp-flags += -D INTEL_ITTNOTIFY_PREFIX=__kmp_itt_
 
+ifneq "$(ompt_support)" "enabled"
+  cpp-flags += -D OMPT_DISABLED
+  $(call say,OMPT support is disabled!)
+endif
 
 # Linux* OS: __declspec(thread) TLS is still buggy on static builds.
 # Windows* OS: This define causes problems with LoadLibrary + declspec(thread) on Windows* OS. See CQ50564,
@@ -656,12 +671,23 @@ ld-flags   += $(LDFLAGS)
 # --------------------------------------------------------------------------------------------------
 # Files.
 # --------------------------------------------------------------------------------------------------
+ifeq "$(ompt_support)" "enabled"
+   ompt_items = ompt-general
+  z_Linux_asm$(obj) : \
+      cpp-flags += -D OMPT_SUPPORT=1
+  z_Windows_NT-586_asm$(obj) : \
+      cpp-flags += -D OMPT_SUPPORT=1
+else
+   ompt_items =
+endif
+
 
 # Library files. These files participate in all kinds of library.
 lib_c_items :=      \
     kmp_ftn_cdecl   \
     kmp_ftn_extra   \
     kmp_version     \
+	 $(ompt_items)   \
     $(empty)
 lib_cpp_items :=
 lib_asm_items :=
