@@ -1156,11 +1156,9 @@ __kmp_parallel_dxo( int *gtid_ref, int *cid_ref, ident_t *loc_ref )
       }
 #endif
 
-
       KMP_MB();       /* Flush all pending memory write invalidates.  */
    }
 #endif /* BUILD_PARALLEL_ORDERED */
-
 }
 
 /* ------------------------------------------------------------------------ */
@@ -2008,13 +2006,13 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
    register kmp_info_t  *this_thr        = __kmp_threads[ gtid ];
    register kmp_team_t  *team            = this_thr -> th.th_team;
    register int status = 0;
-
-   ident_t * tmp_loc = __kmp_threads[ gtid ]->th.th_ident;
-
 #if OMPT_SUPPORT
    ompt_task_id_t my_task_id;
    ompt_parallel_id_t my_parallel_id;  
 #endif
+
+   ident_t * tmp_loc = __kmp_threads[ gtid ]->th.th_ident;
+
 
    KA_TRACE( 15, ( "__kmp_barrier: T#%d(%d:%d) has arrived\n",
             gtid, __kmp_team_from_gtid(gtid)->t.t_id, __kmp_tid_from_gtid(gtid) ) );
@@ -2575,6 +2573,7 @@ __kmp_fork_call(
       ompt_frame = __ompt_get_task_frame_internal(0);
    }
 #endif
+
    master_this_cons = master_th -> th.th_local.this_construct;
    master_last_cons = master_th -> th.th_local.last_construct;
    root          = master_th -> th.th_root;

@@ -40,6 +40,8 @@ VERSION {
         # "Normal" symbols.
         #
         omp_*;     # Standard OpenMP functions.
+        ompt_*;    # OMPT interface
+        ompd_*;    # OMPD dll location
         ompc_*;    # omp.h renames some standard functions to ompc_*.
         kmp_*;     # Intel extensions.
         kmpc_*;    # Intel extensions.
