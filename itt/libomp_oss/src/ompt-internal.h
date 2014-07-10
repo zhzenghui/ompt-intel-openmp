@@ -24,9 +24,13 @@ typedef enum {
 
 
 typedef struct ompt_callbacks_s {
-#define ompt_event(event, callback, eventid, is_impl) callback ompt_callback(event); 
-#include "ompt-event.h"
+#define ompt_event_macro(event, callback, eventid, is_impl) callback ompt_callback(event); 
+
+  FOREACH_OMPT_EVENT(ompt_event_macro)
+
+#undef ompt_event_macro
 } ompt_callbacks_t;
+
 
 
 typedef struct {

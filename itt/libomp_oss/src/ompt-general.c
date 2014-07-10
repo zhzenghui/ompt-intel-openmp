@@ -57,8 +57,9 @@ ompt_status_t ompt_status = ompt_status_ready;
 
 
 ompt_state_info_t ompt_state_info[] = {
-#define ompt_state(state, code) { # state, state },
-#include "ompt-state.h"
+#define ompt_state_macro(state, code) { # state, state },
+  FOREACH_OMPT_STATE(ompt_state_macro)
+#undef ompt_state_macro
 };
 
 
@@ -106,7 +107,7 @@ OMPT_API_ROUTINE int ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
 {
   switch (evid) {
 
-#define ompt_event(event_name, callback_type, event_id, is_impl) \
+#define ompt_event_macro(event_name, callback_type, event_id, is_impl) \
   case event_name: \
     if (is_impl) { \
       ompt_callbacks.ompt_callback(event_name) = (callback_type) cb; \
@@ -114,7 +115,9 @@ OMPT_API_ROUTINE int ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
     } \
     return set_failure; 
 
-#include "ompt-event.h"
+  FOREACH_OMPT_EVENT(ompt_event_macro)
+
+#undef ompt_event_macro
 
   default: return set_failure;
   }
@@ -125,7 +128,7 @@ OMPT_API_ROUTINE int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
 {
   switch (evid) {
 
-#define ompt_event(event_name, callback_type, event_id, is_impl) \
+#define ompt_event_macro(event_name, callback_type, event_id, is_impl) \
   case event_name:  \
     if (is_impl) { \
       ompt_callback_t mycb = \
@@ -137,7 +140,9 @@ OMPT_API_ROUTINE int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
     } \
     return get_failure; 
 
-#include "ompt-event.h"
+  FOREACH_OMPT_EVENT(ompt_event_macro)
+
+#undef ompt_event_macro
 
   default: return get_failure;
   }
@@ -328,8 +333,11 @@ _OMP_EXTERN void ompt_control(uint64_t command, uint64_t modifier)
 
 static ompt_interface_fn_t ompt_fn_lookup(const char *s) 
 {
+
 #define ompt_interface_fn(fn) \
   if (strcmp(s, #fn) == 0) return (ompt_interface_fn_t) fn; 
-#include "ompt-fns.h"
+
+  FOREACH_OMPT_FN(ompt_interface_fn);
+
   return (ompt_interface_fn_t) 0;
 }
