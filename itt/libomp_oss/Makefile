@@ -32,6 +32,8 @@ omp_root?=.
 compver?=12
 linktype?=dynamic
 ompt_support?=enabled
+ompt_blame?=enabled
+ompt_trace?=enabled
 
 include $(omp_root)/tools/common.inc
 .PHONY: default all omp 
@@ -41,12 +43,12 @@ default: omp
 all: omp stubs
 
 omp: info mkdir
-	@echo $(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) lib inc common
-	$(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) lib inc common
+	@echo $(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) --ompt_blame=$(ompt_blame) --ompt_trace=$(ompt_trace)  lib inc common
+	$(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) --ompt_blame=$(ompt_blame) --ompt_trace=$(ompt_trace) lib inc common
 
 stubs: mkdir
-	@echo $(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) --stubs lib inc common 
-	$(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) --stubs lib inc common
+	@echo $(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) --ompt_blame=$(ompt_blame) --ompt_trace=$(ompt_trace) --stubs lib inc common 
+	$(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support)  --ompt_blame=$(ompt_blame) --ompt_trace=$(ompt_trace) --stubs lib inc common
 
 
 

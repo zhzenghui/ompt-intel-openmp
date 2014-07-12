@@ -426,7 +426,7 @@ __kmp_wait_sleep( kmp_info_t *this_thr,
 
    th_gtid = this_thr->th.th_info.ds.ds_gtid;
 
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_BLAME
    if (ompt_status == ompt_status_track_callback){
       if (this_thr->th.ompt_thread_info.state == ompt_state_idle){
          if (ompt_callbacks.ompt_callback(ompt_event_idle_begin)) {
@@ -449,7 +449,7 @@ __kmp_wait_sleep( kmp_info_t *this_thr,
          ompt_callbacks.ompt_callback(ompt_event_wait_barrier_begin)(pId, tId);
       }
    }
-#endif
+#endif /* OMPT_SUPPORT && OMPT_BLAME */
 
    KA_TRACE( 20, ("__kmp_wait_sleep: T#%d waiting for spin(%p) == %d\n",
             th_gtid,
@@ -614,7 +614,7 @@ __kmp_wait_sleep( kmp_info_t *this_thr,
 
    KMP_FSYNC_SPIN_ACQUIRED( spin );
 
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_BLAME
    if (ompt_status == ompt_status_track_callback){
       if (this_thr->th.ompt_thread_info.state == ompt_state_idle){
          if (ompt_callbacks.ompt_callback(ompt_event_idle_end)) {
@@ -637,7 +637,7 @@ __kmp_wait_sleep( kmp_info_t *this_thr,
          ompt_callbacks.ompt_callback(ompt_event_wait_barrier_end)(pId, tId);
       }
    }
-#endif
+#endif /*  OMPT_SUPPORT && OMPT_BLAME */
 
 }
 
@@ -1147,14 +1147,14 @@ __kmp_parallel_dxo( int *gtid_ref, int *cid_ref, ident_t *loc_ref )
       /* TODO repleace with general release procedure */
       team -> t.t_ordered.dt.t_value = ((tid + 1) % team->t.t_nproc );
 
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_BLAME
       if ((ompt_status == ompt_status_track_callback) &&
             (ompt_callbacks.ompt_callback(ompt_event_release_ordered))) {
          /* accept blame for "ordered" waiting */
          kmp_info_t *this_thread = __kmp_threads[gtid];       
          ompt_callbacks.ompt_callback(ompt_event_release_ordered)(this_thread->th.ompt_thread_info.wait_id);
       }
-#endif
+#endif /*  OMPT_SUPPORT && OMPT_BLAME  */
 
       KMP_MB();       /* Flush all pending memory write invalidates.  */
    }
@@ -2017,7 +2017,7 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
    KA_TRACE( 15, ( "__kmp_barrier: T#%d(%d:%d) has arrived\n",
             gtid, __kmp_team_from_gtid(gtid)->t.t_id, __kmp_tid_from_gtid(gtid) ) );
 
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_TRACE
    if (ompt_status & ompt_status_track) {
       if (ompt_status == ompt_status_track_callback) {
          my_task_id = team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id;
@@ -2036,7 +2036,7 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
          this_thr->th.ompt_thread_info.state = ompt_state_wait_barrier;
       }
    }
-#endif
+#endif /* OMPT_SUPPORT && OMPT_TRACE  */
 
    if ( ! team->t.t_serialized ) {
 #if USE_ITT_BUILD
@@ -2188,7 +2188,7 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
    KA_TRACE( 15, ( "__kmp_barrier: T#%d(%d:%d) is leaving with return value %d\n",
             gtid, __kmp_team_from_gtid(gtid)->t.t_id, __kmp_tid_from_gtid(gtid),
             status ) );
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_TRACE
    if (ompt_status & ompt_status_track) {
       if ((ompt_status == ompt_status_track_callback) &&
             ompt_callbacks.ompt_callback(ompt_event_barrier_end)) {
@@ -2196,7 +2196,7 @@ __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
       }
       this_thr->th.ompt_thread_info.state = ompt_state_work_parallel;
    }
-#endif
+#endif /* OMPT_SUPPORT && OMPT_TRACE */
    return status;
 }
 
@@ -6643,7 +6643,7 @@ __kmp_join_barrier( int gtid )
    KA_TRACE( 10, ("__kmp_join_barrier: T#%d(%d:%d) arrived at join barrier\n",
             gtid, team_id, tid ));
 
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMP_TRACE_SUPPORT
     if ((ompt_status == ompt_status_track_callback) &&
       ompt_callbacks.ompt_callback(ompt_event_barrier_begin)) {
         int  tid = __kmp_tid_from_gtid( gtid );
@@ -6765,7 +6765,7 @@ __kmp_join_barrier( int gtid )
    KMP_MB();       /* Flush all pending memory write invalidates.  */
    KA_TRACE( 10, ("__kmp_join_barrier: T#%d(%d:%d) leaving\n",
             gtid, team_id, tid ));
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_TRACE
    if ((ompt_status == ompt_status_track_callback) &&
      ompt_callbacks.ompt_callback(ompt_event_barrier_end)) {
        int  tid = __kmp_tid_from_gtid( gtid );
@@ -6775,7 +6775,7 @@ __kmp_join_barrier( int gtid )
    }
    // return to default state
    this_thr->th.ompt_thread_info.state = ompt_state_overhead;
-#endif
+#endif /* OMPT_SUPPORT && OMPT_TRACE */
 
 }
 

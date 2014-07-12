@@ -117,6 +117,8 @@ define curr_config
     FFLAGS=$(subst $(space),_,$(FFLAGS))
     LDFLAGS=$(subst $(space),_,$(LDFLAGS))
     OMPT_SUPPORT=$(ompt_support)
+    OMPT_BLAME=$(ompt_blame)
+    OMPT_TRACE=$(ompt_trace)
 endef
 # And check it.
 include $(tools_dir)src/common-checks.mk
@@ -677,6 +679,20 @@ ifeq "$(ompt_support)" "enabled"
       cpp-flags += -D OMPT_SUPPORT=1
   z_Windows_NT-586_asm$(obj) : \
       cpp-flags += -D OMPT_SUPPORT=1
+  
+  ifeq "$(ompt_blame)" "enabled"
+    z_Linux_asm$(obj) : \
+      cpp-flags += -D OMPT_BLAME=1
+    z_Windows_NT-586_asm$(obj) : \
+      cpp-flags += -D OMPT_BLAME=1
+  endif
+  
+  ifeq "$(ompt_trace)" "enabled"
+    z_Linux_asm$(obj) : \
+      cpp-flags += -D OMPT_TRACE=1
+    z_Windows_NT-586_asm$(obj) : \
+      cpp-flags += -D OMPT_TRACE=1
+  endif
 else
    ompt_items =
 endif

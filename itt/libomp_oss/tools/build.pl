@@ -89,12 +89,14 @@ my $opts = {
     "mic-os"          => { targets => "rtl",               base => 0, parms => { bsd     => "*", lin       => ""              }, suffix => sub { $_[ 0 ];                       } },
     "mic-comp"        => { targets => "rtl",               base => 0, parms => { native  => "*", offload   => ""              }, suffix => sub { substr( $_[ 0 ], 0, 3 );       } },
     "ompt_support"    => { targets => "rtl",               base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
+    "ompt_blame"    => { targets => "rtl", base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
+    "ompt_trace"    => { targets => "rtl",         base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
 };
 my $synonyms = {
     "debug" => [ qw{ dbg debg } ],
 };
 # This array specifies order of options to process, so it cannot be initialized with keys( %$opts ).
-my @all_opts   = qw{ target version lib-type link-type target-compiler mode omp-version coverage tcheck mic-arch mic-os mic-comp ompt_support };
+my @all_opts   = qw{ target version lib-type link-type target-compiler mode omp-version coverage tcheck mic-arch mic-os mic-comp ompt_support ompt_blame ompt_trace};
 # This is the list of base options.
 my @base_opts  = grep( $opts->{ $_ }->{ base } == 1, @all_opts );
 # This is the list of extra options.
@@ -299,12 +301,16 @@ sub enqueue_jobs($$@) {
                     "TARGET_COMPILER=" . $set->{ "target-compiler" },
                     "suffix=" . $suf,
                      "ompt_support=" . $set->{ "ompt_support" },
+                     "ompt_blame=" . $set->{ "ompt_blame" },
+                     "ompt_trace=" . $set->{ "ompt_trace" },
                     @goals,
                 ],
                 build_dir  => $build_dir
             }
         ); # push
-            print $set->{ "ompt_support" }
+            print $set->{ "ompt_support" };
+            print $set->{ "ompt_blame" };
+            print $set->{ "ompt_trace" };
     }; # if
 }; # sub enqueue_jobs
 
