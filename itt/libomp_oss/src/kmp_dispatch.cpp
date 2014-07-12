@@ -1159,7 +1159,7 @@ __kmp_dispatch_init(
       }
     }
     #endif // ( KMP_STATIC_STEAL_ENABLED && USE_STEALING )
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_TRACE
     int  tid = __kmp_tid_from_gtid( gtid );
     if ((ompt_status & ompt_status_track_callback)) {    
         if (ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
@@ -1169,7 +1169,7 @@ __kmp_dispatch_init(
                 (void*) team->t.t_pkfn);
         }
     }
-#endif
+#endif // OMPT_SUPPORT && OMPT_TRACE
 }
 
 /*
@@ -1336,7 +1336,7 @@ __kmp_dispatch_finish_chunk( int gtid, ident_t *loc )
 /* Define a macro for exiting __kmp_dispatch_next(). If status is 0
  * (no more work), then tell OMPT the loop is over. In some cases
  * kmp_dispatch_fini() is not called. */
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_TRACE
 #define OMPT_LOOP_END \                 
     if (status == 0) { \
         kmp_info_t  *this_thr        = __kmp_threads[ gtid ]; \
@@ -1353,7 +1353,7 @@ __kmp_dispatch_finish_chunk( int gtid, ident_t *loc )
     }
 #else
 #define OMPT_LOOP_END // no-op
-#endif  
+#endif  // OMPT_SUPPORT && OMPT_TRACE
 
 template< typename T >
 static int
