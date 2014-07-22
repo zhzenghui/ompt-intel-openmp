@@ -51,12 +51,6 @@ ifndef omp_os
 
 endif # !omp_os
 
-ifneq ($(mic),)
-    ifeq "$(mic)" "yes"
-        override arch:=mic
-    endif
-endif
-
 # Compiling for the Intel(R) Many Integrated Core architecture is non-trivial at the next layer
 # of script down, but we can make it consistent here.
 ifeq "$(arch)" "mic"
@@ -93,11 +87,11 @@ endif
 
 ifneq "$(mic)" "no"
     ifeq "$(compiler)" "gcc"
-        $(error Compiling the runtime with gcc is not supported on Intel\(R\) Many Integrated Core Architecture)
+	$(error Compiling the runtime with gcc is not supported on Intel\(R\) Many Integrated Core Architecture)
     endif
 
     # Magic flags for the build script!
-    build_args += --os=lrb
+    build_args += --os=lrb --mic-arch=knc --mic-os=lin --mic-comp=offload
 
     # Check that the binutils for Intel(R) Many Integrated Core Architecture are available
     # First we see whether the objdump on the user's path supports the k1om architecture.

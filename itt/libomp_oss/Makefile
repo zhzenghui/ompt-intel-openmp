@@ -28,22 +28,12 @@
 #
 # </copyright>
 
-# Most important make arguments (first is default):
-# mode = [release|debug]
-# mic = [no|yes] (Also set if arch=mic)
-# ompt_support = [enabled|disabled]
-# linktype = [dynamic|static]
-# build_args = (See build.pl -> $opts structure)
-
 omp_root?=.
 compver?=12
 linktype?=dynamic
 ompt_support?=enabled
-<<<<<<< HEAD
 ompt_blame?=enabled
 ompt_trace?=enabled
-=======
->>>>>>> ompt-support-13x
 
 include $(omp_root)/tools/common.inc
 .PHONY: default all omp 
@@ -53,7 +43,6 @@ default: omp
 all: omp stubs
 
 omp: info mkdir
-<<<<<<< HEAD
 	@echo $(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) --ompt_blame=$(ompt_blame) --ompt_trace=$(ompt_trace)  lib inc common
 	$(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) --ompt_blame=$(ompt_blame) --ompt_trace=$(ompt_trace) lib inc common
 
@@ -62,14 +51,6 @@ stubs: mkdir
 	$(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support)  --ompt_blame=$(ompt_blame) --ompt_trace=$(ompt_trace) --stubs lib inc common
 
 
-=======
-	@echo $(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) lib inc common
-	$(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) lib inc common
-
-stubs: mkdir
-	@echo $(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) --stubs lib inc common 
-	$(omp_root)/tools/build.pl $(build_args) --target-compiler=$(compver) --link-type=$(linktype) --arch=$(arch) --mode=$(mode) --ompt_support=$(ompt_support) --stubs lib inc common
->>>>>>> ompt-support-13x
 
 .PHONY: clean info
 
@@ -85,14 +66,7 @@ info:
 	@echo omp_root=$(omp_root)
 	@echo omp_os=$(omp_os)
 	@echo arch=$(arch)
-	@echo mic=$(mic)
 	@echo compiler=$(compiler)	
+	@echo mic=$(mic)
 	@echo mode=$(mode)
-<<<<<<< HEAD
 	@echo ompt_support=$(ompt_support)
-=======
-	@echo compver=$(compver)
-	@echo linktype=$(linktype)
-	@echo ompt_support=$(ompt_support)
-
->>>>>>> ompt-support-13x

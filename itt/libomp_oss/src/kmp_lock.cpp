@@ -359,11 +359,7 @@ __kmp_release_nested_tas_lock( kmp_tas_lock_t *lck, kmp_int32 gtid )
     KMP_MB();
     if ( --(lck->lk.depth_locked) == 0 ) {
         __kmp_release_tas_lock( lck, gtid );
-<<<<<<< HEAD
         return KMP_NESTED_LOCK_RELEASED;
-=======
-	return KMP_NESTED_LOCK_RELEASED;
->>>>>>> ompt-support-13x
     }
     return KMP_NESTED_LOCK_HELD;
 }
@@ -723,20 +719,12 @@ __kmp_release_nested_futex_lock( kmp_futex_lock_t *lck, kmp_int32 gtid )
     KMP_MB();
     if ( --(lck->lk.depth_locked) == 0 ) {
         __kmp_release_futex_lock( lck, gtid );
-<<<<<<< HEAD
         return KMP_NESTED_LOCK_RELEASED;
-=======
-	return KMP_NESTED_LOCK_RELEASED;
->>>>>>> ompt-support-13x
     }
     return KMP_NESTED_LOCK_HELD;
 }
 
-<<<<<<< HEAD
 static int 
-=======
-static int
->>>>>>> ompt-support-13x
 __kmp_release_nested_futex_lock_with_checks( kmp_futex_lock_t *lck, kmp_int32 gtid )
 {
     if ( __kmp_env_consistency_check ) {
@@ -1082,20 +1070,12 @@ __kmp_release_nested_ticket_lock( kmp_ticket_lock_t *lck, kmp_int32 gtid )
         KMP_MB();
         lck->lk.owner_id = 0;
         __kmp_release_ticket_lock( lck, gtid );
-<<<<<<< HEAD
         return KMP_NESTED_LOCK_RELEASED;
-=======
-	return KMP_NESTED_LOCK_RELEASED;
->>>>>>> ompt-support-13x
     }
     return KMP_NESTED_LOCK_HELD;
 }
 
-<<<<<<< HEAD
 static int 
-=======
-static int
->>>>>>> ompt-support-13x
 __kmp_release_nested_ticket_lock_with_checks( kmp_ticket_lock_t *lck, kmp_int32 gtid )
 {
     if ( __kmp_env_consistency_check ) {
@@ -1435,10 +1415,7 @@ __kmp_acquire_queuing_lock_timed_template( kmp_queuing_lock_t *lck,
                     }
 #endif
 
-<<<<<<< HEAD
                     KMP_FSYNC_ACQUIRED( lck );
-=======
->>>>>>> ompt-support-13x
                     return; /* lock holder cannot be on queue */
                 }
                 enqueued = FALSE;
@@ -1894,11 +1871,7 @@ __kmp_release_nested_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid )
         KMP_MB();
         lck->lk.owner_id = 0;
         __kmp_release_queuing_lock( lck, gtid );
-<<<<<<< HEAD
         return KMP_NESTED_LOCK_RELEASED;
-=======
-	return KMP_NESTED_LOCK_RELEASED;
->>>>>>> ompt-support-13x
     }
     return KMP_NESTED_LOCK_HELD;
 }
@@ -3048,11 +3021,7 @@ __kmp_release_nested_drdpa_lock( kmp_drdpa_lock_t *lck, kmp_int32 gtid )
         KMP_MB();
         lck->lk.owner_id = 0;
         __kmp_release_drdpa_lock( lck, gtid );
-<<<<<<< HEAD
         return KMP_NESTED_LOCK_RELEASED;
-=======
-	return KMP_NESTED_LOCK_RELEASED;
->>>>>>> ompt-support-13x
     }
     return KMP_NESTED_LOCK_HELD;
 }

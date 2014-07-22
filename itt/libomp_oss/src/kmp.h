@@ -133,10 +133,6 @@
 #include "ompt-internal.h"
 #endif
 
-#if OMPT_SUPPORT
-#include "ompt-internal.h"
-#endif
-
 /*Select data placement in NUMA memory */
 #define NO_FIRST_TOUCH 0
 #define FIRST_TOUCH 1       /* Exploit SGI's first touch page placement algo */
@@ -2062,13 +2058,7 @@ struct kmp_taskdata {                                 /* aligned during dynamic 
 #if OMPT_SUPPORT
     ompt_task_info_t       ompt_task_info;
 #endif
-<<<<<<< HEAD
 #if KMP_HAVE_QUAD
-=======
-#if OMPT_SUPPORT
-    ompt_task_info_t       ompt_task_info;
-#endif
->>>>>>> ompt-support-13x
     _Quad                   td_dummy;             // Align structure 16-byte size since allocated just before kmp_task_t
 #else
     kmp_uint32              td_dummy[2];
@@ -2220,11 +2210,6 @@ typedef struct KMP_ALIGN_CACHE kmp_base_info {
     /* TODO the first serial team should actually be stored in the info_t
      * structure.  this will help reduce initial allocation overhead */
     KMP_ALIGN_CACHE kmp_team_p *th_serial_team; /*serialized team held in reserve*/
-
-#if OMPT_SUPPORT
-    ompt_thread_info_t     ompt_thread_info;
-#endif
-
 /* The following are also read by the master during reinit */
     struct common_table    *th_pri_common;
 
@@ -2393,11 +2378,7 @@ typedef struct KMP_ALIGN_CACHE kmp_base_team {
     launch_t                 t_invoke;       /* procedure to launch the microtask */
 
 #if OMPT_SUPPORT
-<<<<<<< HEAD
     ompt_team_info_t        ompt_team_info;
-=======
-    ompt_team_info_t        ompt_team_info;  
->>>>>>> ompt-support-13x
 #endif
 
 #if KMP_ARCH_X86 || KMP_ARCH_X86_64
@@ -3239,19 +3220,11 @@ extern void __kmp_clear_x87_fpu_status_word();
 
 #endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
-<<<<<<< HEAD
-=======
-
->>>>>>> ompt-support-13x
 extern int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int npr, int argc, void *argv[]
 #if OMPT_SUPPORT
                                    , void **exit_frame_ptr
 #endif
-<<<<<<< HEAD
 );
-=======
-                                 );
->>>>>>> ompt-support-13x
 
 
 /* ------------------------------------------------------------------------ */
@@ -3455,7 +3428,6 @@ kmp_threadprivate_insert_private_data( int gtid, void *pc_addr, void *data_addr,
 struct private_common *
 kmp_threadprivate_insert( int gtid, void *pc_addr, void *data_addr, size_t pc_size );
 
-<<<<<<< HEAD
 //
 // ompc_, kmpc_ entries moved from omp.h.
 //
@@ -3491,9 +3463,6 @@ KMP_EXPORT void KMPC_CONVENTION kmpc_set_stacksize(int);
 KMP_EXPORT void KMPC_CONVENTION kmpc_set_stacksize_s(size_t);
 KMP_EXPORT void KMPC_CONVENTION kmpc_set_library(int);
 KMP_EXPORT void KMPC_CONVENTION kmpc_set_defaults(char const *);
-=======
-
->>>>>>> ompt-support-13x
 
 #ifdef __cplusplus
 }

@@ -62,10 +62,7 @@ typedef struct ident ident_t;
 #ifndef OMPT_DISABLED
 #define OMPT_SUPPORT 1
 #endif
-<<<<<<< HEAD
 
-=======
->>>>>>> ompt-support-13x
 // End of copied code.
 // ----------------------------------------------------------------------------
 
@@ -202,10 +199,6 @@ extern void __kmp_destroy_nested_tas_lock( kmp_tas_lock_t *lck );
 
 #define KMP_NESTED_LOCK_RELEASED 1
 #define KMP_NESTED_LOCK_HELD 0
-<<<<<<< HEAD
-=======
-
->>>>>>> ompt-support-13x
 
 
 #if KMP_OS_LINUX && (KMP_ARCH_X86 || KMP_ARCH_X86_64 || KMP_ARCH_ARM)
@@ -869,11 +862,7 @@ __kmp_test_nested_user_lock_with_checks( kmp_user_lock_p lck, kmp_int32 gtid )
 
 extern int ( *__kmp_release_nested_user_lock_with_checks_ )( kmp_user_lock_p lck, kmp_int32 gtid );
 
-<<<<<<< HEAD
 static inline int
-=======
-inline int
->>>>>>> ompt-support-13x
 __kmp_release_nested_user_lock_with_checks( kmp_user_lock_p lck, kmp_int32 gtid )
 {
     KMP_DEBUG_ASSERT( __kmp_release_nested_user_lock_with_checks_ != NULL );

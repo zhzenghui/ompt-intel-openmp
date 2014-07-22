@@ -1,5 +1,0 @@
-#define PARALLELFOR
-#define PARALLELFOR_STATIC
-#define PARALLELFOR_DYNAMIC
-#define PARALLELFOR_RUNTIME
-#include "pragmas.h"

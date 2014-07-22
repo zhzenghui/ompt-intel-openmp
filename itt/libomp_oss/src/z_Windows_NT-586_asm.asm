@@ -718,11 +718,7 @@ _gtid$ = 12
 _tid$ = 16
 _argc$ = 20
 _argv$ = 24
-<<<<<<< HEAD
 iif OMPT_SUPPORT
-=======
-if OMPT_SUPPORT
->>>>>>> ompt-support-13x
 _exit_frame$ = 28
 endif
 _i$ = -8
@@ -1581,13 +1577,8 @@ __kmp_invoke_microtask PROC FRAME ;NEAR
         .setframe rbp, 0
         .ENDPROLOG
 if OMPT_SUPPORT
-<<<<<<< HEAD
         mov rax, QWORD PTR $_exit_frame[rbp]
         mov QWORD PTR [rax], rbp
-=======
-        mov	rax, QWORD PTR $_exit_frame[rbp]
-        mov	QWORD PTR [rax], rbp
->>>>>>> ompt-support-13x
 endif
 	mov	r10, rcx	; save pkfn pointer for later
 
