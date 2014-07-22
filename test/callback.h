@@ -248,8 +248,8 @@ int ompt_initialize(ompt_function_lookup_t lookup, const char *runtime_version, 
 
   /* optional events, synchronous */
 
-  //CHECK(ompt_event_implicit_task_create);
-  //CHECK(ompt_event_implicit_task_exit);
+  CHECK(ompt_event_implicit_task_begin);
+  CHECK(ompt_event_implicit_task_end);
   CHECK(ompt_event_master_begin);
   CHECK(ompt_event_master_end);
   CHECK(ompt_event_barrier_begin);

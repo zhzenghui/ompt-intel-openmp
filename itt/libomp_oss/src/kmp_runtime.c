@@ -2660,9 +2660,14 @@ __kmp_fork_call(
             if (ompt_status & ompt_status_track) {
                 lw_taskteam.ompt_task_info.frame.exit_runtime_frame = 0;
 
+      	        if (ompt_callbacks.ompt_callback (ompt_event_implicit_task_end))
+                    ompt_callbacks.ompt_callback (ompt_event_implicit_task_end) (ompt_parallel_id, ompt_task_id);
+
                 __ompt_lw_taskteam_unlink(&lw_taskteam, master_th);
                 // reset clear the task id only after unlinking the task
                 lw_taskteam.ompt_task_info.task_id = ompt_task_id_none;
+
+
 
                 if ((ompt_status == ompt_status_track_callback) &&
                   ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
@@ -2827,6 +2832,9 @@ __kmp_fork_call(
 #if OMPT_SUPPORT
             if (ompt_status & ompt_status_track) {
                 lw_taskteam.ompt_task_info.frame.exit_runtime_frame = 0;
+
+                if (ompt_callbacks.ompt_callback (ompt_event_implicit_task_begin))
+                    ompt_callbacks.ompt_callback (ompt_event_implicit_task_begin) (ompt_parallel_id, ompt_task_id);
 
                 __ompt_lw_taskteam_unlink(&lw_taskteam, master_th);
                 // reset clear the task id only after unlinking the task
@@ -8381,8 +8389,11 @@ __kmp_invoke_task_func( int gtid )
 
 #if OMPT_SUPPORT
     if (ompt_status & ompt_status_track) {
-        team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.exit_runtime_frame = 0;
+        if (ompt_callbacks.ompt_callback(ompt_event_implicit_task_end)) {
+            ompt_callbacks.ompt_callback(ompt_event_implicit_task_end)(my_parallel_id, my_task_id);
+        }
         // the implicit task is not dead yet, so we can't clear its task id here
+        team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.exit_runtime_frame = 0;
     }
 #endif
 

@@ -69,8 +69,8 @@
  | Optional Events (synchronous events) 
  +--------------------------------------------------------------------------*/
 
-#define ompt_event_implicit_task_begin_implemented      ompt_event_unimplemented
-#define ompt_event_implicit_task_end_implemented        ompt_event_unimplemented
+#define ompt_event_implicit_task_begin_implemented      ompt_event_IMPLEMENTED
+#define ompt_event_implicit_task_end_implemented        ompt_event_IMPLEMENTED
 
 #define ompt_event_initial_task_begin_implemented       ompt_event_unimplemented
 #define ompt_event_initial_task_end_implemented         ompt_event_unimplemented
