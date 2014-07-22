@@ -72,8 +72,8 @@ my %makefiles = (
 #     * base: If base is true this is a base option. All the possible values of base options are
 #         iterated if "--all" option is specified. If base is 0, this is an extra option.
 #     * params: A hash of possible option values. "*" denotes default option value. For example,
-#         if "versio" option is not specified, "--version=5" will be used implicitly.
-#     * suffux: Only for extra options. Subroutine returning suffix for build and output
+#         if "version" option is not specified, "--version=5" will be used implicitly.
+#     * suffix: Only for extra options. Subroutine returning suffix for build and output
 #         directories.
 my $opts = {
     "target"          => { targets => "",                  base => 1, parms => { map( ( $_ => "" ), keys( %makefiles ) ), rtl => "*" }, },
@@ -85,18 +85,29 @@ my $opts = {
     "omp-version"     => { targets => "rtl",               base => 0, parms => { 40 => "*", 30 => "", 25 => "" }, suffix => sub { $_[ 0 ]; } },
     "coverage"        => { targets => "rtl",               base => 0, parms => { off     => "*", on        => ""              }, suffix => sub { $_[ 0 ] eq "on" ? "c1" : "c0"; } },
     "tcheck"          => { targets => "rtl",               base => 0, parms => { 0       => "*", 1         => "", 2 => ""     }, suffix => sub { "t" . $_[ 0 ];                 } },
+<<<<<<< HEAD
     "mic-arch"        => { targets => "rtl",               base => 0, parms => { knf     => "*", knc       => "", knl => ""   }, suffix => sub { $_[ 0 ];                       } },
     "mic-os"          => { targets => "rtl",               base => 0, parms => { bsd     => "*", lin       => ""              }, suffix => sub { $_[ 0 ];                       } },
     "mic-comp"        => { targets => "rtl",               base => 0, parms => { native  => "*", offload   => ""              }, suffix => sub { substr( $_[ 0 ], 0, 3 );       } },
     "ompt_support"    => { targets => "rtl",               base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
     "ompt_blame"    => { targets => "rtl", base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
     "ompt_trace"    => { targets => "rtl",         base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
+=======
+    "mic-arch"        => { targets => "rtl",               base => 0, parms => { knf     => "", knc       => "*", knl => ""   }, suffix => sub { $_[ 0 ];                       } },
+    "mic-os"          => { targets => "rtl",               base => 0, parms => { bsd     => "", lin       => "*"              }, suffix => sub { $_[ 0 ];                       } },
+    "mic-comp"        => { targets => "rtl",               base => 0, parms => { native  => "", offload   => "*"              }, suffix => sub { substr( $_[ 0 ], 0, 3 );       } },
+    "ompt_support"    => { targets => "rtl",               base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
+>>>>>>> ompt-support-13x
 };
 my $synonyms = {
     "debug" => [ qw{ dbg debg } ],
 };
 # This array specifies order of options to process, so it cannot be initialized with keys( %$opts ).
+<<<<<<< HEAD
 my @all_opts   = qw{ target version lib-type link-type target-compiler mode omp-version coverage tcheck mic-arch mic-os mic-comp ompt_support ompt_blame ompt_trace};
+=======
+my @all_opts   = qw{ target version lib-type link-type target-compiler mode omp-version coverage tcheck mic-arch mic-os mic-comp ompt_support };
+>>>>>>> ompt-support-13x
 # This is the list of base options.
 my @base_opts  = grep( $opts->{ $_ }->{ base } == 1, @all_opts );
 # This is the list of extra options.
@@ -300,17 +311,25 @@ sub enqueue_jobs($$@) {
                     "VERSION=" . $set->{ version },
                     "TARGET_COMPILER=" . $set->{ "target-compiler" },
                     "suffix=" . $suf,
+<<<<<<< HEAD
                      "ompt_support=" . $set->{ "ompt_support" },
                      "ompt_blame=" . $set->{ "ompt_blame" },
                      "ompt_trace=" . $set->{ "ompt_trace" },
+=======
+                    "ompt_support=" . $set->{ "ompt_support" },
+>>>>>>> ompt-support-13x
                     @goals,
                 ],
                 build_dir  => $build_dir
             }
         ); # push
+<<<<<<< HEAD
             print $set->{ "ompt_support" };
             print $set->{ "ompt_blame" };
             print $set->{ "ompt_trace" };
+=======
+				print $set->{ "ompt_support" }
+>>>>>>> ompt-support-13x
     }; # if
 }; # sub enqueue_jobs
 

@@ -117,8 +117,11 @@ define curr_config
     FFLAGS=$(subst $(space),_,$(FFLAGS))
     LDFLAGS=$(subst $(space),_,$(LDFLAGS))
     OMPT_SUPPORT=$(ompt_support)
+<<<<<<< HEAD
     OMPT_BLAME=$(ompt_blame)
     OMPT_TRACE=$(ompt_trace)
+=======
+>>>>>>> ompt-support-13x
 endef
 # And check it.
 include $(tools_dir)src/common-checks.mk
@@ -143,6 +146,7 @@ else
         endif
     endif
 endif
+
 ifeq "$(MIC_OS)" "lin"
     mic-postfix = $(mic-postf1).lin
 else
@@ -674,11 +678,16 @@ ld-flags   += $(LDFLAGS)
 # Files.
 # --------------------------------------------------------------------------------------------------
 ifeq "$(ompt_support)" "enabled"
+<<<<<<< HEAD
    ompt_items = ompt-general
+=======
+	ompt_items = ompt-general
+>>>>>>> ompt-support-13x
   z_Linux_asm$(obj) : \
       cpp-flags += -D OMPT_SUPPORT=1
   z_Windows_NT-586_asm$(obj) : \
       cpp-flags += -D OMPT_SUPPORT=1
+<<<<<<< HEAD
   
   ifeq "$(ompt_blame)" "enabled"
     z_Linux_asm$(obj) : \
@@ -697,13 +706,22 @@ else
    ompt_items =
 endif
 
+=======
+else
+	ompt_items = 
+endif
+>>>>>>> ompt-support-13x
 
 # Library files. These files participate in all kinds of library.
 lib_c_items :=      \
     kmp_ftn_cdecl   \
     kmp_ftn_extra   \
     kmp_version     \
+<<<<<<< HEAD
 	 $(ompt_items)   \
+=======
+    $(ompt_items) \
+>>>>>>> ompt-support-13x
     $(empty)
 lib_cpp_items :=
 lib_asm_items :=

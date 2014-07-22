@@ -1159,9 +1159,15 @@ __kmp_dispatch_init(
       }
     }
     #endif // ( KMP_STATIC_STEAL_ENABLED && USE_STEALING )
+<<<<<<< HEAD
 #if OMPT_SUPPORT && OMPT_TRACE
     int  tid = __kmp_tid_from_gtid( gtid );
     if ((ompt_status & ompt_status_track_callback)) {    
+=======
+#if OMPT_SUPPORT
+    int  tid = __kmp_tid_from_gtid( gtid );
+    if ((ompt_status & ompt_status_track_callback)) {
+>>>>>>> ompt-support-13x
         if (ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
             ompt_callbacks.ompt_callback(ompt_event_loop_begin)(
                 team->t.ompt_team_info.parallel_id,
@@ -1169,7 +1175,11 @@ __kmp_dispatch_init(
                 (void*) team->t.t_pkfn);
         }
     }
+<<<<<<< HEAD
 #endif // OMPT_SUPPORT && OMPT_TRACE
+=======
+#endif
+>>>>>>> ompt-support-13x
 }
 
 /*
@@ -1242,11 +1252,19 @@ __kmp_dispatch_finish( int gtid, ident_t *loc )
 #if OMPT_SUPPORT && 0
     kmp_info_t  *this_thr        = __kmp_threads[ gtid ];
     kmp_team_t  *team            = this_thr -> th.th_team;
+<<<<<<< HEAD
     int  tid = __kmp_tid_from_gtid( gtid );  
     if ((ompt_status & ompt_status_track_callback)) {
         if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) {
             ompt_callbacks.ompt_callback(ompt_event_loop_end)(
               team->t.ompt_team_info.parallel_id,      
+=======
+    int  tid = __kmp_tid_from_gtid( gtid );
+    if ((ompt_status & ompt_status_track_callback)) {
+        if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) {
+            ompt_callbacks.ompt_callback(ompt_event_loop_end)(
+              team->t.ompt_team_info.parallel_id,
+>>>>>>> ompt-support-13x
               team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
               (void*) team->t.t_pkfn);
         }
@@ -1336,8 +1354,13 @@ __kmp_dispatch_finish_chunk( int gtid, ident_t *loc )
 /* Define a macro for exiting __kmp_dispatch_next(). If status is 0
  * (no more work), then tell OMPT the loop is over. In some cases
  * kmp_dispatch_fini() is not called. */
+<<<<<<< HEAD
 #if OMPT_SUPPORT && OMPT_TRACE
 #define OMPT_LOOP_END \                 
+=======
+#if OMPT_SUPPORT
+#define OMPT_LOOP_END \
+>>>>>>> ompt-support-13x
     if (status == 0) { \
         kmp_info_t  *this_thr        = __kmp_threads[ gtid ]; \
         kmp_team_t  *team            = this_thr -> th.th_team; \
@@ -1345,7 +1368,11 @@ __kmp_dispatch_finish_chunk( int gtid, ident_t *loc )
         if ((ompt_status & ompt_status_track_callback)) { \
             if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) { \
               ompt_callbacks.ompt_callback(ompt_event_loop_end)( \
+<<<<<<< HEAD
                 team->t.ompt_team_info.parallel_id,         \
+=======
+                team->t.ompt_team_info.parallel_id,			\
+>>>>>>> ompt-support-13x
                 team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id, \
                 (void*) team->t.t_pkfn); \
             } \
@@ -1353,7 +1380,11 @@ __kmp_dispatch_finish_chunk( int gtid, ident_t *loc )
     }
 #else
 #define OMPT_LOOP_END // no-op
+<<<<<<< HEAD
 #endif  // OMPT_SUPPORT && OMPT_TRACE
+=======
+#endif
+>>>>>>> ompt-support-13x
 
 template< typename T >
 static int
@@ -2362,7 +2393,11 @@ __kmp_wait_yield_4(volatile kmp_uint32 * spinner,
         KMP_YIELD( TCR_4(__kmp_nth) > __kmp_avail_proc );
         KMP_YIELD_SPIN( spins );
     }
+<<<<<<< HEAD
     KMP_FSYNC_SPIN_ACQUIRED( obj );
+=======
+    
+>>>>>>> ompt-support-13x
     return r;
 }
 
@@ -2390,7 +2425,6 @@ __kmp_wait_yield_8( volatile kmp_uint64 * spinner,
            It causes problems with infinite recursion because of exit lock */
         /* if ( TCR_4(__kmp_global.g.g_done) && __kmp_global.g.g_abort)
             __kmp_abort_thread(); */
-
         __kmp_static_delay(TRUE);
 
         // if we are oversubscribed,
@@ -2399,7 +2433,11 @@ __kmp_wait_yield_8( volatile kmp_uint64 * spinner,
         KMP_YIELD( TCR_4(__kmp_nth) > __kmp_avail_proc );
         KMP_YIELD_SPIN( spins );
     }
+<<<<<<< HEAD
     KMP_FSYNC_SPIN_ACQUIRED( obj );
+=======
+
+>>>>>>> ompt-support-13x
     return r;
 }
 
