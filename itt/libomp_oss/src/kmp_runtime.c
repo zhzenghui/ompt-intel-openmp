@@ -2633,8 +2633,8 @@ __kmp_fork_call(
                 master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
 
                 /* OMPT implicit task begin */
-                my_task_id = team->t.t_implicit_task_taskdata[gtid].ompt_task_info.task_id;
-                my_parallel_id = team->t.ompt_team_info.parallel_id;
+                my_task_id = parent_team->t.t_implicit_task_taskdata[gtid].ompt_task_info.task_id;
+                my_parallel_id = parent_team->t.ompt_team_info.parallel_id;
                 if ((ompt_status == ompt_status_track_callback) &&
                  ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)) {
                     ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)(my_parallel_id, my_task_id);
