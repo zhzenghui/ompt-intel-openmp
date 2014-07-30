@@ -1456,8 +1456,7 @@ __kmpc_for_static_fini( ident_t *loc, kmp_int32 global_tid )
       ompt_callbacks.ompt_callback(ompt_event_loop_end)) {
         ompt_callbacks.ompt_callback(ompt_event_loop_end)(
           team->t.ompt_team_info.parallel_id,    
-          team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
-          (void*) team->t.t_pkfn);
+          team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id);
      }
 #endif // OMPT_SUPPORT && OMPT_TRACE
 

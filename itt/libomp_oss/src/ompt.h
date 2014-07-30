@@ -69,7 +69,7 @@
 																				\
 	  /*--- Mandatory Events ---*/																\
 	macro (ompt_event_parallel_begin, ompt_new_parallel_callback_t, 1, ompt_event_parallel_begin_implemented) /* parallel begin */				\
-	macro (ompt_event_parallel_end, ompt_new_parallel_callback_t, 2, ompt_event_parallel_end_implemented) /* parallel end */				\
+	macro (ompt_event_parallel_end, ompt_parallel_callback_t, 2, ompt_event_parallel_end_implemented) /* parallel end */				\
 																				\
 	macro (ompt_event_task_begin, ompt_new_task_callback_t, 3, ompt_event_task_begin_implemented) /* task begin */						\
 	macro (ompt_event_task_end, ompt_new_task_callback_t, 4, ompt_event_task_end_implemented) /* task destroy */						\
@@ -112,19 +112,19 @@
 	macro (ompt_event_task_switch, ompt_task_switch_callback_t, 27, ompt_event_task_switch_implemented) /* task switch */					\
 																				\
 	macro (ompt_event_loop_begin, ompt_new_workshare_callback_t, 28, ompt_event_loop_begin_implemented) /* task at loop begin */				\
-	macro (ompt_event_loop_end, ompt_new_workshare_callback_t, 29, ompt_event_loop_end_implemented) /* task at loop end */					\
+	macro (ompt_event_loop_end, ompt_parallel_callback_t, 29, ompt_event_loop_end_implemented) /* task at loop end */					\
 																				\
 	macro (ompt_event_sections_begin, ompt_new_workshare_callback_t, 30, ompt_event_sections_begin_implemented) /* task at sections begin  */		\
-	macro (ompt_event_sections_end, ompt_new_workshare_callback_t, 31, ompt_event_sections_end_implemented) /* task at sections end */			\
+	macro (ompt_event_sections_end, ompt_parallel_callback_t, 31, ompt_event_sections_end_implemented) /* task at sections end */			\
 																				\
 	macro (ompt_event_single_in_block_begin, ompt_new_workshare_callback_t, 32, ompt_event_single_in_block_begin_implemented) /* task at single begin*/  	\
-	macro (ompt_event_single_in_block_end, ompt_new_workshare_callback_t, 33, ompt_event_single_in_block_end_implemented) /* task at single end */		\
+	macro (ompt_event_single_in_block_end, ompt_parallel_callback_t, 33, ompt_event_single_in_block_end_implemented) /* task at single end */		\
 																				\
 	macro (ompt_event_single_others_begin, ompt_parallel_callback_t, 34, ompt_event_single_others_begin_implemented) /* task at single begin */		\
 	macro (ompt_event_single_others_end, ompt_parallel_callback_t, 35, ompt_event_single_others_end_implemented) /* task at single end */			\
 																				\
 	macro (ompt_event_workshare_begin, ompt_new_workshare_callback_t, 36, ompt_event_workshare_begin_implemented) /* task at workshare begin */		\
-	macro (ompt_event_workshare_end, ompt_new_workshare_callback_t, 37, ompt_event_workshare_end_implemented) /* task at workshare end */			\
+	macro (ompt_event_workshare_end, ompt_parallel_callback_t, 37, ompt_event_workshare_end_implemented) /* task at workshare end */			\
 																				\
 	macro (ompt_event_master_begin, ompt_parallel_callback_t, 38, ompt_event_master_begin_implemented) /* task at master begin */				\
 	macro (ompt_event_master_end, ompt_parallel_callback_t, 39, ompt_event_master_end_implemented) /* task at master end */					\
@@ -148,7 +148,7 @@
 																				\
 	macro (ompt_event_acquired_lock, ompt_wait_callback_t, 52, ompt_event_acquired_lock_implemented) /* lock acquired */					\
 	macro (ompt_event_acquired_nest_lock_first, ompt_wait_callback_t, 53, ompt_event_acquired_nest_lock_first_implemented) /* 1st nest lock acquired */	\
-	macro (ompt_event_acquired_nest_lock_next, ompt_parallel_callback_t, 54, ompt_event_acquired_nest_lock_next_implemented) /* next nest lock acquired*/	\
+	macro (ompt_event_acquired_nest_lock_next, ompt_wait_callback_t, 54, ompt_event_acquired_nest_lock_next_implemented) /* next nest lock acquired*/	\
 	macro (ompt_event_acquired_critical, ompt_wait_callback_t, 55, ompt_event_acquired_critical_implemented) /* critical acquired */			\
 	macro (ompt_event_acquired_atomic, ompt_wait_callback_t, 56, ompt_event_acquired_atomic_implemented) /* atomic acquired */				\
 	macro (ompt_event_acquired_ordered, ompt_wait_callback_t, 57, ompt_event_acquired_ordered_implemented) /* ordered acquired */				\
@@ -258,8 +258,8 @@ typedef void (*ompt_parallel_callback_t) (
   );
 
 typedef void (*ompt_new_workshare_callback_t) (
-  ompt_task_id_t parent_task_id,    /* id of parent task            */
   ompt_parallel_id_t parallel_id,   /* id of parallel region        */
+  ompt_task_id_t parent_task_id,    /* id of parent task            */
   void *workshare_function          /* pointer to outlined function */
   );
 
@@ -267,6 +267,7 @@ typedef void (*ompt_new_parallel_callback_t) (
   ompt_task_id_t parent_task_id,    /* id of parent task            */
   ompt_frame_t *parent_task_frame,  /* frame data of parent task    */
   ompt_parallel_id_t parallel_id,   /* id of parallel region        */
+  uint32_t requested_team_size,     /* number of threads in team    */
   void *parallel_function           /* pointer to outlined function */
   );
 
