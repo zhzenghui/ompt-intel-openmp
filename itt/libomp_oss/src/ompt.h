@@ -337,11 +337,11 @@ OMPT_API_FUNCTION(int, ompt_get_parallel_team_size, (
 
 /* task */
 OMPT_API_FUNCTION(ompt_task_id_t, ompt_get_task_id, (
-  int ancestor_level
+  int depth
 ));
 
 OMPT_API_FUNCTION(ompt_frame_t *, ompt_get_task_frame, (
-  int ancestor_level
+  int depth
 ));
 
 
