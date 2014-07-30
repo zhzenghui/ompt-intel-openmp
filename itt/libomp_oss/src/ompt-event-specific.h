@@ -7,122 +7,133 @@
  * Description:
  *
  *   specify which of the OMPT events are implemented by this runtime system
- *
+ *   and the level of their implementation by a runtime system.
  *****************************************************************************/
 
+#define _ompt_tokenpaste_helper(x,y) x ## y
+#define _ompt_tokenpaste(x,y)        _ompt_tokenpaste_helper(x,y)
+#define ompt_event_is_implemented(e) _ompt_tokenpaste(e,_implemented)
+
+
 /*----------------------------------------------------------------------------
- | specify whether an event is implemented or not. 
+ | specify whether an event is implemented or not. if it is implemented, 
+ | specify the implementation level 
+ |   UNIMPLEMENTED   = event not supported
+ |   MAY_NONE        = event may occur, no callback possible 
+ |   MAY_NEVER       = event may occur, no callback possible 
+ |   MAY_CONVENIENT  = event may occur, no callback possible 
+ |   MAY_ALWAYS      = event may occur, no callback possible 
  |
- | Note: the value for ompt_event_IMPLEMENTED must be non-zero. it is used
- |       in conditionals as follows
- |
- |          if (ompt_event_IMPLEMENTED) {
- |             ...
- |          }
+ | Note: the values for these constants are defined in section 6.1.2 of
+ |       the OMPT TR. they are exposed to tools through ompt_set_callback.
  +--------------------------------------------------------------------------*/
-#define ompt_event_IMPLEMENTED   1
-#define ompt_event_unimplemented 0
+
+#define ompt_event_UNIMPLEMENTED     0
+#define ompt_event_MAY_NONE          1
+#define ompt_event_MAY_NEVER         2
+#define ompt_event_MAY_CONVENIENT    3
+#define ompt_event_MAY_ALWAYS        4
 
 
 /*----------------------------------------------------------------------------
  | Mandatory Events 
  +--------------------------------------------------------------------------*/
 
-#define ompt_event_parallel_begin_implemented           ompt_event_IMPLEMENTED
-#define ompt_event_parallel_end_implemented             ompt_event_IMPLEMENTED
+#define ompt_event_parallel_begin_implemented           ompt_event_MAY_ALWAYS
+#define ompt_event_parallel_end_implemented             ompt_event_MAY_ALWAYS
 
-#define ompt_event_task_begin_implemented               ompt_event_IMPLEMENTED
-#define ompt_event_task_end_implemented                 ompt_event_IMPLEMENTED
+#define ompt_event_task_begin_implemented               ompt_event_MAY_ALWAYS
+#define ompt_event_task_end_implemented                 ompt_event_MAY_ALWAYS
 
-#define ompt_event_thread_begin_implemented             ompt_event_IMPLEMENTED
-#define ompt_event_thread_end_implemented               ompt_event_IMPLEMENTED
+#define ompt_event_thread_begin_implemented             ompt_event_MAY_ALWAYS
+#define ompt_event_thread_end_implemented               ompt_event_MAY_ALWAYS
 
-#define ompt_event_control_implemented                  ompt_event_IMPLEMENTED
+#define ompt_event_control_implemented                  ompt_event_MAY_ALWAYS
 
-#define ompt_event_runtime_shutdown_implemented         ompt_event_IMPLEMENTED
+#define ompt_event_runtime_shutdown_implemented         ompt_event_MAY_ALWAYS
 
 
 /*----------------------------------------------------------------------------
  | Optional Events (blame shifting) 
  +--------------------------------------------------------------------------*/
 
-#define ompt_event_idle_begin_implemented               ompt_event_IMPLEMENTED
-#define ompt_event_idle_end_implemented                 ompt_event_IMPLEMENTED
+#define ompt_event_idle_begin_implemented               ompt_event_MAY_ALWAYS
+#define ompt_event_idle_end_implemented                 ompt_event_MAY_ALWAYS
 
-#define ompt_event_wait_barrier_begin_implemented       ompt_event_IMPLEMENTED
-#define ompt_event_wait_barrier_end_implemented         ompt_event_IMPLEMENTED
+#define ompt_event_wait_barrier_begin_implemented       ompt_event_MAY_ALWAYS
+#define ompt_event_wait_barrier_end_implemented         ompt_event_MAY_ALWAYS
 
-#define ompt_event_wait_taskwait_begin_implemented      ompt_event_unimplemented
-#define ompt_event_wait_taskwait_end_implemented        ompt_event_unimplemented
+#define ompt_event_wait_taskwait_begin_implemented      ompt_event_UNIMPLEMENTED
+#define ompt_event_wait_taskwait_end_implemented        ompt_event_UNIMPLEMENTED
 
-#define ompt_event_wait_taskgroup_begin_implemented     ompt_event_unimplemented
-#define ompt_event_wait_taskgroup_end_implemented       ompt_event_unimplemented
+#define ompt_event_wait_taskgroup_begin_implemented     ompt_event_UNIMPLEMENTED
+#define ompt_event_wait_taskgroup_end_implemented       ompt_event_UNIMPLEMENTED
 
-#define ompt_event_release_lock_implemented             ompt_event_IMPLEMENTED
-#define ompt_event_release_nest_lock_last_implemented   ompt_event_IMPLEMENTED
-#define ompt_event_release_critical_implemented         ompt_event_IMPLEMENTED
-#define ompt_event_release_atomic_implemented           ompt_event_IMPLEMENTED
-#define ompt_event_release_ordered_implemented          ompt_event_IMPLEMENTED
+#define ompt_event_release_lock_implemented             ompt_event_MAY_ALWAYS
+#define ompt_event_release_nest_lock_last_implemented   ompt_event_MAY_ALWAYS
+#define ompt_event_release_critical_implemented         ompt_event_MAY_ALWAYS
+#define ompt_event_release_atomic_implemented           ompt_event_MAY_ALWAYS
+#define ompt_event_release_ordered_implemented          ompt_event_MAY_ALWAYS
 
 
 /*----------------------------------------------------------------------------
  | Optional Events (synchronous events) 
  +--------------------------------------------------------------------------*/
 
-#define ompt_event_implicit_task_begin_implemented      ompt_event_IMPLEMENTED
-#define ompt_event_implicit_task_end_implemented        ompt_event_IMPLEMENTED
+#define ompt_event_implicit_task_begin_implemented      ompt_event_MAY_ALWAYS
+#define ompt_event_implicit_task_end_implemented        ompt_event_MAY_ALWAYS
 
-#define ompt_event_initial_task_begin_implemented       ompt_event_unimplemented
-#define ompt_event_initial_task_end_implemented         ompt_event_unimplemented
+#define ompt_event_initial_task_begin_implemented       ompt_event_UNIMPLEMENTED
+#define ompt_event_initial_task_end_implemented         ompt_event_UNIMPLEMENTED
 
-#define ompt_event_task_switch_implemented              ompt_event_unimplemented
+#define ompt_event_task_switch_implemented              ompt_event_UNIMPLEMENTED
 
-#define ompt_event_loop_begin_implemented               ompt_event_IMPLEMENTED
-#define ompt_event_loop_end_implemented                 ompt_event_IMPLEMENTED
+#define ompt_event_loop_begin_implemented               ompt_event_MAY_ALWAYS
+#define ompt_event_loop_end_implemented                 ompt_event_MAY_ALWAYS
 
-#define ompt_event_sections_begin_implemented           ompt_event_unimplemented
-#define ompt_event_sections_end_implemented             ompt_event_unimplemented
+#define ompt_event_sections_begin_implemented           ompt_event_UNIMPLEMENTED
+#define ompt_event_sections_end_implemented             ompt_event_UNIMPLEMENTED
 
-#define ompt_event_single_in_block_begin_implemented    ompt_event_IMPLEMENTED
-#define ompt_event_single_in_block_end_implemented      ompt_event_IMPLEMENTED
-#define ompt_event_single_others_begin_implemented      ompt_event_IMPLEMENTED
-#define ompt_event_single_others_end_implemented        ompt_event_IMPLEMENTED
+#define ompt_event_single_in_block_begin_implemented    ompt_event_MAY_ALWAYS
+#define ompt_event_single_in_block_end_implemented      ompt_event_MAY_ALWAYS
+#define ompt_event_single_others_begin_implemented      ompt_event_MAY_ALWAYS
+#define ompt_event_single_others_end_implemented        ompt_event_MAY_ALWAYS
 
-#define ompt_event_workshare_begin_implemented          ompt_event_unimplemented
-#define ompt_event_workshare_end_implemented            ompt_event_unimplemented
+#define ompt_event_workshare_begin_implemented          ompt_event_UNIMPLEMENTED
+#define ompt_event_workshare_end_implemented            ompt_event_UNIMPLEMENTED
 
-#define ompt_event_master_begin_implemented             ompt_event_IMPLEMENTED
-#define ompt_event_master_end_implemented               ompt_event_IMPLEMENTED
+#define ompt_event_master_begin_implemented             ompt_event_MAY_ALWAYS
+#define ompt_event_master_end_implemented               ompt_event_MAY_ALWAYS
 
-#define ompt_event_barrier_begin_implemented            ompt_event_IMPLEMENTED
-#define ompt_event_barrier_end_implemented              ompt_event_IMPLEMENTED
+#define ompt_event_barrier_begin_implemented            ompt_event_MAY_ALWAYS
+#define ompt_event_barrier_end_implemented              ompt_event_MAY_ALWAYS
 
-#define ompt_event_taskwait_begin_implemented           ompt_event_unimplemented
-#define ompt_event_taskwait_end_implemented             ompt_event_unimplemented
+#define ompt_event_taskwait_begin_implemented           ompt_event_UNIMPLEMENTED
+#define ompt_event_taskwait_end_implemented             ompt_event_UNIMPLEMENTED
 
-#define ompt_event_taskgroup_begin_implemented          ompt_event_unimplemented
-#define ompt_event_taskgroup_end_implemented            ompt_event_unimplemented
+#define ompt_event_taskgroup_begin_implemented          ompt_event_UNIMPLEMENTED
+#define ompt_event_taskgroup_end_implemented            ompt_event_UNIMPLEMENTED
 
-#define ompt_event_release_nest_lock_prev_implemented   ompt_event_IMPLEMENTED
-#define ompt_event_wait_lock_implemented                ompt_event_unimplemented
-#define ompt_event_wait_nest_lock_implemented           ompt_event_unimplemented
-#define ompt_event_wait_critical_implemented            ompt_event_unimplemented
-#define ompt_event_wait_atomic_implemented              ompt_event_IMPLEMENTED
-#define ompt_event_wait_ordered_implemented             ompt_event_IMPLEMENTED
+#define ompt_event_release_nest_lock_prev_implemented   ompt_event_MAY_ALWAYS
+#define ompt_event_wait_lock_implemented                ompt_event_UNIMPLEMENTED
+#define ompt_event_wait_nest_lock_implemented           ompt_event_UNIMPLEMENTED
+#define ompt_event_wait_critical_implemented            ompt_event_UNIMPLEMENTED
+#define ompt_event_wait_atomic_implemented              ompt_event_MAY_ALWAYS
+#define ompt_event_wait_ordered_implemented             ompt_event_MAY_ALWAYS
 
-#define ompt_event_acquired_lock_implemented            ompt_event_unimplemented
-#define ompt_event_acquired_nest_lock_first_implemented ompt_event_unimplemented
-#define ompt_event_acquired_nest_lock_next_implemented  ompt_event_unimplemented
-#define ompt_event_acquired_critical_implemented        ompt_event_unimplemented
-#define ompt_event_acquired_atomic_implemented          ompt_event_IMPLEMENTED
-#define ompt_event_acquired_ordered_implemented         ompt_event_IMPLEMENTED
+#define ompt_event_acquired_lock_implemented            ompt_event_UNIMPLEMENTED
+#define ompt_event_acquired_nest_lock_first_implemented ompt_event_UNIMPLEMENTED
+#define ompt_event_acquired_nest_lock_next_implemented  ompt_event_UNIMPLEMENTED
+#define ompt_event_acquired_critical_implemented        ompt_event_UNIMPLEMENTED
+#define ompt_event_acquired_atomic_implemented          ompt_event_MAY_ALWAYS
+#define ompt_event_acquired_ordered_implemented         ompt_event_MAY_ALWAYS
 
-#define ompt_event_init_lock_implemented                ompt_event_unimplemented
-#define ompt_event_init_nest_lock_implemented           ompt_event_unimplemented
+#define ompt_event_init_lock_implemented                ompt_event_UNIMPLEMENTED
+#define ompt_event_init_nest_lock_implemented           ompt_event_UNIMPLEMENTED
 
-#define ompt_event_destroy_lock_implemented             ompt_event_unimplemented
-#define ompt_event_destroy_nest_lock_implemented        ompt_event_unimplemented
+#define ompt_event_destroy_lock_implemented             ompt_event_UNIMPLEMENTED
+#define ompt_event_destroy_nest_lock_implemented        ompt_event_UNIMPLEMENTED
 
-#define ompt_event_flush_implemented                    ompt_event_unimplemented
+#define ompt_event_flush_implemented                    ompt_event_UNIMPLEMENTED
 
 #endif

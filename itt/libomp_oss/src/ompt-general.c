@@ -107,9 +107,9 @@ OMPT_API_ROUTINE int ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
 {
   switch (evid) {
 
-#define ompt_event_macro(event_name, callback_type, event_id, is_impl) \
+#define ompt_event_macro(event_name, callback_type, event_id) \
   case event_name: \
-    if (is_impl) { \
+    if (ompt_event_is_implemented(event_name)) {		     \
       ompt_callbacks.ompt_callback(event_name) = (callback_type) cb; \
       return set_success; \
     } \
@@ -128,9 +128,9 @@ OMPT_API_ROUTINE int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
 {
   switch (evid) {
 
-#define ompt_event_macro(event_name, callback_type, event_id, is_impl) \
+#define ompt_event_macro(event_name, callback_type, event_id) \
   case event_name:  \
-    if (is_impl) { \
+    if (ompt_event_is_implemented(event_name)) {		     \
       ompt_callback_t mycb = \
         (ompt_callback_t) ompt_callbacks.ompt_callback(event_name); \
       if (mycb) { \
