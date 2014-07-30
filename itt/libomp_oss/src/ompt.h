@@ -237,9 +237,9 @@ typedef void (*ompt_thread_callback_t) (
   );
 
 typedef enum {
-  ompt_thread_initial,
-  ompt_thread_worker,
-  ompt_thread_other
+  ompt_thread_initial = 1, // start the enumeration at 1
+  ompt_thread_worker  = 2,
+  ompt_thread_other   = 3
   } ompt_thread_type_t;
 
 typedef void (*ompt_thread_type_callback_t) (
@@ -328,6 +328,10 @@ OMPT_API_FUNCTION(void *, ompt_get_idle_frame, (void));
 
 /* parallel region */
 OMPT_API_FUNCTION(ompt_parallel_id_t, ompt_get_parallel_id, (
+  int ancestor_level
+));
+
+OMPT_API_FUNCTION(int, ompt_get_parallel_team_size, (
   int ancestor_level
 ));
 
