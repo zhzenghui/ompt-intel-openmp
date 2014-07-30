@@ -2643,9 +2643,10 @@ __kmp_fork_call(
                 /* OMPT parallel begin*/
                 if ((ompt_status == ompt_status_track_callback) &&
                   ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
-                    ompt_callbacks.ompt_callback(ompt_event_parallel_begin)(
-                      ompt_task_id, ompt_frame,
-                      ompt_parallel_id, team->t.t_nproc, (void *) microtask);
+		  // trivial team with only 1 thread
+		  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
+		    (ompt_task_id, ompt_frame, ompt_parallel_id, 
+		     1 /* team size */, (void *) microtask);
                 }
             } else {
                 exit_runtime_p = &dummy;
@@ -2780,9 +2781,10 @@ __kmp_fork_call(
          master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
          if ((ompt_status == ompt_status_track_callback) &&
                ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
+	   // trivial team with only 1 thread
             ompt_callbacks.ompt_callback(ompt_event_parallel_begin)(
-                  ompt_task_id, ompt_frame,
-                  ompt_parallel_id, team->t.t_nproc, (void *) microtask);
+                  ompt_task_id, ompt_frame, ompt_parallel_id, 
+		  1 /* team size */, (void *) microtask);
          }
 #endif
          // we were called from GNU native code
@@ -2814,9 +2816,10 @@ __kmp_fork_call(
 
                 if ((ompt_status == ompt_status_track_callback) &&
                   ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
-                    ompt_callbacks.ompt_callback(ompt_event_parallel_begin)(
-                      ompt_task_id, ompt_frame,
-                      ompt_parallel_id, team->t.t_nproc, (void *) microtask);
+		  // trivial team with only 1 thread
+		  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
+		    (ompt_task_id, ompt_frame, ompt_parallel_id, 
+		     1 /* team size */, (void *) microtask);
                 }
             } else {
                 exit_runtime_p = &dummy;
