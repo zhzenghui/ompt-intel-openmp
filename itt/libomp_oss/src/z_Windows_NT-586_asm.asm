@@ -718,7 +718,7 @@ _gtid$ = 12
 _tid$ = 16
 _argc$ = 20
 _argv$ = 24
-iif OMPT_SUPPORT
+if OMPT_SUPPORT
 _exit_frame$ = 28
 endif
 _i$ = -8

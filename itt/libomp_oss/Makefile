@@ -28,6 +28,15 @@
 #
 # </copyright>
 
+# Most important make arguments (first is default):
+# mode = [release|debug]
+# mic = [no|yes] (Also set if arch=mic)
+# ompt_support = [enabled|disabled]
+# ompt_blame = [enabled|disabled]
+# ompt_trace = [enabled|disabled]
+# linktype = [dynamic|static]
+# build_args = (See build.pl -> $opts structure)
+
 omp_root?=.
 compver?=12
 linktype?=dynamic
@@ -66,7 +75,9 @@ info:
 	@echo omp_root=$(omp_root)
 	@echo omp_os=$(omp_os)
 	@echo arch=$(arch)
-	@echo compiler=$(compiler)	
 	@echo mic=$(mic)
+	@echo compiler=$(compiler)	
 	@echo mode=$(mode)
 	@echo ompt_support=$(ompt_support)
+	@echo ompt_blame=$(ompt_blame)
+	@echo ompt_trace=$(ompt_trace)

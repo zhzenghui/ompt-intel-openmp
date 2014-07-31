@@ -45,7 +45,7 @@ my $hex = qr{[0-9a-f]}i;    # hex digit.
 
 # lrb_32e-specific details.
 
-my $mic_arch; # either knf or knc
+my $mic_arch; # either knf or knc or knl
 my $mic_os;   # either bsd or lin
 sub bad_lrb_fmt($) {
     # Before we allowed both elf64-x86-64-freebsd and elf-l1om-freebsd.

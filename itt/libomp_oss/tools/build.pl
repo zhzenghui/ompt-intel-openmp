@@ -72,7 +72,7 @@ my %makefiles = (
 #     * base: If base is true this is a base option. All the possible values of base options are
 #         iterated if "--all" option is specified. If base is 0, this is an extra option.
 #     * params: A hash of possible option values. "*" denotes default option value. For example,
-#         if "versio" option is not specified, "--version=5" will be used implicitly.
+#         if "version" option is not specified, "--version=5" will be used implicitly.
 #     * suffux: Only for extra options. Subroutine returning suffix for build and output
 #         directories.
 my $opts = {
@@ -85,12 +85,12 @@ my $opts = {
     "omp-version"     => { targets => "rtl",               base => 0, parms => { 40 => "*", 30 => "", 25 => "" }, suffix => sub { $_[ 0 ]; } },
     "coverage"        => { targets => "rtl",               base => 0, parms => { off     => "*", on        => ""              }, suffix => sub { $_[ 0 ] eq "on" ? "c1" : "c0"; } },
     "tcheck"          => { targets => "rtl",               base => 0, parms => { 0       => "*", 1         => "", 2 => ""     }, suffix => sub { "t" . $_[ 0 ];                 } },
-    "mic-arch"        => { targets => "rtl",               base => 0, parms => { knf     => "*", knc       => "", knl => ""   }, suffix => sub { $_[ 0 ];                       } },
-    "mic-os"          => { targets => "rtl",               base => 0, parms => { bsd     => "*", lin       => ""              }, suffix => sub { $_[ 0 ];                       } },
-    "mic-comp"        => { targets => "rtl",               base => 0, parms => { native  => "*", offload   => ""              }, suffix => sub { substr( $_[ 0 ], 0, 3 );       } },
+    "mic-arch"        => { targets => "rtl",               base => 0, parms => { knf     => "", knc       => "*", knl => ""   }, suffix => sub { $_[ 0 ];                       } },
+    "mic-os"          => { targets => "rtl",               base => 0, parms => { bsd     => "", lin       => "*"              }, suffix => sub { $_[ 0 ];                       } },
+    "mic-comp"        => { targets => "rtl",               base => 0, parms => { native  => "", offload   => "*"              }, suffix => sub { substr( $_[ 0 ], 0, 3 );       } },
     "ompt_support"    => { targets => "rtl",               base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
-    "ompt_blame"    => { targets => "rtl", base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
-    "ompt_trace"    => { targets => "rtl",         base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
+    "ompt_blame"      => { targets => "rtl",               base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
+    "ompt_trace"      => { targets => "rtl",               base => 0, parms => { enabled => "*", disabled => ""               }, suffix => sub { "" } },
 };
 my $synonyms = {
     "debug" => [ qw{ dbg debg } ],
@@ -300,17 +300,14 @@ sub enqueue_jobs($$@) {
                     "VERSION=" . $set->{ version },
                     "TARGET_COMPILER=" . $set->{ "target-compiler" },
                     "suffix=" . $suf,
-                     "ompt_support=" . $set->{ "ompt_support" },
-                     "ompt_blame=" . $set->{ "ompt_blame" },
-                     "ompt_trace=" . $set->{ "ompt_trace" },
+                    "ompt_support=" . $set->{ "ompt_support" },
+                    "ompt_blame=" . $set->{ "ompt_blame" },
+                    "ompt_trace=" . $set->{ "ompt_trace" },
                     @goals,
                 ],
                 build_dir  => $build_dir
             }
         ); # push
-            print $set->{ "ompt_support" };
-            print $set->{ "ompt_blame" };
-            print $set->{ "ompt_trace" };
     }; # if
 }; # sub enqueue_jobs
 
