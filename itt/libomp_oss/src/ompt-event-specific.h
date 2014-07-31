@@ -28,9 +28,8 @@
  |       the OMPT TR. they are exposed to tools through ompt_set_callback.
  +--------------------------------------------------------------------------*/
 
-#define ompt_event_UNIMPLEMENTED     ompt_set_result_registration_error 
-#define ompt_event_MAY_NONE          ompt_set_result_event_may_occur_no_callback
-#define ompt_event_MAY_NEVER         ompt_set_result_event_never_occurs
+#define ompt_event_UNIMPLEMENTED     ompt_set_result_event_may_occur_no_callback
+#define ompt_event_NEVER             ompt_set_result_event_never_occurs
 #define ompt_event_MAY_CONVENIENT    ompt_set_result_event_may_occur_callback_some
 #define ompt_event_MAY_ALWAYS        ompt_set_result_event_may_occur_callback_always
 
