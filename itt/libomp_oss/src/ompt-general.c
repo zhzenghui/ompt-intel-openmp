@@ -24,13 +24,8 @@
  * macros
  ****************************************************************************/
 
-// these return codes and the event macros still need some work
-//
-#define set_success 3
-#define set_failure 0
-
-#define get_success 1
-#define get_failure 0
+#define ompt_get_callback_success 1
+#define ompt_get_callback_failure 0
 
 #define no_tool_present 0
 
@@ -109,17 +104,16 @@ OMPT_API_ROUTINE int ompt_set_callback(ompt_event_t evid, ompt_callback_t cb)
 
 #define ompt_event_macro(event_name, callback_type, event_id) \
   case event_name: \
-    if (ompt_event_is_implemented(event_name)) {		     \
+    if (ompt_event_implementation_status(event_name)) {		     \
       ompt_callbacks.ompt_callback(event_name) = (callback_type) cb; \
-      return set_success; \
     } \
-    return set_failure; 
+    return ompt_event_implementation_status(event_name); 
 
   FOREACH_OMPT_EVENT(ompt_event_macro)
 
 #undef ompt_event_macro
 
-  default: return set_failure;
+  default: return ompt_set_result_registration_error;
   }
 }
 
@@ -130,21 +124,21 @@ OMPT_API_ROUTINE int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
 
 #define ompt_event_macro(event_name, callback_type, event_id) \
   case event_name:  \
-    if (ompt_event_is_implemented(event_name)) {		     \
+    if (ompt_event_implementation_status(event_name)) {		     \
       ompt_callback_t mycb = \
         (ompt_callback_t) ompt_callbacks.ompt_callback(event_name); \
       if (mycb) { \
         *cb = mycb; \
-         return get_success; \
+        return ompt_get_callback_success; \
       } \
     } \
-    return get_failure; 
+    return ompt_get_callback_failure; 
 
   FOREACH_OMPT_EVENT(ompt_event_macro)
 
 #undef ompt_event_macro
 
-  default: return get_failure;
+  default: return ompt_get_callback_failure;
   }
 }
 

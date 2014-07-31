@@ -219,6 +219,18 @@ typedef enum {
 } ompt_event_t;
 
 
+/*---------------------
+ * set callback results 
+ *---------------------*/
+typedef enum {
+  ompt_set_result_registration_error              = 0,
+  ompt_set_result_event_may_occur_no_callback     = 1,
+  ompt_set_result_event_never_occurs              = 2,
+  ompt_set_result_event_may_occur_callback_some   = 3,
+  ompt_set_result_event_may_occur_callback_always = 4,
+} ompt_set_result_t;
+
+
 
 /*****************************************************************************
  * callback signatures

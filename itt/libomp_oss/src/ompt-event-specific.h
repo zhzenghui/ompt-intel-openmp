@@ -10,9 +10,9 @@
  *   and the level of their implementation by a runtime system.
  *****************************************************************************/
 
-#define _ompt_tokenpaste_helper(x,y) x ## y
-#define _ompt_tokenpaste(x,y)        _ompt_tokenpaste_helper(x,y)
-#define ompt_event_is_implemented(e) _ompt_tokenpaste(e,_implemented)
+#define _ompt_tokenpaste_helper(x,y)        x ## y
+#define _ompt_tokenpaste(x,y)               _ompt_tokenpaste_helper(x,y)
+#define ompt_event_implementation_status(e) _ompt_tokenpaste(e,_implemented)
 
 
 /*----------------------------------------------------------------------------
@@ -28,11 +28,11 @@
  |       the OMPT TR. they are exposed to tools through ompt_set_callback.
  +--------------------------------------------------------------------------*/
 
-#define ompt_event_UNIMPLEMENTED     0
-#define ompt_event_MAY_NONE          1
-#define ompt_event_MAY_NEVER         2
-#define ompt_event_MAY_CONVENIENT    3
-#define ompt_event_MAY_ALWAYS        4
+#define ompt_event_UNIMPLEMENTED     ompt_set_result_registration_error 
+#define ompt_event_MAY_NONE          ompt_set_result_event_may_occur_no_callback
+#define ompt_event_MAY_NEVER         ompt_set_result_event_never_occurs
+#define ompt_event_MAY_CONVENIENT    ompt_set_result_event_may_occur_callback_some
+#define ompt_event_MAY_ALWAYS        ompt_set_result_event_may_occur_callback_always
 
 
 /*----------------------------------------------------------------------------
