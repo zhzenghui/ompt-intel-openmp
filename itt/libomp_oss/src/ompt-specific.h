@@ -40,8 +40,10 @@ kmp_info_t *ompt_get_thread()
   return ompt_get_thread_gtid(gtid);
 }
 
-ompt_task_id_t __ompt_get_task_id_internal(int ancestor_level); 
+int __ompt_get_parallel_team_size_internal(int ancestor_level); 
 
-ompt_frame_t *__ompt_get_task_frame_internal(int ancestor_level); 
+ompt_task_id_t __ompt_get_task_id_internal(int depth); 
+
+ompt_frame_t *__ompt_get_task_frame_internal(int depth); 
 
 #endif

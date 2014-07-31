@@ -148,9 +148,9 @@ ompt_thread_id_t __ompt_get_thread_id_internal()
 }
 
 
-ompt_task_id_t __ompt_get_task_id_internal(int ancestor_level) 
+ompt_task_id_t __ompt_get_task_id_internal(int depth) 
 {
-  int level = ancestor_level;
+  int level = depth;
   ompt_lw_taskteam_t *lwt = __ompt_get_lw_taskteam(&level);
   if (lwt) {
     return lwt->ompt_task_info.task_id;
@@ -161,18 +161,18 @@ ompt_task_id_t __ompt_get_task_id_internal(int ancestor_level)
 }
 
 
-void *__ompt_get_task_function_internal(int ancestor_level) 
+void *__ompt_get_task_function_internal(int depth) 
 {
-  kmp_taskdata_t *td = ompt_task(ancestor_level);
+  kmp_taskdata_t *td = ompt_task(depth);
   kmp_task_t *task = td ? KMP_TASKDATA_TO_TASK(td) : NULL;
 
   return (void *) (task ? task->routine : NULL);
 }
 
 
-ompt_frame_t *__ompt_get_task_frame_internal(int ancestor_level) 
+ompt_frame_t *__ompt_get_task_frame_internal(int depth) 
 {
-  kmp_taskdata_t *task = ompt_task(ancestor_level);
+  kmp_taskdata_t *task = ompt_task(depth);
 
   return task ? &task->ompt_task_info.frame : NULL;
 }
