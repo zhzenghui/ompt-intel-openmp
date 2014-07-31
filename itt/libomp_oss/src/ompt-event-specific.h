@@ -16,20 +16,15 @@
 
 
 /*----------------------------------------------------------------------------
- | specify whether an event is implemented or not. if it is implemented, 
- | specify the implementation level 
- |   UNIMPLEMENTED   = event not supported
- |   MAY_NONE        = event may occur, no callback possible 
- |   MAY_NEVER       = event may occur, no callback possible 
- |   MAY_CONVENIENT  = event may occur, no callback possible 
- |   MAY_ALWAYS      = event may occur, no callback possible 
+ | Specify whether an event may occur or not, and whether event callbacks 
+ | never, sometimes, or always occur.
  |
- | Note: the values for these constants are defined in section 6.1.2 of
- |       the OMPT TR. they are exposed to tools through ompt_set_callback.
+ | The values for these constants are defined in section 6.1.2 of
+ | the OMPT TR. They are exposed to tools through ompt_set_callback.
  +--------------------------------------------------------------------------*/
 
-#define ompt_event_UNIMPLEMENTED     ompt_set_result_event_may_occur_no_callback
 #define ompt_event_NEVER             ompt_set_result_event_never_occurs
+#define ompt_event_UNIMPLEMENTED     ompt_set_result_event_may_occur_no_callback
 #define ompt_event_MAY_CONVENIENT    ompt_set_result_event_may_occur_callback_some
 #define ompt_event_MAY_ALWAYS        ompt_set_result_event_may_occur_callback_always
 
