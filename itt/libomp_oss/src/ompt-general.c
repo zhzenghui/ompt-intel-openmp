@@ -58,7 +58,7 @@ ompt_state_info_t ompt_state_info[] = {
 };
 
 
-ompt_callbacks_t ompt_callbacks;
+ompt_callbacks_t ompt_callbacks __attribute__ ((visibility ("protected")));
 
 _OMP_EXTERN char **ompd_dll_locations;
 
