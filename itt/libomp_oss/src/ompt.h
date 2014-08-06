@@ -402,11 +402,16 @@ OMPT_API_FUNCTION(int, ompt_get_callback, (
  ***************************************************************************/
 
 /* control */
-OMPT_API_FUNCTION(void, ompt_control, (
+#ifdef _OPENMP && _OPENMP >= 201307
+#pragma omp declare target
+#endif
+void ompt_control(
   uint64_t command, 
   uint64_t modifier
-));
-
+);
+#ifdef _OPENMP && _OPENMP >= 201307
+#pragma omp end declare target
+#endif
 
 /* state enumeration */
 OMPT_API_FUNCTION(int, ompt_enumerate_state, (
