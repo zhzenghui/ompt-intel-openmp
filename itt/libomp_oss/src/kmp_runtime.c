@@ -6666,7 +6666,7 @@ __kmp_join_barrier( int gtid )
    KA_TRACE( 10, ("__kmp_join_barrier: T#%d(%d:%d) arrived at join barrier\n",
             gtid, team_id, tid ));
 
-#if OMPT_SUPPORT && OMP_TRACE
+#if OMPT_SUPPORT && OMPT_TRACE
     if ((ompt_status == ompt_status_track_callback) &&
       ompt_callbacks.ompt_callback(ompt_event_barrier_begin)) {
         int  tid = __kmp_tid_from_gtid( gtid );
