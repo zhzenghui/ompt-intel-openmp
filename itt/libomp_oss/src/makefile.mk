@@ -580,10 +580,6 @@ endif
 # changed to __kmp_itt_.
 cpp-flags += -D INTEL_ITTNOTIFY_PREFIX=__kmp_itt_
 
-ifneq "$(ompt_support)" "enabled"
-  cpp-flags += -D OMPT_DISABLED
-  $(call say,OMPT support is disabled!)
-endif
 
 # Linux* OS: __declspec(thread) TLS is still buggy on static builds.
 # Windows* OS: This define causes problems with LoadLibrary + declspec(thread) on Windows* OS. See CQ50564,
@@ -675,27 +671,18 @@ ld-flags   += $(LDFLAGS)
 # Files.
 # --------------------------------------------------------------------------------------------------
 ifeq "$(ompt_support)" "enabled"
-   ompt_items = ompt-general
-  z_Linux_asm$(obj) : \
-      cpp-flags += -D OMPT_SUPPORT=1
-  z_Windows_NT-586_asm$(obj) : \
-      cpp-flags += -D OMPT_SUPPORT=1
+    ompt_items = ompt-general
+    cpp-flags += -D OMPT_SUPPORT=1
   
-  ifeq "$(ompt_blame)" "enabled"
-    z_Linux_asm$(obj) : \
-      cpp-flags += -D OMPT_BLAME=1
-    z_Windows_NT-586_asm$(obj) : \
-      cpp-flags += -D OMPT_BLAME=1
-  endif
+    ifeq "$(ompt_blame)" "enabled"
+        cpp-flags += -D OMPT_BLAME=1
+    endif
   
-  ifeq "$(ompt_trace)" "enabled"
-    z_Linux_asm$(obj) : \
-      cpp-flags += -D OMPT_TRACE=1
-    z_Windows_NT-586_asm$(obj) : \
-      cpp-flags += -D OMPT_TRACE=1
-  endif
+    ifeq "$(ompt_trace)" "enabled"
+        cpp-flags += -D OMPT_TRACE=1
+    endif
 else
-   ompt_items =
+  ompt_items =
 endif
 
 
