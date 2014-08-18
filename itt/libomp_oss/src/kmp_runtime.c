@@ -2943,9 +2943,6 @@ __kmp_fork_call(
             if (ompt_status & ompt_status_track) {
                 lw_taskteam.ompt_task_info.frame.exit_runtime_frame = 0;
 
-                __ompt_lw_taskteam_unlink(&lw_taskteam, master_th);
-                // reset clear the task id only after unlinking the task
-                lw_taskteam.ompt_task_info.task_id = ompt_task_id_none;
 
                 if ((ompt_status == ompt_status_track_callback) &&
                  ompt_callbacks.ompt_callback(ompt_event_implicit_task_end)) {
@@ -2959,6 +2956,9 @@ __kmp_fork_call(
                       lw_taskteam.ompt_task_info.task_id
                     );
                 }
+                __ompt_lw_taskteam_unlink(&lw_taskteam, master_th);
+                // reset clear the task id only after unlinking the task
+                lw_taskteam.ompt_task_info.task_id = ompt_task_id_none;
                 master_th->th.ompt_thread_info.state = ompt_state_overhead;
             }
 #endif
