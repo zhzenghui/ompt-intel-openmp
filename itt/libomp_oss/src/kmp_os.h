@@ -39,9 +39,6 @@
 
 #include <stdlib.h>
 
-#ifndef OMPT_DISABLED
-#define OMPT_SUPPORT 1
-#endif
 
 #define KMP_FTN_PLAIN   1
 #define KMP_FTN_APPEND  2

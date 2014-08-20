@@ -59,10 +59,6 @@ extern "C" {
 struct ident;
 typedef struct ident ident_t;
 
-#ifndef OMPT_DISABLED
-#define OMPT_SUPPORT 1
-#endif
-
 // End of copied code.
 // ----------------------------------------------------------------------------
 
