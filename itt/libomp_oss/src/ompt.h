@@ -59,7 +59,6 @@
 	macro (ompt_state_wait_critical, 0x62)   /* waiting for critical */		\
 	macro (ompt_state_wait_atomic, 0x63)     /* waiting for atomic */		\
 	macro (ompt_state_wait_ordered, 0x64)    /* waiting for ordered */		\
-	macro (ompt_state_wait_single, 0x6F)     /* waiting for single region (non-standard!) */	\
 											\
 	/* misc (112..127) */								\
 	macro (ompt_state_undefined, 0x70)       /* undefined thread state */
@@ -403,14 +402,14 @@ OMPT_API_FUNCTION(int, ompt_get_callback, (
  ***************************************************************************/
 
 /* control */
-#if defined(_OPENMP) && (_OPENMP >= 201307)
+#if defined(_OPENMP) && (!defined(__INTEL_COMPILER) || (_OPENMP >= 201307))
 #pragma omp declare target
 #endif
 void ompt_control(
   uint64_t command, 
   uint64_t modifier
 );
-#if defined(_OPENMP) && (_OPENMP >= 201307)
+#if defined(_OPENMP) && (!defined(__INTEL_COMPILER) || (_OPENMP >= 201307))
 #pragma omp end declare target
 #endif
 
