@@ -155,7 +155,12 @@ ompt_task_id_t __ompt_get_task_id_internal(int depth)
   if (lwt) {
     return lwt->ompt_task_info.task_id;
   } else {
-    kmp_taskdata_t *task = ompt_task(level); /* remaining levels */
+    /* remaining levels */
+    // Laksono: previously: ompt_task(level)
+    // It seems ompt_task doesn't keep track the current depth, 
+    //  	instead we need to recount the task up to the
+    //  	specified depth
+    kmp_taskdata_t *task = ompt_task(depth); 
     return task ? task->ompt_task_info.task_id : ompt_task_id_none;
   }
 }
