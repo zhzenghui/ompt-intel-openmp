@@ -141,4 +141,12 @@
 
 #define ompt_event_flush_implemented                    ompt_event_UNIMPLEMENTED
 
+/*----------------------------------------------------------------------------
+ | Additional (experimental) events for 4.0 support (NOT in technical report yet)
+ +--------------------------------------------------------------------------*/
+
+#define ompt_event_target_begin_implemented           ompt_event_MAY_ALWAYS
+#define ompt_event_target_end_implemented             ompt_event_MAY_ALWAYS
+
+
 #endif

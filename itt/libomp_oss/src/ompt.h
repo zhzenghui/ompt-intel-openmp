@@ -159,9 +159,11 @@
 	macro (ompt_event_destroy_lock,             ompt_wait_callback_t,          59) /* lock destruction */		\
 	macro (ompt_event_destroy_nest_lock,        ompt_wait_callback_t,          60) /* nest lock destruction */	\
 															\
-	macro (ompt_event_flush,                    ompt_callback_t,               61) /* after executing flush */
-
-
+	macro (ompt_event_flush,                    ompt_callback_t,               61) /* after executing flush */  \
+                              \
+	  /*--- Additional (experimental) event to support OpenMP 4.0, TODO:Fix signature*/					\
+	macro (ompt_event_target_begin,             ompt_target_callback_t,        62) /* before offload  */  \
+	macro (ompt_event_target_end,               ompt_callback_t,               63) /* after offload */
 
 /*****************************************************************************
  * data types
@@ -183,6 +185,12 @@ typedef uint64_t ompt_parallel_id_t;
 typedef uint64_t ompt_wait_id_t;
 #define ompt_wait_id_none ((ompt_wait_id_t) 0)         /* non-standard */
 
+/* Adittional (experimental) identifiers for 4.0 */
+typedef uint64_t ompt_target_id_t;
+
+typedef uint64_t ompt_target_device_id_t;
+
+typedef uint64_t ompt_target_data_map_t; //FIXME: Should not be uint64
 
 /*---------------------
  * ompt_frame_t
@@ -309,6 +317,16 @@ typedef void (*ompt_control_callback_t) (
 
 typedef void (*ompt_callback_t)(void);
 
+/* Additional (experimental) signatures to support 4.0 */
+typedef void (*ompt_target_callback_t) (/* for target region         */
+  ompt_task_id_t parent_task_id,    /* ID of parent task            */
+  ompt_frame_t *parent_task_frame,  /* frame data of parent task    */
+  ompt_target_id_t target_id,       /* ID of target region          */
+  ompt_target_device_id_t device_id,/* ID of the device executing this region */
+  ompt_target_data_map_t map_type,  /* type of the data mapping (if given) */
+  void *target_function             /* pointer to outlined function */
+);
+
 
 /****************************************************************************
  * ompt API 
@@ -403,14 +421,16 @@ OMPT_API_FUNCTION(int, ompt_get_callback, (
  ***************************************************************************/
 
 /* control */
-#ifdef _OPENMP && _OPENMP >= 201307
+//#ifdef _OPENMP && _OPENMP >= 201307
+#ifdef _OPENMP 
 #pragma omp declare target
 #endif
 void ompt_control(
   uint64_t command, 
   uint64_t modifier
 );
-#ifdef _OPENMP && _OPENMP >= 201307
+//#ifdef _OPENMP && _OPENMP >= 201307
+#ifdef _OPENMP
 #pragma omp end declare target
 #endif
 

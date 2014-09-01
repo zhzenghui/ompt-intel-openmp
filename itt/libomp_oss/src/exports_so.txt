@@ -40,8 +40,13 @@ VERSION {
         # "Normal" symbols.
         #
         omp_*;     # Standard OpenMP functions.
-        ompt_initialize;     # OMPT initialization interface
-        ompt_control;        # OMPT control interface
+# TODO: Fix this quick hack needed for 4.0 support. Importing all ompt* 
+# symbols is way to much. It would be much better to have a separated
+# interface for liboffload.
+        *ompt_*;
+        __ompt_*;
+#        ompt_initialize;     # OMPT initialization interface
+#        ompt_control;        # OMPT control interface
         ompd_dll_locations;  # OMPD debugging library locations
         ompc_*;    # omp.h renames some standard functions to ompc_*.
         kmp_*;     # Intel extensions.
