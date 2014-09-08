@@ -82,12 +82,16 @@ ompt_lw_taskteam_t *__ompt_get_lw_taskteam(int *ancestor_level)
   kmp_info_t  *ti = ompt_get_thread();
   if (ti) {
     ompt_lw_taskteam_t *lwt = ti->th.ompt_thread_info.lw_taskteam;
+    // Check for NULL, otherwise we would have ancestor_level = ancestor_level + 1
+    if (!lwt)
+        return NULL;
     while (lwt) {
       if (level == 0) return lwt;
       lwt = lwt->parent;
       level--;
     }
-    *ancestor_level = level;
+    // Remaining levels = level + 1 as we had one less valid entry
+    *ancestor_level = level + 1;
   } 
   return NULL;
 }
@@ -156,11 +160,7 @@ ompt_task_id_t __ompt_get_task_id_internal(int depth)
     return lwt->ompt_task_info.task_id;
   } else {
     /* remaining levels */
-    // Laksono: previously: ompt_task(level)
-    // It seems ompt_task doesn't keep track the current depth, 
-    //  	instead we need to recount the task up to the
-    //  	specified depth
-    kmp_taskdata_t *task = ompt_task(depth); 
+    kmp_taskdata_t *task = ompt_task(level); 
     return task ? task->ompt_task_info.task_id : ompt_task_id_none;
   }
 }
