@@ -2,57 +2,6 @@
 #include "ompt-internal.h"
 #include "ompt-specific.h"
 
-#if 0
-inline
-kmp_info_t *ompt_get_thread_gtid(int gtid)
-{
-  return (gtid >= 0) ? __kmp_thread_from_gtid(gtid) : NULL;
-}
-
-
-inline
-kmp_info_t *ompt_get_thread()
-{
-  int gtid = __kmp_gtid_get_specific();
-  return ompt_get_thread_gtid(gtid);
-}
-#endif
-
-
-/* safely extract team from a thread. 
- * - a thread may not be an openmp thread
- * - an openmp thread may have an uninitialized team
- */
-kmp_team_t *ompt_team(int ancestor_level)
-{
-  int i;
-  kmp_info_t *th = ompt_get_thread();
-  kmp_team_t *team = th ? th->th.th_team : NULL;
-
-  for (i = 0; team && (i < ancestor_level); i++) {
-    team = team->t.t_parent;
-  }
-  return team;
-} 
-
-
-/* safely extract a task from a thread. 
- * - a thread need not be an openmp thread
- * - an openmp thread may have an uninitialized task
- */
-kmp_taskdata_t *ompt_task(int ancestor_level)
-{
-  int i;
-  kmp_info_t *th = ompt_get_thread();
-  kmp_taskdata_t *task = th ? th->th.th_current_task : NULL;
-
-  for (i = 0; task && (i < ancestor_level); i++) {
-    task = task->td_parent;
-  }
-  return task;
-} 
-
-
 ompt_state_t __ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
 {
   kmp_info_t  *ti = ompt_get_thread();
@@ -75,64 +24,102 @@ void *__ompt_get_idle_frame_internal(void)
   return ti ? ti->th.ompt_thread_info.idle_frame : NULL;
 }
 
+// Returns either a kmp_team or a ompt_lw_taskteam_t
+// Sets the tid_p to the tid in the kmp_team or -1 for the lwt (tid is always 0 in that case)
+// This is to avoid having multiple similar functions as getting the team is not easy (nested cases)
+void *__ompt_get_team(int depth, int *tid_p){
+  kmp_info_t *thr = ompt_get_thread();
+  if(!thr)
+      return NULL;
 
-ompt_lw_taskteam_t *__ompt_get_lw_taskteam(int *ancestor_level)
-{
-  int level = *ancestor_level;
-  kmp_info_t  *ti = ompt_get_thread();
-  if (ti) {
-    ompt_lw_taskteam_t *lwt = ti->th.ompt_thread_info.lw_taskteam;
-    // Check for NULL, otherwise we would have ancestor_level = ancestor_level + 1
-    if (!lwt)
-        return NULL;
-    while (lwt) {
-      if (level == 0) return lwt;
+  kmp_team *team = thr->th.th_team;
+  int tid = thr->th.th_info.ds.ds_tid;
+  ompt_lw_taskteam_t *lwt = team->t.ompt_serialized_team_info;
+#ifdef KMP_DEBUG
+  int serializedCt = team->t.t_serialized;
+#endif
+  
+  while(depth > 0){
+    if(lwt){
       lwt = lwt->parent;
-      level--;
+#ifdef KMP_DEBUG
+      serializedCt--;
+#endif
+      if(!lwt){
+        tid=team->t.t_master_tid;
+        team=team->t.t_parent;
+        lwt=team->t.ompt_serialized_team_info;
+#ifdef KMP_DEBUG
+        serializedCt = team->t.t_serialized;
+#endif
+      }
+    }else{
+      if(!team)
+        return ompt_task_id_none;   
+      KMP_DEBUG_ASSERT2(!serializedCt, "OMPT lwt entries inconsistent!");
+      tid=team->t.t_master_tid;
+      team=team->t.t_parent;
+      lwt=team->t.ompt_serialized_team_info;
+#ifdef KMP_DEBUG
+      serializedCt = team->t.t_serialized;
+#endif
     }
-    // Remaining levels = level + 1 as we had one less valid entry
-    *ancestor_level = level + 1;
-  } 
-  return NULL;
+    depth--;
+  }
+  if(lwt){
+    *tid_p = -1;
+    return lwt;
+  }else if(team){
+    *tid_p = tid;
+    return team;
+  }else
+    return NULL;
 }
 
 
 void *__ompt_get_parallel_function_internal(int ancestor_level) 
 {
-  int level = ancestor_level;
-  ompt_lw_taskteam_t *lwt = __ompt_get_lw_taskteam(&level);
-  if (lwt) {
+  int tid;
+  void* team=__ompt_get_team(ancestor_level, &tid);
+  if(!team)
+    return NULL;
+  if(tid < 0) {
+    ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t*) team;
     return lwt->ompt_team_info.microtask;
   } else {
-    kmp_team_t *team = ompt_team(level); /* remaining levels */
-    return (void *) (team ? team->t.t_pkfn : NULL);
+    kmp_team_t *kteam = (kmp_team*) team;
+    return (void *) kteam->t.t_pkfn;
   }
 }
 
 
 ompt_parallel_id_t __ompt_get_parallel_id_internal(int ancestor_level) 
 {
-  int level = ancestor_level;
-  ompt_lw_taskteam_t *lwt = __ompt_get_lw_taskteam(&level);
-  if (lwt) {
+  int tid;
+  void* team=__ompt_get_team(ancestor_level, &tid);
+  if(!team)
+    return NULL;
+  if(tid < 0) {
+    ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t*) team;
     return lwt->ompt_team_info.parallel_id;
   } else {
-    kmp_team_t *team = ompt_team(level); /* remaining levels */
-    return team ? team->t.ompt_team_info.parallel_id : ompt_parallel_id_none; 
+    kmp_team_t *kteam = (kmp_team*) team;
+    return kteam->t.ompt_team_info.parallel_id;
   }
 }
 
 
 int __ompt_get_parallel_team_size_internal(int ancestor_level)
 {
-  int level = ancestor_level;
-  ompt_lw_taskteam_t *lwt = __ompt_get_lw_taskteam(&level);
-  if (lwt) {
-      // If we have a lightweight team we only have 1 thread
-      return 1;
+  int tid;
+  void* team=__ompt_get_team(ancestor_level, &tid);
+  if(!team)
+    return NULL;
+  if(tid < 0) {
+    return 1; // LWT -> Serial team -> 1 Thread
   } else {
-      kmp_team_t *team = ompt_team(level); /* remaining levels */
-      return team ? team->t.t_nproc : -1;
+    kmp_team_t *kteam = (kmp_team*) team;
+    return kteam->t.t_nproc;
   }
 }
 
@@ -154,32 +141,49 @@ ompt_thread_id_t __ompt_get_thread_id_internal()
 
 ompt_task_id_t __ompt_get_task_id_internal(int depth) 
 {
-  int level = depth;
-  ompt_lw_taskteam_t *lwt = __ompt_get_lw_taskteam(&level);
-  if (lwt) {
+  int tid;
+  void* team=__ompt_get_team(depth, &tid);
+  if(!team)
+    return NULL;
+  if(tid < 0) {
+    ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t*) team;
     return lwt->ompt_task_info.task_id;
   } else {
-    /* remaining levels */
-    kmp_taskdata_t *task = ompt_task(level); 
-    return task ? task->ompt_task_info.task_id : ompt_task_id_none;
+    kmp_team_t *kteam = (kmp_team*) team;
+    return kteam->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id;
   }
 }
 
 
 void *__ompt_get_task_function_internal(int depth) 
 {
-  kmp_taskdata_t *td = ompt_task(depth);
-  kmp_task_t *task = td ? KMP_TASKDATA_TO_TASK(td) : NULL;
-
-  return (void *) (task ? task->routine : NULL);
+  int tid;
+  void* team=__ompt_get_team(depth, &tid);
+  if(!team)
+    return NULL;
+  if(tid < 0) {
+    ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t*) team;
+    return lwt->ompt_task_info.function;
+  } else {
+    kmp_team_t *kteam = (kmp_team*) team;
+    return kteam->t.t_implicit_task_taskdata[tid].ompt_task_info.function;
+  }
 }
 
 
 ompt_frame_t *__ompt_get_task_frame_internal(int depth) 
 {
-  kmp_taskdata_t *task = ompt_task(depth);
-
-  return task ? &task->ompt_task_info.frame : NULL;
+  int tid;
+  void* team=__ompt_get_team(depth, &tid);
+  if(!team)
+    return NULL;
+  if(tid < 0) {
+    ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t*) team;
+    return &lwt->ompt_task_info.frame;
+  } else {
+    kmp_team_t *kteam = (kmp_team*) team;
+    return &kteam->t.t_implicit_task_taskdata[tid].ompt_task_info.frame;
+  }
 }
 
 
@@ -243,21 +247,22 @@ void __ompt_lw_taskteam_init(ompt_lw_taskteam_t *lwt, kmp_info_t *thr,
   lwt->ompt_task_info.task_id = 0;
   lwt->ompt_task_info.frame.reenter_runtime_frame = 0;
   lwt->ompt_task_info.frame.exit_runtime_frame = 0;
+  lwt->ompt_task_info.function = NULL;
   lwt->parent = 0;
 }
 
 
 void __ompt_lw_taskteam_link(ompt_lw_taskteam_t *lwt,  kmp_info_t *thr)
 {
-  ompt_lw_taskteam_t *my_parent = thr->th.ompt_thread_info.lw_taskteam;
+  ompt_lw_taskteam_t *my_parent = thr->th.th_team->t.ompt_serialized_team_info;
   lwt->parent = my_parent;
-  thr->th.ompt_thread_info.lw_taskteam = lwt;
+  thr->th.th_team->t.ompt_serialized_team_info = lwt;
 }
 
 
 void __ompt_lw_taskteam_unlink(ompt_lw_taskteam_t *lwt, kmp_info_t *thr)
 {
-  thr->th.ompt_thread_info.lw_taskteam = lwt->parent;
+  thr->th.th_team->t.ompt_serialized_team_info = lwt->parent;
 }
 
 

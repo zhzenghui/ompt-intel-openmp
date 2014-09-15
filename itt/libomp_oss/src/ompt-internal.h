@@ -35,6 +35,7 @@ typedef struct ompt_callbacks_s {
 
 typedef struct {
   ompt_frame_t        frame;
+  void*               function;
   ompt_task_id_t      task_id;
 } ompt_task_info_t;
 
@@ -64,7 +65,6 @@ typedef struct {
   ompt_state_t        state;
   ompt_wait_id_t      wait_id;
   void                *idle_frame;
-  ompt_lw_taskteam_t  *lw_taskteam;  
 #if 0
   // use shared variables instead of these. repeated initializations of thread 
   // data structures make it hard to maintain persistent thread-private data.
