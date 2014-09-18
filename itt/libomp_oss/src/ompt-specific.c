@@ -45,24 +45,32 @@ void *__ompt_get_team(int depth, int *tid_p){
 #ifdef KMP_DEBUG
       serializedCt--;
 #endif
-      if(!lwt){
-        tid=team->t.t_master_tid;
-        team=team->t.t_parent;
-        lwt=team->t.ompt_serialized_team_info;
+      if(!lwt) {
+	if (team && team->t.t_parent){
+          tid=team->t.t_master_tid;
+          team=team->t.t_parent;
+          lwt=team->t.ompt_serialized_team_info;
 #ifdef KMP_DEBUG
-        serializedCt = team->t.t_serialized;
+          serializedCt = team->t.t_serialized;
 #endif
+	} else {
+          return ompt_task_id_none;   
+	}
       }
     }else{
-      if(!team)
-        return ompt_task_id_none;   
-      KMP_DEBUG_ASSERT2(!serializedCt, "OMPT lwt entries inconsistent!");
-      tid=team->t.t_master_tid;
-      team=team->t.t_parent;
-      lwt=team->t.ompt_serialized_team_info;
+      if(team && team->t.t_parent) {
 #ifdef KMP_DEBUG
-      serializedCt = team->t.t_serialized;
+      	MP_DEBUG_ASSERT2(!serializedCt, "OMPT lwt entries inconsistent!");
 #endif
+      	tid=team->t.t_master_tid;
+      	team=team->t.t_parent;
+      	lwt=team->t.ompt_serialized_team_info;
+#ifdef KMP_DEBUG
+      	serializedCt = team->t.t_serialized;
+#endif
+      } else {
+        return ompt_task_id_none;   
+      }
     }
     depth--;
   }

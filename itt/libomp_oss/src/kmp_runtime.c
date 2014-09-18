@@ -5005,7 +5005,10 @@ __kmp_register_root( int initial_thread )
 #if OMPT_SUPPORT
     if ( KMP_UBER_GTID(gtid) ) {
         if (ompt_status & ompt_status_track) {
-            root_thread->th.ompt_thread_info.idle_frame = __builtin_frame_address(0);
+	   // laks: previouslu, the value of idle_frame is __builtin_frame_address(0);
+	   // However, since the initial thread cannot be idle, we should initialize it with 0
+	   // see TR-2 pp 34
+            root_thread->th.ompt_thread_info.idle_frame = 0; 
             root_thread->th.ompt_thread_info.state = ompt_state_overhead;
             if ((ompt_status == ompt_status_track_callback) &&
               ompt_callbacks.ompt_callback(ompt_event_thread_begin)) {
