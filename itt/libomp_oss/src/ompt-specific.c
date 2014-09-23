@@ -60,7 +60,7 @@ void *__ompt_get_team(int depth, int *tid_p){
     }else{
       if(team && team->t.t_parent) {
 #ifdef KMP_DEBUG
-      	MP_DEBUG_ASSERT2(!serializedCt, "OMPT lwt entries inconsistent!");
+      	KMP_DEBUG_ASSERT2(!serializedCt, "OMPT lwt entries inconsistent!");
 #endif
       	tid=team->t.t_master_tid;
       	team=team->t.t_parent;
