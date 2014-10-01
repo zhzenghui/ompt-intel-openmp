@@ -745,9 +745,29 @@ xexpand(KMP_API_NAME_GOMP_TASK)(void (*func)(void *), void *data, void (*copy_fu
         __kmpc_omp_task(&loc, gtid, task);
     }
     else {
+#if OMPT_SUPPORT
+        ompt_thread_info_t oldInfo;
+        kmp_info_t * thread;
+        kmp_taskdata_t * taskdata;
+        if (ompt_status & ompt_status_track) {
+          // Store the threads states and restore them after the task
+          thread = __kmp_threads[ gtid ];
+          taskdata = KMP_TASK_TO_TASKDATA(task);
+          oldInfo = thread->th.ompt_thread_info;
+          thread->th.ompt_thread_info.wait_id = 0;
+          thread->th.ompt_thread_info.state = ompt_state_work_parallel;
+          taskdata->ompt_task_info.frame.exit_runtime_frame = __builtin_frame_address(0);      
+        }
+#endif
         __kmpc_omp_task_begin_if0(&loc, gtid, task);
         func(data);
         __kmpc_omp_task_complete_if0(&loc, gtid, task);
+#if OMPT_SUPPORT
+        if (ompt_status & ompt_status_track) {
+          thread->th.ompt_thread_info = oldInfo;
+          taskdata->ompt_task_info.frame.exit_runtime_frame = 0;
+        }
+#endif
     }
 
     KA_TRACE(20, ("GOMP_task exit: T#%d\n", gtid));

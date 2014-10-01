@@ -50,7 +50,7 @@ ompt_target_id_t __ompt_target_id_new();
 
 ompt_target_data_id_t __ompt_target_data_id_new();
 
-ompt_target_id_t ompt_get_target_id();
+ompt_target_id_t __ompt_get_target_id_internal();
 
 //ompt_target_data_id_t ompt_get_target_data_id(); //TODO: Implement me?
 
