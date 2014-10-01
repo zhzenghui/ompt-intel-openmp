@@ -260,3 +260,29 @@ const char *__ompt_get_runtime_version_internal()
 {
   return &__kmp_version_lib_ver[KMP_VERSION_MAGIC_LEN];
 }
+
+
+ompt_target_id_t __ompt_target_id_new()
+{
+  static uint64_t ompt_target_id = 1;
+  kmp_taskdata_t* task = ompt_task(0);
+  task->ompt_task_info.target_id = NEXT_ID(&ompt_target_id, 0);
+  return task->ompt_task_info.target_id;
+}
+
+ompt_target_data_id_t __ompt_target_data_id_new()
+{
+  static uint64_t ompt_target_data_id = 1;
+  kmp_taskdata_t* task = ompt_task(0);
+  task->ompt_task_info.target_data_id = NEXT_ID(&ompt_target_data_id, 0);
+  return task->ompt_task_info.target_data_id;
+}
+
+
+ompt_target_id_t ompt_get_target_id()
+{
+   //TODO: Is there a need to use lw_taskteam?
+   kmp_taskdata_t* task = ompt_task(0);
+
+   return task->ompt_task_info.target_id;
+}

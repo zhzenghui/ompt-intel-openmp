@@ -162,9 +162,17 @@
 	macro (ompt_event_flush,                    ompt_callback_t,               61) /* after executing flush */  \
                               \
 	  /*--- Additional (experimental) event to support OpenMP 4.0, TODO:Fix signature*/					\
-	macro (ompt_event_target_begin,             ompt_target_callback_t,        62) /* before offload  */  \
-	macro (ompt_event_target_end,               ompt_callback_t,               63) /* after offload */
-
+	macro (ompt_event_target_begin,             ompt_new_target_callback_t,    62) /* before offload  */  \
+	macro (ompt_event_target_end,               ompt_target_callback_t,        63) /* after offload */ \
+                              \
+	macro (ompt_event_target_data_begin,        ompt_new_target_data_callback_t,64) /* */\
+	macro (ompt_event_target_data_end,          ompt_target_data_callback_t,   65) /* */\
+                              \
+	macro (ompt_event_target_update_begin,      ompt_new_target_update_callback_t,66)/**/\
+	macro (ompt_event_target_update_end,        ompt_target_update_callback_t, 67)/**/\
+                            \
+	macro (ompt_event_data_map_begin,           ompt_new_data_map_callback_t,  68) /* before data mapping  */  \
+	macro (ompt_event_data_map_end,             ompt_target_data_callback_t,   69) /* after data mapping */
 /*****************************************************************************
  * data types
  *****************************************************************************/
@@ -187,10 +195,29 @@ typedef uint64_t ompt_wait_id_t;
 
 /* Adittional (experimental) identifiers for 4.0 */
 typedef uint64_t ompt_target_id_t;
-
+typedef uint64_t ompt_target_data_id_t;
+typedef uint64_t ompt_target_update_id_t;
 typedef uint64_t ompt_target_device_id_t;
+typedef uint64_t ompt_data_size_t;
 
-typedef uint64_t ompt_target_data_map_t; //FIXME: Should not be uint64
+/*typedef union{ 
+   struct{
+      uint8_t in  : 1;
+      uint8_t out : 1;
+   };
+   uint8_t bits;
+} ompt_target_data_map_t; //TODO: Really use this ugly typedef as map type?*/
+
+typedef enum{
+  ompt_data_map_IN   = 0,
+	ompt_data_map_OUT  = 1,
+  ompt_data_map_INOUT =2,
+} ompt_target_data_map_t;
+
+typedef enum{
+   ompt_data_sync  = 0,
+   ompt_data_async = 1,
+} ompt_target_sync_t;
 
 /*---------------------
  * ompt_frame_t
@@ -318,13 +345,50 @@ typedef void (*ompt_control_callback_t) (
 typedef void (*ompt_callback_t)(void);
 
 /* Additional (experimental) signatures to support 4.0 */
-typedef void (*ompt_target_callback_t) (/* for target region         */
-  ompt_task_id_t parent_task_id,    /* ID of parent task            */
-  ompt_frame_t *parent_task_frame,  /* frame data of parent task    */
-  ompt_target_id_t target_id,       /* ID of target region          */
-  ompt_target_device_id_t device_id,/* ID of the device executing this region */
-  ompt_target_data_map_t map_type,  /* type of the data mapping (if given) */
-  void *target_function             /* pointer to outlined function */
+typedef void (*ompt_new_target_callback_t) (         /* for new target region                  */
+  ompt_task_id_t task_id,                            /* ID of task                             */
+  ompt_target_id_t target_id,                        /* ID of target region                    */
+  ompt_target_device_id_t device_id,                 /* ID of the device executing this region */
+  void *target_function                              /* pointer to outlined function           */
+);
+
+typedef void (*ompt_target_callback_t) (             /* for target region                      */
+  ompt_task_id_t task_id,                            /* ID of task                             */
+  ompt_target_id_t target_id                         /* ID of target region                    */
+);
+
+typedef void (*ompt_new_target_data_callback_t) (    /* for new target data region             */
+   ompt_task_id_t task_id,                           /* ID of task                             */
+   ompt_target_data_id_t target_data_id,             /* ID of target data region               */
+   ompt_target_device_id_t device_id,                /* ID of the device                       */
+   void *target_data_function                        /* pointer to outlined function           */
+);
+
+typedef void (*ompt_target_data_callback_t) (        /* for target data region                 */
+   ompt_task_id_t task_id,                           /* ID of task                             */
+   ompt_target_data_id_t target_data_id              /* ID of target data region               */
+);
+
+typedef void (*ompt_new_target_update_callback_t) (  /* for new target update region           */
+   ompt_task_id_t task_id,                           /* ID of task                             */
+   ompt_target_update_id_t target_update_id,         /* ID of target update region             */
+   ompt_target_device_id_t device_id,                /* ID of the device                       */
+   void *target_update_function                      /* pointer to outlined function           */
+);
+
+typedef void (*ompt_target_update_callback_t) (      /* for new target update region           */
+   ompt_task_id_t task_id,                           /* ID of task                             */
+   ompt_target_update_id_t target_update_id          /* ID of target update region             */
+);
+
+
+typedef void (*ompt_new_data_map_callback_t) (       /* for target data map                    */
+  ompt_task_id_t task_id,                            /* ID of task                             */
+  ompt_target_id_t target_id,                        /* ID of target region                    */
+  ompt_target_device_id_t device_id,                 /* ID of the device executing this region */
+  ompt_target_sync_t sync_type,                      /* sync or asynchronus data map           */
+  ompt_target_data_map_t map_type,                   /* type of the data mapping               */
+  ompt_data_size_t bytes                             /* amount of mapped bytes                 */
 );
 
 

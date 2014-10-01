@@ -148,5 +148,13 @@
 #define ompt_event_target_begin_implemented           ompt_event_MAY_ALWAYS
 #define ompt_event_target_end_implemented             ompt_event_MAY_ALWAYS
 
+#define ompt_event_target_data_begin_implemented      ompt_event_UNIMPLEMENTED
+#define ompt_event_target_data_end_implemented        ompt_event_UNIMPLEMENTED
+
+#define ompt_event_target_update_begin_implemented    ompt_event_UNIMPLEMENTED
+#define ompt_event_target_update_end_implemented      ompt_event_UNIMPLEMENTED
+
+#define ompt_event_data_map_begin_implemented         ompt_event_MAY_ALWAYS
+#define ompt_event_data_map_end_implemented           ompt_event_MAY_ALWAYS
 
 #endif

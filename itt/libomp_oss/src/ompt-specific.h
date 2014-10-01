@@ -46,4 +46,12 @@ ompt_task_id_t __ompt_get_task_id_internal(int depth);
 
 ompt_frame_t *__ompt_get_task_frame_internal(int depth); 
 
+ompt_target_id_t __ompt_target_id_new();
+
+ompt_target_data_id_t __ompt_target_data_id_new();
+
+ompt_target_id_t ompt_get_target_id();
+
+//ompt_target_data_id_t ompt_get_target_data_id(); //TODO: Implement me?
+
 #endif
