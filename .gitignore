@@ -3,3 +3,4 @@
 *tmp
 test/.gdb_history
 itt/libomp_oss/exports/
+itt/offload/build

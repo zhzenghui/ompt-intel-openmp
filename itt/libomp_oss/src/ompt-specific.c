@@ -286,13 +286,19 @@ ompt_target_id_t __ompt_target_id_new()
   return NEXT_ID(&ompt_target_id, 0);
 }
 
-ompt_target_data_id_t __ompt_target_data_id_new()
+ompt_data_map_id_t __ompt_data_map_id_new()
 {
-  static uint64_t ompt_target_data_id = 1;
-  return NEXT_ID(&ompt_target_data_id, 0);
+  static uint64_t ompt_data_map_id = 1;
+  return NEXT_ID(&ompt_data_map_id, 0);
 }
 
-
+#if 0
+// This approach does not work / is dangerous, because the
+// structure depends on OpenMP compile flags which are not
+// necessary set for building the liboffload. Since in 4.1
+// each target region will be an implicit task the target id
+// obsolete anyway. We manage the target id internaly in 
+// liboffload untill we have the new spec.
 ompt_target_id_t __ompt_get_target_id_internal()
 {
   int tid;
@@ -307,3 +313,4 @@ ompt_target_id_t __ompt_get_target_id_internal()
     return kteam->t.t_implicit_task_taskdata[tid].ompt_task_info.target_id;
   }
 }
+#endif

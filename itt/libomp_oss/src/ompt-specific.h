@@ -3,6 +3,8 @@
 
 #include "kmp.h"
 
+void *__ompt_get_team(int depth, int *tid_p);
+
 void __ompt_team_assign_id(kmp_team_t *team, ompt_parallel_id_t ompt_pid);
 void __ompt_thread_assign_wait_id(void *variable);
 
@@ -48,10 +50,10 @@ ompt_frame_t *__ompt_get_task_frame_internal(int depth);
 
 ompt_target_id_t __ompt_target_id_new();
 
-ompt_target_data_id_t __ompt_target_data_id_new();
-
+#if 0
 ompt_target_id_t __ompt_get_target_id_internal();
+#endif
 
-//ompt_target_data_id_t ompt_get_target_data_id(); //TODO: Implement me?
+ompt_data_map_id_t __ompt_data_map_id_new();
 
 #endif

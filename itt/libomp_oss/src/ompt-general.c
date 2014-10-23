@@ -292,14 +292,15 @@ OMPT_API_ROUTINE void *ompt_get_task_function(int depth)
 /*****************************************************************************
  * target (experimental, not in technical report yet!)
  ****************************************************************************/
+#if 0
 
-
+// Determine comment in __ompt_get_target_id_internal()
 OMPT_API_ROUTINE ompt_target_id_t ompt_get_target_id(void)
 {
   return __ompt_get_target_id_internal(); 
 }
 
-
+#endif
 
 /*****************************************************************************
  * compatability
