@@ -1,3 +1,9 @@
+/*
+ * include/30/ompt.h.var
+ * $Revision$
+ * $Date$
+ */
+
 #ifndef __OMPT___
 #define __OMPT___
 
