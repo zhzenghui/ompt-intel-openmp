@@ -2093,6 +2093,9 @@ bool OffloadDescriptor::offload(
 #if OMPT_SUPPORT
    ompt_target_device_id_t device_id;
    ompt_task_id_t task_id;
+   int i;
+   bool is_update = false;
+   bool is_target_data_begin = false;
    int tid; 
    if (ompt_status == ompt_status_track_callback) {
      
@@ -2106,15 +2109,44 @@ bool OffloadDescriptor::offload(
                                        0);//m_device.m_funcs[Engine::c_func_compute]); //FIXME 
      }
 
-     //FIXME: We get this callback for target data and target update.
-     if (ompt_callbacks.ompt_callback(ompt_event_target_update_begin) && is_empty ) {
+     if ( (ompt_callbacks.ompt_callback(ompt_event_target_update_begin) ||
+           ompt_callbacks.ompt_callback(ompt_event_target_data_begin) ) &&
+           is_empty ) {
        target_id = __ompt_target_id_new();
        device_id = m_device.get_logical_index();
        task_id = __ompt_get_task_id_internal(0);
-       ompt_callbacks.ompt_callback(ompt_event_target_update_begin)(task_id,
-                                       target_id,
-                                       device_id,
-                                       0);//m_device.m_funcs[Engine::c_func_compute]); //FIXME 
+
+       // We assume that we have an update region if one of
+       // the variables neither is allocated nor freed.
+       // If one of the one of the variablse is allocated
+       // it hast to be the begin event.
+       // FIXME: For a target data which contains only "alloc"
+       //        variables no event is called since it is
+       //        unclear if it is the begin or the end event.
+       for(i=0; i<vars_total; i++){
+         if(!vars[i].alloc_if && !vars[i].free_if){
+           is_update = true;
+         } else {
+           if(vars[i].alloc_if)
+             is_target_data_begin = true;
+         }
+       }
+
+       if(!is_update){
+         if(ompt_callbacks.ompt_callback(ompt_event_target_data_begin) && is_target_data_begin) {
+           ompt_callbacks.ompt_callback(ompt_event_target_data_begin)(task_id,
+                                           target_id,
+                                           device_id,
+                                           0);//m_device.m_funcs[Engine::c_func_compute]); //FIXME
+         }
+       } else {
+         if(ompt_callbacks.ompt_callback(ompt_event_target_update_begin)) {
+           ompt_callbacks.ompt_callback(ompt_event_target_update_begin)(task_id,
+                                           target_id,
+                                           device_id,
+                                           0);//m_device.m_funcs[Engine::c_func_compute]); //FIXME
+         }
+       }
      }
 
    }
@@ -2223,10 +2255,20 @@ bool OffloadDescriptor::offload(
                                        target_id);
      }
 
-     //FIXME: We get this callback for target data and target update.
-     if (ompt_callbacks.ompt_callback(ompt_event_target_update_end) && is_empty) {
-       ompt_callbacks.ompt_callback(ompt_event_target_update_end)(task_id,
-                                       target_id);
+     if ( (ompt_callbacks.ompt_callback(ompt_event_target_update_end) ||
+           ompt_callbacks.ompt_callback(ompt_event_target_data_end) ) &&
+           is_empty ) {
+       if(!is_update){
+         if(ompt_callbacks.ompt_callback(ompt_event_target_data_end) && !is_target_data_begin) {
+           ompt_callbacks.ompt_callback(ompt_event_target_data_end)(task_id,
+                                           target_id);
+         }
+       } else {
+         if(ompt_callbacks.ompt_callback(ompt_event_target_update_end)) {
+           ompt_callbacks.ompt_callback(ompt_event_target_update_end)(task_id,
+                                           target_id);
+         }
+       }
      }
 
    }
