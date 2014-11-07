@@ -2259,7 +2259,7 @@ bool OffloadDescriptor::offload(
            ompt_callbacks.ompt_callback(ompt_event_target_data_end) ) &&
            is_empty ) {
        if(!is_update){
-         if(ompt_callbacks.ompt_callback(ompt_event_target_data_end) && !is_target_data_begin) {
+         if(ompt_callbacks.ompt_callback(ompt_event_target_data_end) && !is_target_data_begin && (vars_total != 0) ) {
            ompt_callbacks.ompt_callback(ompt_event_target_data_end)(task_id,
                                            target_id);
          }
