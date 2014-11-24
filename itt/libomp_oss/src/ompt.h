@@ -367,7 +367,7 @@ OMPT_API_FUNCTION(ompt_frame_t *, ompt_get_task_frame, (
 int ompt_initialize(
   ompt_function_lookup_t ompt_fn_lookup, 
   const char *runtime_version, 
-  int ompt_version
+  unsigned int ompt_version
 ); 
 
 typedef enum opt_init_mode_e {

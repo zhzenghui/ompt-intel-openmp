@@ -149,7 +149,8 @@ OMPT_API_ROUTINE int ompt_get_callback(ompt_event_t evid, ompt_callback_t *cb)
  ****************************************************************************/
 
 _OMP_EXTERN __attribute__ (( weak )) 
-int ompt_initialize(ompt_function_lookup_t ompt_fn_lookup, const char *version, int ompt_version)
+int ompt_initialize(ompt_function_lookup_t ompt_fn_lookup, const char *version, 
+                    unsigned int ompt_version)
 {
   return no_tool_present;
 }
