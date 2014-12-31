@@ -105,8 +105,9 @@ ompt_parallel_id_t __ompt_get_parallel_id_internal(int ancestor_level)
 {
   int tid;
   void* team=__ompt_get_team(ancestor_level, &tid);
-  if(!team)
-    return NULL;
+  if (team == NULL) {
+    return 0;
+  }
   if(tid < 0) {
     ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t*) team;
     return lwt->ompt_team_info.parallel_id;
@@ -121,8 +122,9 @@ int __ompt_get_parallel_team_size_internal(int ancestor_level)
 {
   int tid;
   void* team=__ompt_get_team(ancestor_level, &tid);
-  if(!team)
-    return NULL;
+  if (team == NULL) {
+    return 0;
+  }
   if(tid < 0) {
     return 1; // LWT -> Serial team -> 1 Thread
   } else {
@@ -151,8 +153,9 @@ ompt_task_id_t __ompt_get_task_id_internal(int depth)
 {
   int tid;
   void* team=__ompt_get_team(depth, &tid);
-  if(!team)
-    return NULL;
+  if (team == NULL) {
+    return 0;
+  }
   if(tid < 0) {
     ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t*) team;
     return lwt->ompt_task_info.task_id;
