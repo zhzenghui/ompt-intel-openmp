@@ -824,7 +824,7 @@ __kmp_init_implicit_task( ident_t *loc_ref, kmp_info_t *this_thr, kmp_team_t *te
     if (ompt_status & ompt_status_track) {
       task->ompt_task_info.task_id = __ompt_task_id_new(tid);
       task->ompt_task_info.function = NULL;
-      task->ompt_task_info.frame = {0 , 0}; 
+      task->ompt_task_info.frame = (ompt_frame_t) {.exit_runtime_frame = NULL, .reenter_runtime_frame = NULL};
     }
 #endif
 
