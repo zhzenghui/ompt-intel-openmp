@@ -2118,8 +2118,8 @@ bool OffloadDescriptor::offload(
 
        // We assume that we have an update region if one of
        // the variables neither is allocated nor freed.
-       // If one of the one of the variablse is allocated
-       // it hast to be the begin event.
+       // If one of the one of the variables is allocated
+       // it has to be the begin event.
        // FIXME: For a target data which contains only "alloc"
        //        variables no event is called since it is
        //        unclear if it is the begin or the end event.
