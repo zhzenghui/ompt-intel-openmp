@@ -38,7 +38,7 @@
  ****************************************************************************/
 
 typedef struct {
-  char *state_name;
+  const char *state_name;
   ompt_state_t  state_id;
 } ompt_state_info_t;
 
@@ -164,7 +164,11 @@ enum tool_setting_e {
 
 void ompt_init()
 {
-   char *ompt_env_var = getenv("OMP_TOOL");
+   static int ompt_initialized = 0;
+
+   if (ompt_initialized) return;
+
+   const char *ompt_env_var = getenv("OMP_TOOL");
    tool_setting_e tool_setting = omp_tool_error;
 
    if (!ompt_env_var  || !strcmp(ompt_env_var, ""))
@@ -199,6 +203,8 @@ void ompt_init()
              "\"enabled\").\n", ompt_env_var);
      break;
    }
+
+   ompt_initialized = 1;
 } 
 
 

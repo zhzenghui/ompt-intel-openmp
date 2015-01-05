@@ -313,6 +313,15 @@ __kmp_GOMP_fork_call(ident_t *loc, int gtid, microtask_t wrapper, int argc,...)
     va_list ap;
     va_start(ap, argc);
 
+#if OMPT_SUPPORT
+    kmp_info_t *master_th = __kmp_threads[ gtid ];
+    kmp_team_t *parent_team = master_th->th.th_team;
+    int tid = __kmp_tid_from_gtid( gtid );
+    parent_team->t.t_implicit_task_taskdata[tid].
+      ompt_task_info.frame.reenter_runtime_frame =
+      __builtin_frame_address(0);
+#endif
+
     rc = __kmp_fork_call(loc, gtid, FALSE, argc, wrapper, __kmp_invoke_task_func,
 #if (KMP_ARCH_X86_64 || KMP_ARCH_ARM) && KMP_OS_LINUX
       &ap
@@ -328,6 +337,12 @@ __kmp_GOMP_fork_call(ident_t *loc, int gtid, microtask_t wrapper, int argc,...)
         __kmp_run_before_invoked_task(gtid, __kmp_tid_from_gtid(gtid), thr,
           thr->th.th_team);
     }
+#if OMPT_SUPPORT
+    if (ompt_status & ompt_status_track) {
+        parent_team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame.reenter_runtime_frame = 0;
+    }
+#endif
+
 }
 
 
