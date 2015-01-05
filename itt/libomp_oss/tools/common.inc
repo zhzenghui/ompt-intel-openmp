@@ -104,7 +104,9 @@ ifneq "$(mic)" "no"
     hask1om = $(shell if (objdump --help | grep -s k1om); then echo OK; else echo KO; fi)
     ifneq "$(hask1om)" "OK"
         # Appropriate binutils are not already set up, so try to add them from the default place.
-        micBinPath = /usr/linux-k1om-4.7/x86_64-k1om-linux/bin
+        #micBinPath = /usr/linux-k1om-4.7/x86_64-k1om-linux/bin
+        micBinPath = /usr/linux-k1om-4.7/bin
+        #micBinPath = /opt/mpss/3.3/sysroots/x86_64-mpsssdk-linux/bin
         micBinPresent = $(shell if test -d $(micBinPath); then echo OK; else echo KO; fi)
         ifneq "$(micBinPresent)" "OK"
             # We can't find them in the normal place, so complain.
