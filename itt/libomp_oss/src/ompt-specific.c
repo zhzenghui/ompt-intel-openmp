@@ -123,7 +123,7 @@ int __ompt_get_parallel_team_size_internal(int ancestor_level)
   int tid;
   void* team=__ompt_get_team(ancestor_level, &tid);
   if (team == NULL) {
-    return 0;
+    return -1;
   }
   if(tid < 0) {
     return 1; // LWT -> Serial team -> 1 Thread
