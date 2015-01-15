@@ -2,6 +2,14 @@
 #include "ompt-internal.h"
 #include "ompt-specific.h"
 
+void
+__ompt_init_internal()
+{
+  // initialize initial thread for OMPT
+  kmp_info_t  *ti = ompt_get_thread();
+  __kmp_task_init_ompt(ti->th.th_team->t.t_implicit_task_taskdata, 0);
+}
+
 ompt_state_t __ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
 {
   kmp_info_t  *ti = ompt_get_thread();

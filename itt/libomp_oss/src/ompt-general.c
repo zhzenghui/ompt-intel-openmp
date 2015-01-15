@@ -192,6 +192,7 @@ void ompt_init()
 
        if (ompt_init_val) {
          ompt_status = ompt_status_track_callback;
+         __ompt_init_internal();
        }
        break;
      }
