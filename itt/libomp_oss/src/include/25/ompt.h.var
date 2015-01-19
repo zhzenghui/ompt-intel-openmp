@@ -18,19 +18,21 @@
  *****************************************************************************/
 
 #define FOREACH_OMPT_FN(macro) \
-	macro (ompt_enumerate_state ) 	\
-					\
-	macro (ompt_set_callback) 	\
-	macro (ompt_get_callback) 	\
-					\
-	macro (ompt_get_idle_frame) 	\
-	macro (ompt_get_task_frame) 	\
-					\
-	macro (ompt_get_state) 		\
-					\
-	macro (ompt_get_parallel_id) 	\
-	macro (ompt_get_task_id) 	\
+	macro (ompt_enumerate_state ) 		\
+						\
+	macro (ompt_set_callback) 		\
+	macro (ompt_get_callback) 		\
+						\
+	macro (ompt_get_idle_frame) 		\
+	macro (ompt_get_task_frame) 		\
+						\
+	macro (ompt_get_state) 			\
+						\
+	macro (ompt_get_parallel_id) 		\
+	macro (ompt_get_parallel_team_size) 	\
+	macro (ompt_get_task_id) 		\
 	macro (ompt_get_thread_id)
+
 
 #define FOREACH_OMPT_STATE(macro) \
 											\
@@ -371,7 +373,7 @@ OMPT_API_FUNCTION(ompt_frame_t *, ompt_get_task_frame, (
 int ompt_initialize(
   ompt_function_lookup_t ompt_fn_lookup, 
   const char *runtime_version, 
-  int ompt_version
+  unsigned int ompt_version
 ); 
 
 typedef enum opt_init_mode_e {

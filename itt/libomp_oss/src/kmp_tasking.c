@@ -765,6 +765,22 @@ __kmpc_omp_task_complete( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task )
 
 
 //----------------------------------------------------------------------------------------------------
+// __kmp_task_init_ompt: 
+//   Initialize OMPT fields maintained by a task. Since the serial task is initialized before 
+//   ompt_initialize is called, at the point the serial task is initialized we don't know whether
+//   OMPT will be used or not when the serial task is initialized. This function provides the support
+//   needed to initialize OMPT for the serial task after the fact.
+
+void
+__kmp_task_init_ompt(kmp_taskdata_t * task, int tid)
+{
+  task->ompt_task_info.task_id = __ompt_task_id_new(tid);
+  task->ompt_task_info.function = NULL;
+  task->ompt_task_info.frame = (ompt_frame_t) {.exit_runtime_frame = NULL, .reenter_runtime_frame = NULL};
+}
+
+
+//----------------------------------------------------------------------------------------------------
 // __kmp_init_implicit_task: Initialize the appropriate fields in the implicit task for a given thread
 //
 // loc_ref:  reference to source location of parallel region
@@ -822,16 +838,13 @@ __kmp_init_implicit_task( ident_t *loc_ref, kmp_info_t *this_thr, kmp_team_t *te
 
 #if OMPT_SUPPORT
     if (ompt_status & ompt_status_track) {
-      task->ompt_task_info.task_id = __ompt_task_id_new(tid);
-      task->ompt_task_info.function = NULL;
-      task->ompt_task_info.frame = (ompt_frame_t) {.exit_runtime_frame = NULL, .reenter_runtime_frame = NULL};
+      __kmp_task_init_ompt(task, tid);
     }
 #endif
 
     KF_TRACE(10, ("__kmp_init_implicit_task(exit): T#:%d team=%p task=%p\n",
                   tid, team, task ) );
 }
-
 // Round up a size to a power of two specified by val
 // Used to insert padding between structures co-allocated using a single malloc() call
 static size_t

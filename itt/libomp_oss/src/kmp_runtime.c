@@ -2570,12 +2570,11 @@ __kmp_fork_call(
    ompt_task_id_t my_task_id;
    ompt_parallel_id_t my_parallel_id;
    if (ompt_status & ompt_status_track) {
-      ompt_parallel_id = __ompt_parallel_id_new(gtid);
-      ompt_task_id = __ompt_get_task_id_internal(0);
-      ompt_frame = __ompt_get_task_frame_internal(0);
+     ompt_parallel_id = __ompt_parallel_id_new(gtid);
+     ompt_task_id = __ompt_get_task_id_internal(0);
+     ompt_frame = __ompt_get_task_frame_internal(0);
    }
 #endif
-
    master_this_cons = master_th -> th.th_local.this_construct;
    master_last_cons = master_th -> th.th_local.last_construct;
    root          = master_th -> th.th_root;
@@ -2587,6 +2586,16 @@ __kmp_fork_call(
 #endif // OMP_30_ENABLED
 #if OMP_40_ENABLED
    teams_level    = master_th->th.th_teams_level; // needed to check nesting inside the teams
+#endif
+
+#if OMPT_SUPPORT
+    if ((ompt_status == ompt_status_track_callback) &&
+	ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
+      int team_size = master_set_numthreads;
+      ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
+	(ompt_task_id, ompt_frame, ompt_parallel_id, 
+	 team_size, (void *) microtask);
+    }
 #endif
 
 
@@ -2629,19 +2638,6 @@ __kmp_fork_call(
 
                 __ompt_lw_taskteam_link(&lw_taskteam, master_th);
 
-                /* OMPT state */
-                master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
-
-
-                /* OMPT parallel begin*/
-                if ((ompt_status == ompt_status_track_callback) &&
-                  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
-                  // trivial team with only 1 thread
-                  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
-                  (ompt_task_id, ompt_frame, ompt_parallel_id,
-                  1 /* team size */, (void *) microtask);
-                }
-
                 /* OMPT implicit task begin */
                 my_task_id = lw_taskteam.ompt_task_info.task_id;
                 my_parallel_id = parent_team->t.ompt_team_info.parallel_id;
@@ -2650,6 +2646,8 @@ __kmp_fork_call(
                   ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)(my_parallel_id, my_task_id);
                 }
 
+                /* OMPT state */
+                master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
             } else {
                 exit_runtime_p = &dummy;
             }
@@ -2780,13 +2778,6 @@ __kmp_fork_call(
 #if OMPT_SUPPORT
          //TODO: Do we need this here?
          master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
-         if ((ompt_status == ompt_status_track_callback) &&
-               ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
-	   // trivial team with only 1 thread
-            ompt_callbacks.ompt_callback(ompt_event_parallel_begin)(
-                  ompt_task_id, ompt_frame, ompt_parallel_id, 
-		  1 /* team size */, (void *) microtask);
-         }
 #endif
          // we were called from GNU native code
          KA_TRACE( 20, ("__kmp_fork_call: T#%d serial exit\n", gtid ));
@@ -2806,42 +2797,20 @@ __kmp_fork_call(
             ompt_lw_taskteam_t lw_taskteam;
 
             if (ompt_status & ompt_status_track) {
-
-#if 1 
-// johnmc - replaces code inside parallel region
-                if ((ompt_status == ompt_status_track_callback) &&
-                  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
-                  // trivial team with only 1 thread
-                  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
-                  (ompt_task_id, ompt_frame, ompt_parallel_id,
-                  1 /* team size */, (void *) microtask);
-                }
-#endif
                 __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, microtask, ompt_parallel_id);
                 lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
                 exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 
                 __ompt_lw_taskteam_link(&lw_taskteam, master_th);
 
-                /* OMPT state */
-                master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
-
-#if 0
-// johnmc - replaced by code above outside parallel region
-                if ((ompt_status == ompt_status_track_callback) &&
-                  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
-                  // trivial team with only 1 thread
-                  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
-                  (ompt_task_id, ompt_frame, ompt_parallel_id,
-                  1 /* team size */, (void *) microtask);
-                }
-#endif
 
                 my_task_id = lw_taskteam.ompt_task_info.task_id;
-                if (ompt_callbacks.ompt_callback (ompt_event_implicit_task_begin))
-                    ompt_callbacks.ompt_callback (ompt_event_implicit_task_begin) (ompt_parallel_id, my_task_id);
+                if (ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)) {
+                    ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin) (ompt_parallel_id, my_task_id);
+		}
 
-
+                /* OMPT state */
+                master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
             } else {
                 exit_runtime_p = &dummy;
             }
@@ -2917,37 +2886,11 @@ __kmp_fork_call(
             ompt_lw_taskteam_t lw_taskteam;
 
             if (ompt_status & ompt_status_track) {
-
-#if 1
-// johnmc - replaces version inside parallel region
-                /* OMPT parallel begin*/
-                if ((ompt_status == ompt_status_track_callback) &&
-                  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
-                    ompt_callbacks.ompt_callback(ompt_event_parallel_begin)(
-                      ompt_task_id, ompt_frame,
-                      ompt_parallel_id, master_th->th.th_team->t.t_nproc, (void *) microtask);
-                }
-#endif
-
                 __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, microtask, ompt_parallel_id);
                 lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
                 exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 
                 __ompt_lw_taskteam_link(&lw_taskteam, master_th);
-
-                /* OMPT state */
-                master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
-
-#if 0
-// johnmc - replaced by version outside parallel region
-                /* OMPT parallel begin*/
-                if ((ompt_status == ompt_status_track_callback) &&
-                  ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
-                    ompt_callbacks.ompt_callback(ompt_event_parallel_begin)(
-                      ompt_task_id, ompt_frame,
-                      ompt_parallel_id, master_th->th.th_team->t.t_nproc, (void *) microtask);
-                }
-#endif
 
                 /* OMPT implicit task begin */
                 my_task_id = lw_taskteam.ompt_task_info.task_id; 
@@ -2957,6 +2900,8 @@ __kmp_fork_call(
                     ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)(my_parallel_id, my_task_id);
                 }
 
+                /* OMPT state */
+                master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
             } else {
                 exit_runtime_p = &dummy;
             }
@@ -3229,12 +3174,6 @@ __kmp_fork_call(
    __kmp_fork_team_threads( root, team, master_th, gtid );
 #if OMPT_SUPPORT
     master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
-    if ((ompt_status == ompt_status_track_callback) &&
-      ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
-        ompt_callbacks.ompt_callback(ompt_event_parallel_begin)(
-          ompt_task_id, ompt_frame,
-          ompt_parallel_id, team->t.t_nproc, (void *) microtask);
-    }
 #endif
    __kmp_setup_icv_copy(team, nthreads
 #if OMP_30_ENABLED
@@ -3403,10 +3342,15 @@ __kmp_join_call(ident_t *loc, int gtid
 #endif
 
 #if OMPT_SUPPORT
+   ompt_parallel_id_t parallel_id = team->t.ompt_team_info.parallel_id;
+#endif
+
+#if OMPT_SUPPORT
    ompt_parallel_info_t parallel_info;
    if ((ompt_status == ompt_status_track_callback) &&
        ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
      int  tid = __kmp_tid_from_gtid( gtid );
+     parallel_id; 
 #if 0     
      parallel_info =  (ompt_parallel_info_t)
        {
@@ -3488,21 +3432,6 @@ __kmp_join_call(ident_t *loc, int gtid
 
    master_th -> th.th_dispatch =
       & parent_team -> t.t_dispatch[ team -> t.t_master_tid ];
-
-	/*cramer: I moved this from the bottom of the function to here, because
-    in the locked area the implicit task is poped. However, the ompt-spec
-    says the callback has to be executed before the parent task is resumed.
-    If the current task is poped before we execute the callback, 
-    ompt_get_task_id delivers a wrong result in the user (tool) space.
-  */
-#if OMPT_SUPPORT
-   if ((ompt_status == ompt_status_track_callback) &&
-       ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
-       ompt_callbacks.ompt_callback(ompt_event_parallel_end)(
-         parallel_info.parallel_id, parallel_info.parent_task_id);
-   }
-#endif
-
    /* jc: The following lock has instructions with REL and ACQ semantics,
       separating the parallel user code called in this parallel region
       from the serial user code called after this function returns.
@@ -3588,6 +3517,13 @@ __kmp_join_call(ident_t *loc, int gtid
 
    __kmp_release_bootstrap_lock( &__kmp_forkjoin_lock );
 
+#if OMPT_SUPPORT
+   if ((ompt_status == ompt_status_track_callback) &&
+       ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
+       ompt_callbacks.ompt_callback(ompt_event_parallel_end)
+	 (parallel_id, master_th->th.th_current_task->ompt_task_info.task_id);
+   }
+#endif
 
    KMP_MB();
    KA_TRACE( 20, ("__kmp_join_call: exit T#%d\n", gtid ));
@@ -4310,7 +4246,7 @@ __kmp_initialize_root( kmp_root_t *root )
 #if OMPT_SUPPORT
    int gtid = __kmp_gtid_get_specific();
    kmp_info_t *ti = ompt_get_thread_gtid(gtid);
-   ompt_parallel_id_t ompt_parallel_id_1 = __ompt_parallel_id_new(gtid);
+   ompt_parallel_id_t ompt_parallel_id_1 = 0; // __ompt_parallel_id_new(gtid);
 #endif
 
    root_team =
@@ -4359,7 +4295,7 @@ __kmp_initialize_root( kmp_root_t *root )
    KF_TRACE( 10, ( "__kmp_initialize_root: before hot_team\n" ) );
 
 #if OMPT_SUPPORT
-    ompt_parallel_id_t ompt_parallel_id_2 = __ompt_parallel_id_new(gtid);
+   ompt_parallel_id_t ompt_parallel_id_2 = 0; // __ompt_parallel_id_new(gtid);
 #endif
 
    hot_team =
@@ -4960,7 +4896,7 @@ __kmp_register_root( int initial_thread )
       KF_TRACE( 10, ( "__kmp_register_root: before serial_team\n" ) );
 
 #if OMPT_SUPPORT
-        ompt_parallel_id_t ompt_parallel_id_3 = __ompt_parallel_id_new(gtid);
+      ompt_parallel_id_t ompt_parallel_id_3 = 0; // __ompt_parallel_id_new(gtid);
 #endif
     
       root_thread -> th.th_serial_team = __kmp_allocate_team( root, 1, 1,
@@ -5412,7 +5348,7 @@ __kmp_allocate_thread( kmp_root_t *root, kmp_team_t *team, int new_tid )
 
 #if OMPT_SUPPORT
     kmp_info_t *ti = ompt_get_thread_gtid(new_gtid);
-    ompt_parallel_id_t ompt_parallel_id_4 = __ompt_parallel_id_new(new_gtid);
+    ompt_parallel_id_t ompt_parallel_id_4 = 0; // __ompt_parallel_id_new(new_gtid);
 #endif
 
       new_thr -> th.th_serial_team = serial_team =
