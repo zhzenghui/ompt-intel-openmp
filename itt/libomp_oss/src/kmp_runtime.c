@@ -8061,6 +8061,10 @@ __kmp_do_serial_initialize( void )
    KMP_MB();
 
    KA_TRACE( 10, ("__kmp_do_serial_initialize: exit\n" ) );
+#if OMPT_SUPPORT
+    ompt_init();
+#endif
+
 }
 
    void

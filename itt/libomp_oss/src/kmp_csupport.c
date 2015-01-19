@@ -71,9 +71,6 @@ __kmpc_begin(ident_t *loc, kmp_int32 flags)
 
         KC_TRACE( 10, ("__kmpc_begin: called\n" ) );
     }
-#if OMPT_SUPPORT
-    ompt_init();
-#endif
 }
 
 /*!
