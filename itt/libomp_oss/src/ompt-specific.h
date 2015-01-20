@@ -50,6 +50,8 @@ ompt_frame_t *__ompt_get_task_frame_internal(int depth);
 
 ompt_target_id_t __ompt_target_id_new();
 
+void __ompt_initialize_openmp_runtime();
+
 #if 0
 ompt_target_id_t __ompt_get_target_id_internal();
 #endif

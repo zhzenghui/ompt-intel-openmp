@@ -303,6 +303,19 @@ ompt_data_map_id_t __ompt_data_map_id_new()
   return NEXT_ID(&ompt_data_map_id, 0);
 }
 
+// In order to initialize the OpenMP library from the liboffload
+// we call __kmp_get_global_thread_id_reg(). At the moment this
+// is a workaround which is need get the implicit task ids and
+// force initialization of the OpenMP library.
+// TODO: Really force initialization like that?
+void __ompt_initialize_openmp_runtime(){
+static bool omp_init = false;
+  if (omp_init == false) {
+    __kmp_get_global_thread_id_reg();
+    omp_init = true;
+  }
+}
+
 #if 0
 // This approach does not work / is dangerous, because the
 // structure depends on OpenMP compile flags which are not

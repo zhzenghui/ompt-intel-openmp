@@ -2097,6 +2097,9 @@ bool OffloadDescriptor::offload(
    bool is_update = false;
    bool is_target_data_begin = false;
    int tid; 
+
+   __ompt_initialize_openmp_runtime();
+
    if (ompt_status == ompt_status_track_callback) {
      
      if (ompt_callbacks.ompt_callback(ompt_event_target_begin) && !is_empty ) {
