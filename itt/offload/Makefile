@@ -115,7 +115,7 @@ obj_ofld_host=$(foreach file,$(obj_ofld),$(build_host_dir)/$(file))
 obj_ofld_target=$(foreach file,$(obj_ofld),$(build_target_dir)/$(file))
 
 # Options
-opts_common=-O0 -g -w -fpic -c -DCOI_LIBRARY_VERSION=2 -DMYO_SUPPORT -DOFFLOAD_DEBUG=5 -DSEP_SUPPORT -DTIMING_SUPPORT -I$(coi_dir_include) -I$(myo_dir)/include -I$(source_dir)
+opts_common=-O0 -g -w -fpic -c -DCOI_LIBRARY_VERSION=2 -DMYO_SUPPORT -DOFFLOAD_DEBUG=5 -DSEP_SUPPORT -DTIMING_SUPPORT -I$(coi_dir_include) -I$(coi_dir_include)/source  -I$(myo_dir)/include -I$(source_dir)
 ifneq ($(omp_header_dir), )
   opts_common+=-I$(imported_dir)
 endif

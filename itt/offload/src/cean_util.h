@@ -12,7 +12,8 @@
 #define CEAN_UTIL_H_INCLUDED
 
 #include <stdint.h>
-
+#include <COIBuffer_source.h>
+/*
 // CEAN expression representation
 struct dim_desc {
     int64_t size;       // Length of data type
@@ -22,12 +23,13 @@ struct dim_desc {
     int64_t stride;     // Stride
 };
 
+
 struct arr_desc {
     int64_t base;       // Base address
     int64_t rank;       // Rank of array
     dim_desc dim[1];
 };
-
+*/
 struct CeanReadDim {
     int64_t count; // The number of elements in this dimension
     int64_t size;  // The number of bytes between successive
