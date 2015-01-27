@@ -764,6 +764,7 @@ __kmpc_omp_task_complete( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task )
 #endif // TASK_UNUSED
 
 
+#if OMPT_SUPPORT
 //----------------------------------------------------------------------------------------------------
 // __kmp_task_init_ompt: 
 //   Initialize OMPT fields maintained by a task. Since the serial task is initialized before 
@@ -778,6 +779,7 @@ __kmp_task_init_ompt(kmp_taskdata_t * task, int tid)
   task->ompt_task_info.function = NULL;
   task->ompt_task_info.frame = (ompt_frame_t) {.exit_runtime_frame = NULL, .reenter_runtime_frame = NULL};
 }
+#endif
 
 
 //----------------------------------------------------------------------------------------------------
