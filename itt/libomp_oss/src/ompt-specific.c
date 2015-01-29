@@ -2,12 +2,31 @@
 #include "ompt-internal.h"
 #include "ompt-specific.h"
 
+#define GTID_TO_OMPT_THREAD_ID(id) ((ompt_thread_id_t) (id >=0) ? id + 1: 0)
+
 void
 __ompt_init_internal()
 {
   // initialize initial thread for OMPT
-  kmp_info_t  *ti = ompt_get_thread();
-  __kmp_task_init_ompt(ti->th.th_team->t.t_implicit_task_taskdata, 0);
+  kmp_info_t  *root_thread = ompt_get_thread();
+  __kmp_task_init_ompt(root_thread->th.th_team->t.t_implicit_task_taskdata, 0);
+
+  // make mandatory callback for creation of initial thread
+  // this needs to occur here rather than in __kmp_register_root because
+  // __kmp_register_root is called before ompt_initialize
+  if (ompt_status & ompt_status_track) {
+    int gtid = __kmp_get_gtid();
+    if (KMP_UBER_GTID(gtid)) {
+      // initialize the initial thread's idle frame and state
+      root_thread->th.ompt_thread_info.idle_frame = 0;
+      root_thread->th.ompt_thread_info.state = ompt_state_overhead;
+      if ((ompt_status == ompt_status_track_callback) &&
+           ompt_callbacks.ompt_callback(ompt_event_thread_begin)) {
+             ompt_callbacks.ompt_callback(ompt_event_thread_begin)(ompt_thread_initial, 
+                                          GTID_TO_OMPT_THREAD_ID(gtid));
+      }
+    }
+  }
 }
 
 ompt_state_t __ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
@@ -153,7 +172,7 @@ ompt_thread_id_t __ompt_get_thread_id_internal()
   int id = __kmp_get_gtid();
   assert(id >= 0); 
 
-  return (ompt_thread_id_t) (id >=0) ? id + 1: 0;
+  return GTID_TO_OMPT_THREAD_ID(id);
 }
 
 

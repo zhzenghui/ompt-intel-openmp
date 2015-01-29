@@ -4967,22 +4967,6 @@ __kmp_register_root( int initial_thread )
    KMP_MB();
    __kmp_release_bootstrap_lock( &__kmp_forkjoin_lock );
 
-#if OMPT_SUPPORT
-    if ( KMP_UBER_GTID(gtid) ) {
-        if (ompt_status & ompt_status_track) {
-	   // laks: previouslu, the value of idle_frame is __builtin_frame_address(0);
-	   // However, since the initial thread cannot be idle, we should initialize it with 0
-	   // see TR-2 pp 34
-            root_thread->th.ompt_thread_info.idle_frame = 0; 
-            root_thread->th.ompt_thread_info.state = ompt_state_overhead;
-            if ((ompt_status == ompt_status_track_callback) &&
-              ompt_callbacks.ompt_callback(ompt_event_thread_begin)) {
-                ompt_callbacks.ompt_callback(ompt_event_thread_begin)(ompt_thread_initial, gtid + 1);
-            }
-        }
-    }
-#endif
-
    return gtid;
 }
 
