@@ -33,6 +33,12 @@ kmp_info_t *ompt_get_thread_gtid(int gtid)
 }
 
 
+void __ompt_thread_begin(ompt_thread_type_t thread_type, int gtid);
+
+
+void __ompt_thread_end(ompt_thread_type_t thread_type, int gtid);
+
+
 inline
 kmp_info_t *ompt_get_thread()
 {

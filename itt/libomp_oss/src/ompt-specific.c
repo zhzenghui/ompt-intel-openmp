@@ -7,14 +7,14 @@
 void
 __ompt_init_internal()
 {
-  // initialize initial thread for OMPT
-  kmp_info_t  *root_thread = ompt_get_thread();
-  __kmp_task_init_ompt(root_thread->th.th_team->t.t_implicit_task_taskdata, 0);
-
-  // make mandatory callback for creation of initial thread
-  // this needs to occur here rather than in __kmp_register_root because
-  // __kmp_register_root is called before ompt_initialize
   if (ompt_status & ompt_status_track) {
+    // initialize initial thread for OMPT
+    kmp_info_t  *root_thread = ompt_get_thread();
+    __kmp_task_init_ompt(root_thread->th.th_team->t.t_implicit_task_taskdata, 0);
+
+    // make mandatory callback for creation of initial thread
+    // this needs to occur here rather than in __kmp_register_root because
+    // __kmp_register_root is called before ompt_initialize
     int gtid = __kmp_get_gtid();
     if (KMP_UBER_GTID(gtid)) {
       // initialize the initial thread's idle frame and state
@@ -22,12 +22,28 @@ __ompt_init_internal()
       root_thread->th.ompt_thread_info.state = ompt_state_overhead;
       if ((ompt_status == ompt_status_track_callback) &&
            ompt_callbacks.ompt_callback(ompt_event_thread_begin)) {
-             ompt_callbacks.ompt_callback(ompt_event_thread_begin)(ompt_thread_initial, 
-                                          GTID_TO_OMPT_THREAD_ID(gtid));
+        __ompt_thread_begin(ompt_thread_initial, gtid);
       }
     }
   }
 }
+
+
+void
+__ompt_thread_begin(ompt_thread_type_t thread_type, int gtid)
+{
+  ompt_callbacks.ompt_callback(ompt_event_thread_begin)(thread_type, 
+                               GTID_TO_OMPT_THREAD_ID(gtid));
+}
+
+
+void
+__ompt_thread_end(ompt_thread_type_t thread_type, int gtid)
+{
+  ompt_callbacks.ompt_callback(ompt_event_thread_end)(thread_type, 
+                               GTID_TO_OMPT_THREAD_ID(gtid));
+}
+
 
 ompt_state_t __ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
 {

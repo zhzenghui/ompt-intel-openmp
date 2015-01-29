@@ -5008,6 +5008,14 @@ __kmp_reset_root(int gtid, kmp_root_t *root)
    __kmp_free_handle( root->r.r_uber_thread->th.th_info.ds.ds_thread );
 #endif /* KMP_OS_WINDOWS */
 
+#ifdef OMPT_SUPPORT
+ if ((ompt_status == ompt_status_track_callback) && 
+     ompt_callbacks.ompt_callback(ompt_event_thread_end)) {
+    int gtid = __kmp_get_gtid();
+    __ompt_thread_end(ompt_thread_initial, gtid);
+  }
+#endif
+
    TCW_4(__kmp_nth, __kmp_nth - 1); // __kmp_reap_thread will decrement __kmp_all_nth.
    __kmp_reap_thread( root->r.r_uber_thread, 1 );
 
@@ -6989,7 +6997,7 @@ __kmp_launch_thread( kmp_info_t *this_thr )
        this_thr->th.ompt_thread_info.idle_frame = __builtin_frame_address(0);
        if ((ompt_status == ompt_status_track_callback) &&
          ompt_callbacks.ompt_callback(ompt_event_thread_begin)) {
-           ompt_callbacks.ompt_callback(ompt_event_thread_begin)(ompt_thread_worker, gtid + 1);
+         __ompt_thread_begin(ompt_thread_worker, gtid);
        }
    }
 #endif
@@ -7066,9 +7074,9 @@ __kmp_launch_thread( kmp_info_t *this_thr )
    TCR_SYNC_PTR(__kmp_global.g.g_done);
 
 #if OMPT_SUPPORT
-   if ((ompt_status == ompt_status_track_callback) &&
+   if ((ompt_status == ompt_status_track_callback) && 
        ompt_callbacks.ompt_callback(ompt_event_thread_end)) {
-     ompt_callbacks.ompt_callback(ompt_event_thread_end)(ompt_thread_worker, gtid + 1);
+     __ompt_thread_end(ompt_thread_worker, gtid);
    }
 #endif
 
