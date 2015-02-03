@@ -268,7 +268,11 @@ private:
 #ifdef OMPT_SUPPORT
     // a boolean value to identify a omp target region
     bool m_need_runuserfunction;
+    // the current target id
     ompt_target_id_t target_id;
+    // a boolean value to identify data mapping of _only_ statck
+    // buffer pointer. In this case we do not trigger map events.
+    bool only_stack_vars;
 #endif
 
 };
