@@ -25,6 +25,10 @@ __ompt_init_internal()
         __ompt_thread_begin(ompt_thread_initial, gtid);
       }
     }
+
+    // init target stuff
+    root_thread->th.ompt_target_info.target_data_id = 0;
+    root_thread->th.ompt_target_info.is_target_data = 1;
   }
 }
 
@@ -351,6 +355,12 @@ void __ompt_initialize_openmp_runtime(){
     omp_init = true;
   }
 }
+
+ompt_target_info_t* __ompt_get_target_info(){
+  kmp_info_t  *root_thread = ompt_get_thread();
+  return &(root_thread->th.ompt_target_info);
+}
+
 
 #if 0
 // This approach does not work / is dangerous, because the

@@ -58,6 +58,8 @@ ompt_target_id_t __ompt_target_id_new();
 
 void __ompt_initialize_openmp_runtime();
 
+ompt_target_info_t* __ompt_get_target_info();
+
 #if 0
 ompt_target_id_t __ompt_get_target_id_internal();
 #endif

@@ -73,6 +73,10 @@ typedef struct {
 #endif
 } ompt_thread_info_t;
 
+typedef struct {
+  ompt_target_id_t target_data_id; /* Id for the current target data region */
+  int              is_target_data; /* boolean flag to differentiate target data and target update*/
+} ompt_target_info_t;
 
 extern ompt_status_t ompt_status;
 extern ompt_callbacks_t ompt_callbacks;
