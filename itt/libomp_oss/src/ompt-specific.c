@@ -182,55 +182,6 @@ void *__ompt_get_team(int depth, int *tid_p){
 
 #define VERSION2
 #ifndef VERSION2
-
-void *__ompt_get_parallel_function_internal(int ancestor_level) 
-{
-  int tid;
-  void* team=__ompt_get_team(ancestor_level, &tid);
-  if(!team)
-    return NULL;
-  if(tid < 0) {
-    ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t*) team;
-    return lwt->ompt_team_info.microtask;
-  } else {
-    kmp_team_t *kteam = (kmp_team*) team;
-    return (void *) kteam->t.t_pkfn;
-  }
-}
-
-
-ompt_parallel_id_t __ompt_get_parallel_id_internal(int ancestor_level) 
-{
-  int tid;
-  void* team=__ompt_get_team(ancestor_level, &tid);
-  if (team == NULL) {
-    return 0;
-  }
-  if(tid < 0) {
-    ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t*) team;
-    return lwt->ompt_team_info.parallel_id;
-  } else {
-    kmp_team_t *kteam = (kmp_team*) team;
-    return kteam->t.ompt_team_info.parallel_id;
-  }
-}
-
-
-int __ompt_get_parallel_team_size_internal(int ancestor_level)
-{
-  int tid;
-  void* team=__ompt_get_team(ancestor_level, &tid);
-  if (team == NULL) {
-    return -1;
-  }
-  if(tid < 0) {
-    return 1; // LWT -> Serial team -> 1 Thread
-  } else {
-    kmp_team_t *kteam = (kmp_team*) team;
-    return kteam->t.t_nproc;
-  }
-}
-
 #else /* VERSION2 */
 
 
@@ -343,9 +294,6 @@ ompt_thread_id_t __ompt_get_thread_id_internal()
   return GTID_TO_OMPT_THREAD_ID(id);
 }
 
-#define NEWTASK_INFO 1
-#if NEWTASK_INFO
-#if 0
 ompt_task_info_t *
 __ompt_get_taskinfo(int depth) 
 {
@@ -356,78 +304,6 @@ __ompt_get_taskinfo(int depth)
   if(gtid >= 0) {
     kmp_info_t *thr = ompt_get_thread_gtid(gtid);
     if (thr == NULL) return NULL;
-
-#if 0
-    // ----------------------------------------------------      
-    // FIXME (johnmc) 
-    //  unsure how to deal with serialized teams
-    //  it is hard to tell how the runtime works. 
-    //  the representation used with lightweight task teams
-    //  in the stack isn't sufficient for gcc-compiled code,
-    //  which requires a lifetime for this info that extends
-    //  beyond __kmp_fork_call. the code below doesn't help.
-    //  there are problems for serialized regions even using
-    //  icc.
-    // ----------------------------------------------------      
-    kmp_team *team = thr->th.th_team;
-    ompt_lw_taskteam_t *lwt = team->t.ompt_serialized_team_info;
-    while (lwt && depth > 0) {
-      lwt = lwt->parent;
-      depth--;
-    }
-    if (lwt && depth == 0) {
-      return &lwt->ompt_task_info;
-    }
-#endif
-
-    kmp_taskdata_t  *taskdata = 
-      __kmp_threads[ gtid ] -> th.th_current_task;
-    while (taskdata && depth > 0) {
-      taskdata = taskdata->td_parent;
-      depth--;
-    }
-    if (taskdata && depth == 0) { 
-      info = &taskdata->ompt_task_info;
-    }
-  }
-  return info;
-}
-
-#else
-
-ompt_task_info_t *
-__ompt_get_taskinfo(int depth) 
-{
-  ompt_task_info_t *info = NULL;
-
-  int gtid = __kmp_get_gtid();
-
-  if(gtid >= 0) {
-    kmp_info_t *thr = ompt_get_thread_gtid(gtid);
-    if (thr == NULL) return NULL;
-
-#if 0
-    // ----------------------------------------------------      
-    // FIXME (johnmc) 
-    //  unsure how to deal with serialized teams
-    //  it is hard to tell how the runtime works. 
-    //  the representation used with lightweight task teams
-    //  in the stack isn't sufficient for gcc-compiled code,
-    //  which requires a lifetime for this info that extends
-    //  beyond __kmp_fork_call. the code below doesn't help.
-    //  there are problems for serialized regions even using
-    //  icc.
-    // ----------------------------------------------------      
-    kmp_team *team = thr->th.th_team;
-    ompt_lw_taskteam_t *lwt = team->t.ompt_serialized_team_info;
-    while (lwt && depth > 0) {
-      lwt = lwt->parent;
-      depth--;
-    }
-    if (lwt && depth == 0) {
-      return &lwt->ompt_task_info;
-    }
-#endif
 
     kmp_taskdata_t  *taskdata = 
       __kmp_threads[ gtid ] -> th.th_current_task;
@@ -461,7 +337,6 @@ __ompt_get_taskinfo(int depth)
   }
   return info;
 }
-#endif
 
 
 ompt_task_id_t 
@@ -488,57 +363,6 @@ ompt_frame_t *__ompt_get_task_frame_internal(int depth)
   return frame;
 }
 
-#else
-ompt_task_id_t __ompt_get_task_id_internal(int depth)
-{
-  int tid;
-  void* team=__ompt_get_team(depth, &tid);
-  if (team == NULL) {
-    return 0;
-  }
-  if(tid < 0) {
-    ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t*) team;
-    return lwt->ompt_task_info.task_id;
-  } else {
-    kmp_team_t *kteam = (kmp_team*) team;
-    return kteam->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id;
-  }
-}
-
-
-void *__ompt_get_task_function_internal(int depth)
-{
-  int tid;
-  void* team=__ompt_get_team(depth, &tid);
-  if(!team)
-    return NULL;
-  if(tid < 0) {
-    ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t*) team;
-    return lwt->ompt_task_info.function;
-  } else {
-    kmp_team_t *kteam = (kmp_team*) team;
-    return kteam->t.t_implicit_task_taskdata[tid].ompt_task_info.function;
-  }
-}
-
-
-ompt_frame_t *__ompt_get_task_frame_internal(int depth)
-{
-  int tid;
-  void* team=__ompt_get_team(depth, &tid);
-  if(!team)
-    return NULL;
-  if(tid < 0) {
-    ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t*) team;
-    return &lwt->ompt_task_info.frame;
-  } else {
-    kmp_team_t *kteam = (kmp_team*) team;
-    return &kteam->t.t_implicit_task_taskdata[tid].ompt_task_info.frame;
-  }
-}
-
-
-#endif
 
 
 #define OMPT_THREAD_ID_BITS 16
