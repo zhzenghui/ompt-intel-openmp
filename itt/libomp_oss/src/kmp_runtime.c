@@ -5033,7 +5033,7 @@ __kmp_reset_root(int gtid, kmp_root_t *root)
    __kmp_free_handle( root->r.r_uber_thread->th.th_info.ds.ds_thread );
 #endif /* KMP_OS_WINDOWS */
 
-#ifdef OMPT_SUPPORT
+#if OMPT_SUPPORT
  if ((ompt_status == ompt_status_track_callback) && 
      ompt_callbacks.ompt_callback(ompt_event_thread_end)) {
     int gtid = __kmp_get_gtid();
