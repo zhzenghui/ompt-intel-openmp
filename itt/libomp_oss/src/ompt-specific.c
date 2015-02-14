@@ -60,129 +60,12 @@ ompt_state_t __ompt_get_state_internal(ompt_wait_id_t *ompt_wait_id)
 }
 
 
-
 void *__ompt_get_idle_frame_internal(void)
 {
   kmp_info_t  *ti = ompt_get_thread();
 
   return ti ? ti->th.ompt_thread_info.idle_frame : NULL;
 }
-
-
-#define JMC_DEBUG 1
-
-// Returns either a kmp_team or a ompt_lw_taskteam_t
-// Sets the tid_p to the tid in the kmp_team or -1 for the lwt (tid is always 0 in that case)
-// This is to avoid having multiple similar functions as getting the team is not easy (nested cases)
-void *__ompt_get_team(int depth, int *tid_p){
-  kmp_info_t *thr = ompt_get_thread();
-  if(!thr)
-      return NULL;
-  kmp_team *team = thr->th.th_team;
-  int tid = thr->th.th_info.ds.ds_tid;
-  ompt_lw_taskteam_t *lwt = team->t.ompt_serialized_team_info;
-#ifdef KMP_DEBUG
-  int serializedCt = team->t.t_serialized;
-#endif
-
-
-#if JMC_DEBUG
-  int original_depth = depth; 
-  ompt_lw_taskteam_t  *orig_lwt = lwt;
-  kmp_team *orig_team = team;
-  kmp_taskdata_t  *orig_task = thr->th.th_current_task;
-  ompt_lw_taskteam_t *jmc_lwt = orig_task->td_team->t.ompt_serialized_team_info;
-  kmp_taskdata_t  *taskdata = orig_task;
-#endif
-
-  while(depth > 0){
-
-#if JMC_DEBUG
-    kmp_taskdata_t  *local_taskdata;
-    if (lwt) {
-      local_taskdata = 0; // &lwt->ompt_task_info;
-    } else if (team) {
-      local_taskdata = &team->t.t_implicit_task_taskdata[tid];
-    } else {
-	local_taskdata = NULL;
-    }
-    if (taskdata != local_taskdata) { //  && (jmc_lwt != lwt && lwt != 0)) {
-      printf("taskdata (%p) != local_taskdata (%p) depth = %d orig_depth = %d "
-	     "lwt(%p) jmc_lwt(%p) team(%p) orig_task(%p) orig_lwt (%p) orig_team(%p)\n", 
-              taskdata, local_taskdata, depth, original_depth, 
- 	      lwt, jmc_lwt, team, orig_task, orig_lwt, orig_team);
-    }
-#endif
-
-    if(lwt){
-      lwt = lwt->parent;
-#ifdef KMP_DEBUG
-      serializedCt--;
-#endif
-      if(!lwt) {
-	if (team && team->t.t_parent){
-          tid=team->t.t_master_tid;
-          team=team->t.t_parent;
-#if 0
-          lwt=team->t.ompt_serialized_team_info;
-#ifdef KMP_DEBUG
-          serializedCt = team->t.t_serialized;
-#endif
-#endif
-	} else {
-          return ompt_task_id_none;   
-	}
-      }
-    }else{
-      if(team && team->t.t_parent) {
-#if 0
-#ifdef KMP_DEBUG
-      	KMP_DEBUG_ASSERT2(!serializedCt, "OMPT lwt entries inconsistent!");
-#endif
-#endif
-      	tid=team->t.t_master_tid;
-      	team=team->t.t_parent;
-#if 0
-      	lwt=team->t.ompt_serialized_team_info;
-#ifdef KMP_DEBUG
-      	serializedCt = team->t.t_serialized;
-#endif
-#endif
-      } else {
-        return ompt_task_id_none;   
-      }
-    }
-    if (jmc_lwt) {
-      jmc_lwt = jmc_lwt->parent;
-    } 
-    if (!jmc_lwt && taskdata) { 
-        taskdata = taskdata->td_parent;
-        if (taskdata) {
-          jmc_lwt = taskdata->td_team->t.ompt_serialized_team_info;
-        }
-    }
-    depth--;
-  }
-  if(lwt){
-    *tid_p = -1;
-    if (jmc_lwt != lwt) {
-      printf("lwt result: jmc_lwt (%p) != lwt (%p)\n", jmc_lwt, lwt);
-    }
-    return lwt;
-  }else if(team){
-    *tid_p = tid;
-    kmp_taskdata_t *local_taskdata = &team->t.t_implicit_task_taskdata[tid];
-    if (taskdata != local_taskdata) {
-      printf("team result: taskdata (%p) != local_taskdata (%p)\n", taskdata, local_taskdata);
-    }
-    return team;
-  }else
-    return NULL;
-}
-
-#define VERSION2
-#ifndef VERSION2
-#else /* VERSION2 */
 
 
 ompt_team_info_t *
@@ -277,8 +160,6 @@ int __ompt_get_parallel_team_size_internal(int depth)
   return size;
 }
 
-#endif
-
 
 ompt_thread_id_t __ompt_get_thread_id_internal() 
 {
@@ -309,10 +190,7 @@ __ompt_get_taskinfo(int depth)
       __kmp_threads[ gtid ] -> th.th_current_task;
     ompt_lw_taskteam_t *lwt = NULL;
  
-    if (1 || taskdata && taskdata->td_flags.task_serial != 1) {
-      lwt = taskdata->td_team->t.ompt_serialized_team_info;
-    }
-
+    lwt = taskdata->td_team->t.ompt_serialized_team_info;
     while (depth > 0) {
       if (lwt) {
         lwt = lwt->parent;
@@ -320,10 +198,7 @@ __ompt_get_taskinfo(int depth)
       if (!lwt && taskdata) { 
         taskdata = taskdata->td_parent;
         if (taskdata) {
-          // lwt = taskdata->td_team->t.ompt_serialized_team_info;
-          if (1 || taskdata && taskdata->td_flags.task_serial != 1) {
-            lwt = taskdata->td_team->t.ompt_serialized_team_info;
-          }
+          lwt = taskdata->td_team->t.ompt_serialized_team_info;
         }
       }
       depth--;
