@@ -469,15 +469,18 @@ __kmp_task_start( kmp_int32 gtid, kmp_task_t * task, kmp_taskdata_t * current_ta
     KA_TRACE(10, ("__kmp_task_start(exit): T#%d task=%p\n",
                   gtid, taskdata ) );
 
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT 
     if ((ompt_status == ompt_status_track_callback) &&
       (ompt_callbacks.ompt_callback(ompt_event_task_begin))) {
-        kmp_taskdata_t *parent = current_task->td_parent; 
+        // kmp_taskdata_t *parent = current_task->td_parent; 
+        kmp_taskdata_t *parent = taskdata->td_parent; 
         ompt_callbacks.ompt_callback(ompt_event_task_begin)(
           parent ? parent->ompt_task_info.task_id : ompt_task_id_none,
           parent ? &(parent->ompt_task_info.frame) : NULL,
-          current_task->ompt_task_info.task_id,
-          (void *) task->routine);
+          // current_task->ompt_task_info.task_id,
+          // (void *) task->routine);
+          taskdata->ompt_task_info.task_id,
+          taskdata->ompt_task_info.function); 
     }
 #endif
 
@@ -630,14 +633,11 @@ __kmp_task_finish( kmp_int32 gtid, kmp_task_t *task, kmp_taskdata_t *resumed_tas
    if (ompt_status & ompt_status_track) {
        if ((ompt_status == ompt_status_track_callback) &&
          (ompt_callbacks.ompt_callback(ompt_event_task_end))) {
-           kmp_taskdata_t *parent = taskdata->td_parent;
            ompt_callbacks.ompt_callback(ompt_event_task_end)(
-             parent ? parent->ompt_task_info.task_id : ompt_task_id_none,
-             parent ? &(parent->ompt_task_info.frame) : NULL,
-             taskdata->ompt_task_info.task_id,
-             (void *) task->routine);
+             taskdata->ompt_task_info.task_id);
        }
-       taskdata->ompt_task_info.task_id = ompt_task_id_none;
+       // FIXME johnmc: I this perhaps should be done in free task and ancestors
+       // taskdata->ompt_task_info.task_id = ompt_task_id_none;
    }
 #endif
 
@@ -712,6 +712,9 @@ __kmp_task_finish( kmp_int32 gtid, kmp_task_t *task, kmp_taskdata_t *resumed_tas
     // Free this task and then ancestor tasks if they have no children.
     __kmp_free_task_and_ancestors(gtid, taskdata, thread);
 
+    // FIXME johnmc: I this statement should be before the last one so if an 
+    // asynchronous inquiry peers into the runtime system it doesn't see the freed
+    // task as the current task
     __kmp_threads[ gtid ] -> th.th_current_task = resumed_task; // restore current_task
 
     // TODO: GEH - make sure root team implicit task is initialized properly.
@@ -839,7 +842,11 @@ __kmp_init_implicit_task( ident_t *loc_ref, kmp_info_t *this_thr, kmp_team_t *te
     }
 
 #if OMPT_SUPPORT
-    if (ompt_status & ompt_status_track) {
+#if 0
+    // FIXME: johnmc always initialize support for OMPT
+    if (ompt_status & ompt_status_track) 
+#endif
+    {
       __kmp_task_init_ompt(task, tid);
     }
 #endif

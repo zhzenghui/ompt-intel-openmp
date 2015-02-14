@@ -625,6 +625,11 @@ __kmpc_serialized_parallel(ident_t *loc, kmp_int32 global_tid)
         }
         this_thr -> th.th_dispatch = serial_team->t.t_dispatch;
 
+#if OMPT_SUPPORT
+        ompt_parallel_id_t ompt_parallel_id = __ompt_parallel_id_new(global_tid);
+        __ompt_team_assign_id(serial_team, ompt_parallel_id);
+#endif
+
         KMP_MB();
 
     } else {

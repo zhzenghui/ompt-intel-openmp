@@ -2776,9 +2776,34 @@ __kmp_fork_call(
 
       if ( exec_master == 0 ) {
 #if OMPT_SUPPORT
+
+
+#if 0
+ 	// FIXME OMPT
+        we need to allocate a lightweight task team here and initialize it.
+        we need to make a task begin callback here as well.
+	also, need to make sure we have an implcit task end callback 
+        in GNU parallel stop.
+
+	__ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, microtask, 
+                                ompt_parallel_id);
+	lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
+	exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
+
+	__ompt_lw_taskteam_link(&lw_taskteam, master_th);
+
+	my_task_id = lw_taskteam.ompt_task_info.task_id;
+	if (ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)) {
+	    ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)
+              (ompt_parallel_id, my_task_id);
+	}
+
+#endif
+         
          //TODO: Do we need this here?
          master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
 #endif
+
          // we were called from GNU native code
          KA_TRACE( 20, ("__kmp_fork_call: T#%d serial exit\n", gtid ));
          return FALSE;
