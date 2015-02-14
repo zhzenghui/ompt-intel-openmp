@@ -72,65 +72,79 @@ ompt_team_info_t *
 __ompt_get_teaminfo(int depth, int *size)
 {
   kmp_info_t *thr = ompt_get_thread();
-  if(!thr) return NULL;
 
-  kmp_team *team = thr->th.th_team;
-  ompt_lw_taskteam_t *lwt = team->t.ompt_serialized_team_info;
-#ifdef KMP_DEBUG
-  int serializedCt = team->t.t_serialized;
-#endif
-  
-  while(depth > 0){
-    if(lwt){
-      lwt = lwt->parent;
-#ifdef KMP_DEBUG
-      serializedCt--;
-#endif
-      if(!lwt) {
-	if (team && team->t.t_parent){
-          team=team->t.t_parent;
-#if 0
-          lwt=team->t.ompt_serialized_team_info;
-#ifdef KMP_DEBUG
-          serializedCt = team->t.t_serialized;
-#endif
-#endif
-	} else {
-          return NULL;
-	}
-      }
-    }else{
-      if(team && team->t.t_parent) {
-#if 0
-#ifdef KMP_DEBUG
-      	KMP_DEBUG_ASSERT2(!serializedCt, "OMPT lwt entries inconsistent!");
-#endif
-#endif
-      	team=team->t.t_parent;
-#if 0
-      	lwt=team->t.ompt_serialized_team_info;
-#ifdef KMP_DEBUG
-      	serializedCt = team->t.t_serialized;
-#endif
-#endif
-      } else {
-        return NULL;
-      }
+  if (thr) {
+    kmp_team *team = thr->th.th_team;
+    ompt_lw_taskteam_t *lwt = team->t.ompt_serialized_team_info;
+
+    while(depth > 0){
+      // iterate through lightweight teams
+      if (lwt) lwt = lwt->parent;
+
+      // iterate through heavyweight teams
+      // once the lightweight teams are exhausted
+      if (!lwt && team) team=team->t.t_parent;
+
+      depth--;
     }
-    depth--;
-  }
 
-  if (lwt)  {
-    if (size) *size = 1;
-    return &lwt->ompt_team_info;
-  }
+    if (lwt)  {
+      // lightweight teams have one task
+      if (size) *size = 1;
 
-  if (team) {
-    if (size) *size = team->t.t_nproc;
-    return &team->t.ompt_team_info;
+      // return team info for lightweight team
+      return &lwt->ompt_team_info;
+    }
+
+    if (team) {
+      // extract size from heavyweight team 
+      if (size) *size = team->t.t_nproc;
+
+      // return team info for heavyweight team
+      return &team->t.ompt_team_info;
+    }
   }
 
   return NULL;
+}
+
+
+ompt_task_info_t *
+__ompt_get_taskinfo(int depth) 
+{
+  ompt_task_info_t *info = NULL;
+
+  int gtid = __kmp_get_gtid();
+
+  if(gtid >= 0) {
+    kmp_info_t *thr = ompt_get_thread_gtid(gtid);
+    if (thr == NULL) return NULL;
+
+    kmp_taskdata_t  *taskdata = 
+      __kmp_threads[ gtid ] -> th.th_current_task;
+    ompt_lw_taskteam_t *lwt = NULL;
+ 
+    lwt = taskdata->td_team->t.ompt_serialized_team_info;
+    while (depth > 0) {
+
+      if (lwt) lwt = lwt->parent;
+
+      if (!lwt && taskdata) { 
+        taskdata = taskdata->td_parent;
+        if (taskdata) {
+          lwt = taskdata->td_team->t.ompt_serialized_team_info;
+        }
+      }
+      depth--;
+    }    
+
+    if(lwt){
+      info = &lwt->ompt_task_info;
+    } else if (taskdata) {
+      info = &taskdata->ompt_task_info;
+    }
+  }
+  return info;
 }
 
 
@@ -173,44 +187,6 @@ ompt_thread_id_t __ompt_get_thread_id_internal()
   assert(id >= 0); 
 
   return GTID_TO_OMPT_THREAD_ID(id);
-}
-
-ompt_task_info_t *
-__ompt_get_taskinfo(int depth) 
-{
-  ompt_task_info_t *info = NULL;
-
-  int gtid = __kmp_get_gtid();
-
-  if(gtid >= 0) {
-    kmp_info_t *thr = ompt_get_thread_gtid(gtid);
-    if (thr == NULL) return NULL;
-
-    kmp_taskdata_t  *taskdata = 
-      __kmp_threads[ gtid ] -> th.th_current_task;
-    ompt_lw_taskteam_t *lwt = NULL;
- 
-    lwt = taskdata->td_team->t.ompt_serialized_team_info;
-    while (depth > 0) {
-      if (lwt) {
-        lwt = lwt->parent;
-      } 
-      if (!lwt && taskdata) { 
-        taskdata = taskdata->td_parent;
-        if (taskdata) {
-          lwt = taskdata->td_team->t.ompt_serialized_team_info;
-        }
-      }
-      depth--;
-    }    
-
-    if(lwt){
-      info = &lwt->ompt_task_info;
-    } else if (taskdata) {
-      info = &taskdata->ompt_task_info;
-    }
-  }
-  return info;
 }
 
 
