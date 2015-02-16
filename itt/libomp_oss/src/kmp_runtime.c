@@ -3346,29 +3346,6 @@ __kmp_join_call(ident_t *loc, int gtid
    ompt_parallel_id_t parallel_id = team->t.ompt_team_info.parallel_id;
 #endif
 
-#if OMPT_SUPPORT
-   ompt_parallel_info_t parallel_info;
-   if ((ompt_status == ompt_status_track_callback) &&
-       ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
-     int  tid = __kmp_tid_from_gtid( gtid );
-     parallel_id; 
-#if 0     
-     parallel_info =  (ompt_parallel_info_t)
-       {
-         .parent_task_id = team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
-         .parent_task_frame = &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame),
-         .parallel_id = team->t.ompt_team_info.parallel_id,
-         .parallel_function = (void *) team->t.t_pkfn
-       };
-#else
-    parallel_info.parent_task_id = team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id;
-    parallel_info.parent_task_frame = &(team->t.t_implicit_task_taskdata[tid].ompt_task_info.frame);
-    parallel_info.parallel_id = team->t.ompt_team_info.parallel_id;
-    parallel_info.parallel_function = (void *) team->t.t_pkfn;
-#endif
-   }
-#endif
-
 #if USE_ITT_BUILD
    if ( __itt_stack_caller_create_ptr ) {
       __kmp_itt_stack_caller_destroy( (__itt_caller)team->t.t_stack_id ); // destroy the stack stitching id after join barrier
@@ -3521,8 +3498,9 @@ __kmp_join_call(ident_t *loc, int gtid
 #if OMPT_SUPPORT
    if ((ompt_status == ompt_status_track_callback) &&
        ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
-       ompt_callbacks.ompt_callback(ompt_event_parallel_end)
-	 (parallel_id, master_th->th.th_current_task->ompt_task_info.task_id);
+      ompt_task_info_t *task_info = __ompt_get_taskinfo(0);
+      ompt_callbacks.ompt_callback(ompt_event_parallel_end)
+        (parallel_id, task_info->task_id);
    }
 #endif
 
