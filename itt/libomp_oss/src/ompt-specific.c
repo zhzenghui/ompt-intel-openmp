@@ -49,7 +49,7 @@
 //       kept consistent
 //----------------------------------------------------------
 
-static ompt_team_info_t *
+ompt_team_info_t *
 __ompt_get_teaminfo(int depth, int *size)
 {
   kmp_info_t *thr = ompt_get_thread();
@@ -90,7 +90,7 @@ __ompt_get_teaminfo(int depth, int *size)
 }
 
 
-static ompt_task_info_t *
+ompt_task_info_t *
 __ompt_get_taskinfo(int depth) 
 {
   ompt_task_info_t *info = NULL;
@@ -294,11 +294,11 @@ __ompt_get_parallel_team_size_internal(int depth)
 
 void 
 __ompt_lw_taskteam_init(ompt_lw_taskteam_t *lwt, kmp_info_t *thr, 
-                        int gtid, microtask_t microtask, 
+                        int gtid, void *microtask, 
                         ompt_parallel_id_t ompt_pid)
 {
   lwt->ompt_team_info.parallel_id = ompt_pid;
-  lwt->ompt_team_info.microtask = (void *) microtask;
+  lwt->ompt_team_info.microtask = microtask;
   lwt->ompt_task_info.task_id = 0;
   lwt->ompt_task_info.frame.reenter_runtime_frame = 0;
   lwt->ompt_task_info.frame.exit_runtime_frame = 0;
@@ -315,9 +315,12 @@ void __ompt_lw_taskteam_link(ompt_lw_taskteam_t *lwt,  kmp_info_t *thr)
 }
 
 
-void __ompt_lw_taskteam_unlink(ompt_lw_taskteam_t *lwt, kmp_info_t *thr)
+ompt_lw_taskteam_t *
+__ompt_lw_taskteam_unlink(kmp_info_t *thr)
 {
-  thr->th.th_team->t.ompt_serialized_team_info = lwt->parent;
+  ompt_lw_taskteam_t *lwtask= thr->th.th_team->t.ompt_serialized_team_info;
+  if (lwtask) thr->th.th_team->t.ompt_serialized_team_info = lwtask->parent;
+  return lwtask;
 }
 
 

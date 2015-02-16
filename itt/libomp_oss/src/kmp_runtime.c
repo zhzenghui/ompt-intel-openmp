@@ -2632,7 +2632,7 @@ __kmp_fork_call(
             ompt_lw_taskteam_t lw_taskteam;
 
             if (ompt_status & ompt_status_track) {
-                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, microtask, ompt_parallel_id);
+                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, (void *) microtask, ompt_parallel_id);
                 lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
                 exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 
@@ -2664,7 +2664,7 @@ __kmp_fork_call(
       	        if (ompt_callbacks.ompt_callback (ompt_event_implicit_task_end))
                     ompt_callbacks.ompt_callback (ompt_event_implicit_task_end) (ompt_parallel_id, ompt_task_id);
 
-                __ompt_lw_taskteam_unlink(&lw_taskteam, master_th);
+                __ompt_lw_taskteam_unlink(master_th);
                 // reset clear the task id only after unlinking the task
                 lw_taskteam.ompt_task_info.task_id = ompt_task_id_none;
 
@@ -2775,33 +2775,19 @@ __kmp_fork_call(
       __kmpc_serialized_parallel(loc, gtid);
 
       if ( exec_master == 0 ) {
-#if OMPT_SUPPORT
-
-
-#if 0
- 	// FIXME OMPT
-        we need to allocate a lightweight task team here and initialize it.
-        we need to make a task begin callback here as well.
-	also, need to make sure we have an implcit task end callback 
-        in GNU parallel stop.
-
-	__ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, microtask, 
-                                ompt_parallel_id);
-	lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
-	exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
-
-	__ompt_lw_taskteam_link(&lw_taskteam, master_th);
-
-	my_task_id = lw_taskteam.ompt_task_info.task_id;
+#if OMPT_SUPPORT && OMPT_TRACE
+        ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t *) 
+           __kmp_allocate(sizeof(ompt_lw_taskteam_t));
+	__ompt_lw_taskteam_init(lwt, master_th, gtid, (void *) microtask, ompt_parallel_id);
+	lwt->ompt_task_info.task_id = __ompt_task_id_new(gtid);
+	lwt->ompt_task_info.frame.exit_runtime_frame = 0;
+	__ompt_lw_taskteam_link(lwt, master_th);
+	my_task_id = lwt->ompt_task_info.task_id;
 	if (ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)) {
 	    ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)
               (ompt_parallel_id, my_task_id);
 	}
-
-#endif
-         
-         //TODO: Do we need this here?
-         master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
+        master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
 #endif
 
          // we were called from GNU native code
@@ -2822,7 +2808,7 @@ __kmp_fork_call(
             ompt_lw_taskteam_t lw_taskteam;
 
             if (ompt_status & ompt_status_track) {
-                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, microtask, ompt_parallel_id);
+                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, (void *) microtask, ompt_parallel_id);
                 lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
                 exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 
@@ -2852,7 +2838,7 @@ __kmp_fork_call(
                 if (ompt_callbacks.ompt_callback (ompt_event_implicit_task_end))
                     ompt_callbacks.ompt_callback (ompt_event_implicit_task_end) (ompt_parallel_id, my_task_id);
 
-                __ompt_lw_taskteam_unlink(&lw_taskteam, master_th);
+                __ompt_lw_taskteam_unlink(master_th);
                 // reset clear the task id only after unlinking the task
                 lw_taskteam.ompt_task_info.task_id = ompt_task_id_none;
 
@@ -2911,7 +2897,7 @@ __kmp_fork_call(
             ompt_lw_taskteam_t lw_taskteam;
 
             if (ompt_status & ompt_status_track) {
-                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, microtask, ompt_parallel_id);
+                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, (void *) microtask, ompt_parallel_id);
                 lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
                 exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 
@@ -2946,7 +2932,7 @@ __kmp_fork_call(
                     ompt_callbacks.ompt_callback(ompt_event_implicit_task_end)(my_parallel_id, my_task_id);
                 }
 
-                __ompt_lw_taskteam_unlink(&lw_taskteam, master_th);
+                __ompt_lw_taskteam_unlink(master_th);
                 // reset clear the task id only after unlinking the task
                 lw_taskteam.ompt_task_info.task_id = ompt_task_id_none;
                 
@@ -3355,16 +3341,6 @@ __kmp_join_call(ident_t *loc, int gtid
       __kmp_internal_join( loc, gtid, team );
    }
    KMP_MB();
-
-#if 0 && OMPT_SUPPORT
-   if ((ompt_status == ompt_status_track_callback) &&
-       ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
-     int  tid = __kmp_tid_from_gtid( gtid );
-     ompt_callbacks.ompt_callback(ompt_event_parallel_end)
-       (team->t.ompt_team_info.parallel_id,
-        team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id);
-   }
-#endif
 
 #if OMPT_SUPPORT
    ompt_parallel_id_t parallel_id = team->t.ompt_team_info.parallel_id;
