@@ -2782,6 +2782,7 @@ __kmp_fork_call(
       __kmpc_serialized_parallel(loc, gtid);
 
       if ( exec_master == 0 ) {
+#if OMPT_SUPPORT
         ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t *) 
            __kmp_allocate(sizeof(ompt_lw_taskteam_t));
 	__ompt_lw_taskteam_init(lwt, master_th, gtid, (void *) microtask, ompt_parallel_id);
@@ -2789,7 +2790,7 @@ __kmp_fork_call(
 	lwt->ompt_task_info.frame.exit_runtime_frame = 0;
 	__ompt_lw_taskteam_link(lwt, master_th);
 
-#if OMPT_SUPPORT && OMPT_TRACE
+#if OMPT_TRACE
 	my_task_id = lwt->ompt_task_info.task_id;
 	if (ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)) {
 	    ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)
@@ -2798,6 +2799,7 @@ __kmp_fork_call(
 #endif
 
         master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
+#endif
 
          // we were called from GNU native code
          KA_TRACE( 20, ("__kmp_fork_call: T#%d serial exit\n", gtid ));
