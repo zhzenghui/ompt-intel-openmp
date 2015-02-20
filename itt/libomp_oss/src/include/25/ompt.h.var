@@ -78,7 +78,7 @@
 	macro (ompt_event_parallel_end,             ompt_parallel_callback_t,       2) /* parallel end */               \
 															\
 	macro (ompt_event_task_begin,               ompt_new_task_callback_t,       3) /* task begin */			\
-	macro (ompt_event_task_end,                 ompt_new_task_callback_t,       4) /* task destroy */		\
+	macro (ompt_event_task_end,                 ompt_task_callback_t,       4) /* task destroy */		\
 						  									\
 	macro (ompt_event_thread_begin,             ompt_thread_type_callback_t,    5) /* thread begin */		\
 	macro (ompt_event_thread_end,               ompt_thread_type_callback_t,    6) /* thread end */			\

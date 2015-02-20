@@ -85,8 +85,8 @@
  | Optional Events (synchronous events) 
  +--------------------------------------------------------------------------*/
 
-#define ompt_event_implicit_task_begin_implemented      ompt_event_MAY_ALWAYS
-#define ompt_event_implicit_task_end_implemented        ompt_event_MAY_ALWAYS
+#define ompt_event_implicit_task_begin_implemented      ompt_event_MAY_ALWAYS_TRACE
+#define ompt_event_implicit_task_end_implemented        ompt_event_MAY_ALWAYS_TRACE
 
 #define ompt_event_initial_task_begin_implemented       ompt_event_UNIMPLEMENTED
 #define ompt_event_initial_task_end_implemented         ompt_event_UNIMPLEMENTED
@@ -119,7 +119,7 @@
 #define ompt_event_taskgroup_begin_implemented          ompt_event_UNIMPLEMENTED
 #define ompt_event_taskgroup_end_implemented            ompt_event_UNIMPLEMENTED
 
-#define ompt_event_release_nest_lock_prev_implemented   ompt_event_MAY_ALWAYS_BLAME
+#define ompt_event_release_nest_lock_prev_implemented   ompt_event_MAY_ALWAYS_TRACE
 #define ompt_event_wait_lock_implemented                ompt_event_UNIMPLEMENTED
 #define ompt_event_wait_nest_lock_implemented           ompt_event_UNIMPLEMENTED
 #define ompt_event_wait_critical_implemented            ompt_event_UNIMPLEMENTED
