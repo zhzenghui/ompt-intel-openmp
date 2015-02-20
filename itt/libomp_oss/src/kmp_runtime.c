@@ -2789,16 +2789,6 @@ __kmp_fork_call(
 	lwt->ompt_task_info.task_id = __ompt_task_id_new(gtid);
 	lwt->ompt_task_info.frame.exit_runtime_frame = 0;
 	__ompt_lw_taskteam_link(lwt, master_th);
-
-#if OMPT_TRACE
-	my_task_id = lwt->ompt_task_info.task_id;
-	if (ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)) {
-	    ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)
-              (ompt_parallel_id, my_task_id);
-	}
-#endif
-
-        master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
 #endif
 
          // we were called from GNU native code
