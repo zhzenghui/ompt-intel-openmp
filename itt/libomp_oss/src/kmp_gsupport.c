@@ -280,6 +280,7 @@ __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
     task(data);
 }
 
+void* __kmp_GOMP_microtask_wrapper_task = (void*)__kmp_GOMP_microtask_wrapper;
 
 #ifdef KMP_DEBUG
 static

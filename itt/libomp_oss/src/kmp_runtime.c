@@ -2515,6 +2515,9 @@ __kmp_setup_icv_copy( kmp_team_t *team, int new_nproc,
 #endif // OMP_30_ENABLED
       ); // forward declaration
 
+// this is the address of the wrapper task, defined in kmp_gsupport.c.
+extern void* __kmp_GOMP_microtask_wrapper_task;
+
 /* most of the work for a fork */
 /* return true if we really went parallel, false if serialized */
 int
@@ -2592,9 +2595,24 @@ __kmp_fork_call(
     if ((ompt_status == ompt_status_track_callback) &&
 	ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
       int team_size = master_set_numthreads;
+      // if this is a fork from the GOMP support, the true task is inside this wrapper
+      if ((void*)microtask == __kmp_GOMP_microtask_wrapper_task) {
+        va_list copy; // make a copy of the valist, so we can modify it by reading it
+#if (KMP_ARCH_X86_64 || KMP_ARCH_ARM) && KMP_OS_LINUX
+        va_copy(copy, *ap);
+#else
+        va_copy(copy, ap);
+#endif
+        void* true_task = va_arg(copy,void*); // the first argument is the real task
+        va_end(copy); // dispose of our copied list
+        ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
+	  (ompt_task_id, ompt_frame, ompt_parallel_id, 
+	   team_size, true_task);
+      } else {
       ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
 	(ompt_task_id, ompt_frame, ompt_parallel_id, 
 	 team_size, (void *) microtask);
+      }
     }
 #endif
 
