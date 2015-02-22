@@ -278,7 +278,7 @@ __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
   void *data)
 {
     kmp_info_t *thr = __kmp_threads[*gtid];
-#if OMPT_SUPPORT
+#if OMPT_SUPPORT && OMPT_TRACE 
     if (ompt_status & ompt_status_track) {
         ompt_parallel_id_t ompt_parallel_id = __ompt_parallel_id_new(*gtid);
         ompt_task_id_t ompt_task_id = __ompt_get_task_id_internal(0);
@@ -294,7 +294,7 @@ __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
     }
 #endif 
     task(data);
-#if OMPT_SUPPORT 
+#if OMPT_SUPPORT && OMPT_TRACE 
     if (ompt_status & ompt_status_track) {
         ompt_parallel_id_t ompt_parallel_id = __ompt_parallel_id_new(*gtid);
         ompt_task_id_t ompt_task_id = __ompt_get_task_id_internal(0);
@@ -306,7 +306,6 @@ __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
         thr->th.ompt_thread_info.state = ompt_state_idle; 
     }
 #endif 
-
 }
 
 #ifdef KMP_DEBUG
