@@ -277,10 +277,57 @@ void
 __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
   void *data)
 {
-    task(data);
-}
+#if OMPT_SUPPORT 
+    kmp_info_t *thr; 
+    ompt_frame_t *ompt_frame;
+    ompt_state_t enclosing_state;
 
-void* __kmp_GOMP_microtask_wrapper_task = (void*)__kmp_GOMP_microtask_wrapper;
+    if (ompt_status & ompt_status_track) {
+#if OMPT_TRACE 
+        ompt_parallel_id_t ompt_parallel_id = __ompt_parallel_id_new(*gtid);
+        ompt_task_id_t ompt_task_id = __ompt_get_task_id_internal(0);
+
+       // loop callback
+        if ((ompt_status == ompt_status_track_callback) &&
+             ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
+            int team_size = 1;
+            ompt_callbacks.ompt_callback(ompt_event_loop_begin)
+              (ompt_parallel_id, ompt_task_id, (void *) task);
+        }
+#endif 
+	// get pointer to thread data structure
+        thr = __kmp_threads[*gtid]; 
+
+	// save enclosing task state; set current state for task
+        enclosing_state = thr->th.ompt_thread_info.state;
+        thr->th.ompt_thread_info.state = ompt_state_work_parallel; 
+
+	// set task frame
+        ompt_frame = __ompt_get_task_frame_internal(0);
+	ompt_frame->exit_runtime_frame = __builtin_frame_address(0);
+
+    }
+#endif 
+    task(data);
+#if OMPT_SUPPORT 
+    if (ompt_status & ompt_status_track) {
+	// clear task frame
+	ompt_frame->exit_runtime_frame = NULL;
+
+ 	// restore enclosing state
+        thr->th.ompt_thread_info.state = enclosing_state;
+#if OMPT_TRACE 
+        ompt_parallel_id_t ompt_parallel_id = __ompt_parallel_id_new(*gtid);
+        ompt_task_id_t ompt_task_id = __ompt_get_task_id_internal(0);
+        if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) {
+            ompt_task_info_t *task_info = __ompt_get_taskinfo(0);
+            ompt_callbacks.ompt_callback(ompt_event_loop_end)
+            (ompt_parallel_id, ompt_task_id);
+        }
+#endif 
+    }
+#endif 
+}
 
 #ifdef KMP_DEBUG
 static
@@ -296,10 +343,38 @@ __kmp_GOMP_parallel_microtask_wrapper(int *gtid, int *npr,
     KMP_DISPATCH_INIT(loc, *gtid, schedule, start, end, incr, chunk_size,
       schedule != kmp_sch_static);
 
+#if OMPT_SUPPORT 
+    kmp_info_t *thr;
+    ompt_frame_t *ompt_frame;
+    ompt_state_t enclosing_state;
+
+    if (ompt_status & ompt_status_track) {
+ 	thr = __kmp_threads[*gtid];
+	// save enclosing task state; set current state for task
+        enclosing_state = thr->th.ompt_thread_info.state;
+        thr->th.ompt_thread_info.state = ompt_state_work_parallel; 
+
+	// set task frame
+        ompt_frame = __ompt_get_task_frame_internal(0);
+	ompt_frame->exit_runtime_frame = __builtin_frame_address(0);
+    }
+#endif
+
     //
     // Now invoke the microtask.
     //
+
     task(data);
+
+#if OMPT_SUPPORT 
+    if (ompt_status & ompt_status_track) {
+	// clear task frame
+	ompt_frame->exit_runtime_frame = NULL;
+	
+	// reset enclosing state
+        thr->th.ompt_thread_info.state = enclosing_state;
+    }
+#endif 
 }
 
 
@@ -307,7 +382,7 @@ __kmp_GOMP_parallel_microtask_wrapper(int *gtid, int *npr,
 static
 #endif /* KMP_DEBUG */
 void
-__kmp_GOMP_fork_call(ident_t *loc, int gtid, microtask_t wrapper, int argc,...)
+__kmp_GOMP_fork_call(ident_t *loc, int gtid, void (*unwrapped_task)(void *), microtask_t wrapper, int argc,...)
 {
     int rc;
 
@@ -322,7 +397,7 @@ __kmp_GOMP_fork_call(ident_t *loc, int gtid, microtask_t wrapper, int argc,...)
       ompt_task_info.frame.reenter_runtime_frame = NULL;
 #endif
 
-    rc = __kmp_fork_call(loc, gtid, FALSE, argc, wrapper, __kmp_invoke_task_func,
+    rc = __kmp_fork_call(loc, gtid, FALSE, argc, VOLATILE_CAST(microtask_t) unwrapped_task, wrapper, __kmp_invoke_task_func,
 #if (KMP_ARCH_X86_64 || KMP_ARCH_ARM) && KMP_OS_LINUX
       &ap
 #else
@@ -346,6 +421,16 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_START)(void (*task)(void *), void *data, unsi
     int gtid = __kmp_entry_gtid();
     kmp_info_t *thr = __kmp_threads[gtid];
 
+
+#if OMPT_SUPPORT
+    ompt_frame_t *parent_frame;
+
+    if (ompt_status & ompt_status_track) {
+      parent_frame = __ompt_get_task_frame_internal(0);
+      parent_frame->reenter_runtime_frame = __builtin_frame_address(0);
+    }
+#endif
+
     MKLOC(loc, "GOMP_parallel_start");
     KA_TRACE(20, ("GOMP_parallel_start: T#%d\n", gtid));
 
@@ -353,7 +438,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_START)(void (*task)(void *), void *data, unsi
         if (num_threads != 0) {
             __kmp_push_num_threads(&loc, gtid, num_threads);
         }
-        __kmp_GOMP_fork_call(&loc, gtid,
+        __kmp_GOMP_fork_call(&loc, gtid, task,
           (microtask_t)__kmp_GOMP_microtask_wrapper, 2, task, data);
     }
     else {
@@ -364,6 +449,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_START)(void (*task)(void *), void *data, unsi
          ompt_parallel_id_t ompt_parallel_id = __ompt_parallel_id_new(gtid);
          ompt_task_id_t ompt_task_id = __ompt_get_task_id_internal(0);
          ompt_frame_t  *ompt_frame = __ompt_get_task_frame_internal(0);
+	 ompt_frame->exit_runtime_frame = NULL;
 
          // parallel region callback
          if ((ompt_status == ompt_status_track_callback) &&
@@ -384,17 +470,30 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_START)(void (*task)(void *), void *data, unsi
 #endif 
     }
 
-#if OMPT_SUPPORT && OMPT_TRACE 
+#if OMPT_SUPPORT 
     if (ompt_status & ompt_status_track) {
-      ompt_team_info_t *team_info = __ompt_get_teaminfo(0, NULL);
+#if OMPT_TRACE 
       ompt_task_info_t *task_info = __ompt_get_taskinfo(0);
+      ompt_team_info_t *team_info = __ompt_get_teaminfo(0, NULL);
       //
       // implicit task callback
       if (ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)) {
           ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)
             (team_info->parallel_id, task_info->task_id);
       }
+      // The main thread just calls the task directly, so issue a loop event now too
+      // loop callback
+      if (ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
+          ompt_callbacks.ompt_callback(ompt_event_loop_begin)
+            (team_info->parallel_id, task_info->task_id, (void*)task);
+      }
       thr->th.ompt_thread_info.state = ompt_state_work_parallel;
+#endif 
+#if 0
+      ompt_frame_t  *ompt_frame = &task_info->frame;
+      ompt_frame->exit_runtime_frame = NULL;
+#endif
+      parent_frame->reenter_runtime_frame = NULL;
     }
 #endif 
 }
@@ -410,15 +509,36 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void)
     KA_TRACE(20, ("GOMP_parallel_end: T#%d\n", gtid));
 
 
-#if OMPT_SUPPORT 
-    ompt_parallel_id_t parallel_id;
+#if OMPT_SUPPORT
+#if 0
+    ompt_frame_t *parent_frame;
 
     if (ompt_status & ompt_status_track) {
+      parent_frame = __ompt_get_task_frame_internal(1);
+      parent_frame->reenter_runtime_frame = __builtin_frame_address(0);
+    }
+#endif
+#endif
+
+
+#if OMPT_SUPPORT 
+    ompt_parallel_id_t parallel_id;
+    ompt_frame_t  *ompt_frame = NULL;
+
+    if (ompt_status & ompt_status_track) {
+      ompt_frame = __ompt_get_task_frame_internal(0);
+      ompt_frame->exit_runtime_frame = __builtin_frame_address(0);
       ompt_team_info_t *team_info = __ompt_get_teaminfo(0, NULL);
       parallel_id = team_info->parallel_id;
 #if OMPT_TRACE 
       {
         ompt_task_info_t *task_info = __ompt_get_taskinfo(0);
+      // loop callback
+        if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) {
+            ompt_callbacks.ompt_callback(ompt_event_loop_end)
+            (team_info->parallel_id, task_info->task_id);
+        }
+      // task callback
         if (ompt_callbacks.ompt_callback(ompt_event_implicit_task_end)) {
           ompt_callbacks.ompt_callback(ompt_event_implicit_task_end)
             (parallel_id, task_info->task_id);
@@ -450,6 +570,10 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void)
           }
           // FIXME johnmc - serial is not right if we are in a nested region. 
           thr->th.ompt_thread_info.state = ompt_state_work_serial; 
+          ompt_frame->exit_runtime_frame = NULL;
+#if 0
+          parent_frame->reenter_runtime_frame = NULL;
+#endif
         }
 #endif 
 
@@ -756,7 +880,7 @@ LOOP_NEXT_ULL(xexpand(KMP_API_NAME_GOMP_LOOP_ULL_ORDERED_RUNTIME_NEXT), \
             if (num_threads != 0) {                                          \
                 __kmp_push_num_threads(&loc, gtid, num_threads);             \
             }                                                                \
-            __kmp_GOMP_fork_call(&loc, gtid,                                 \
+            __kmp_GOMP_fork_call(&loc, gtid, task,                           \
               (microtask_t)__kmp_GOMP_parallel_microtask_wrapper, 9,         \
               task, data, num_threads, &loc, (schedule), lb,                 \
               (str > 0) ? (ub - 1) : (ub + 1), str, chunk_sz);               \
@@ -957,7 +1081,7 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_SECTIONS_START)(void (*task) (void *), void *
         if (num_threads != 0) {
             __kmp_push_num_threads(&loc, gtid, num_threads);
         }
-        __kmp_GOMP_fork_call(&loc, gtid,
+        __kmp_GOMP_fork_call(&loc, gtid, task,
           (microtask_t)__kmp_GOMP_parallel_microtask_wrapper, 9, task, data,
           num_threads, &loc, kmp_nm_dynamic_chunked, (kmp_int)1,
           (kmp_int)count, (kmp_int)1, (kmp_int)1);

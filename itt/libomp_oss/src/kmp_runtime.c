@@ -2528,6 +2528,7 @@ __kmp_fork_call(
       // 1 - Intel code, master invokes microtask
       // 2 - MS native code, use special invoker
       kmp_int32   argc,
+      microtask_t unwrapped_task,
       microtask_t microtask,
       launch_t    invoker,
       /* TODO: revert workaround for Intel(R) 64 tracker #96 */
@@ -2596,23 +2597,9 @@ __kmp_fork_call(
 	ompt_callbacks.ompt_callback(ompt_event_parallel_begin)) {
       int team_size = master_set_numthreads;
       // if this is a fork from the GOMP support, the true task is inside this wrapper
-      if ((void*)microtask == __kmp_GOMP_microtask_wrapper_task) {
-        va_list copy; // make a copy of the valist, so we can modify it by reading it
-#if (KMP_ARCH_X86_64 || KMP_ARCH_ARM) && KMP_OS_LINUX
-        va_copy(copy, *ap);
-#else
-        va_copy(copy, ap);
-#endif
-        void* true_task = va_arg(copy,void*); // the first argument is the real task
-        va_end(copy); // dispose of our copied list
-        ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
-	  (ompt_task_id, ompt_frame, ompt_parallel_id, 
-	   team_size, true_task);
-      } else {
       ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
 	(ompt_task_id, ompt_frame, ompt_parallel_id, 
-	 team_size, (void *) microtask);
-      }
+	 team_size, (void *) unwrapped_task);
     }
 #endif
 
@@ -2795,22 +2782,14 @@ __kmp_fork_call(
       __kmpc_serialized_parallel(loc, gtid);
 
       if ( exec_master == 0 ) {
+#if OMPT_SUPPORT
         ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t *) 
            __kmp_allocate(sizeof(ompt_lw_taskteam_t));
 	__ompt_lw_taskteam_init(lwt, master_th, gtid, (void *) microtask, ompt_parallel_id);
 	lwt->ompt_task_info.task_id = __ompt_task_id_new(gtid);
 	lwt->ompt_task_info.frame.exit_runtime_frame = 0;
 	__ompt_lw_taskteam_link(lwt, master_th);
-
-#if OMPT_SUPPORT && OMPT_TRACE
-	my_task_id = lwt->ompt_task_info.task_id;
-	if (ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)) {
-	    ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)
-              (ompt_parallel_id, my_task_id);
-	}
 #endif
-
-        master_th->th.ompt_thread_info.state = ompt_state_work_parallel;
 
          // we were called from GNU native code
          KA_TRACE( 20, ("__kmp_fork_call: T#%d serial exit\n", gtid ));
@@ -8422,7 +8401,8 @@ __kmp_teams_master( microtask_t microtask, int gtid )
    this_thr->th.th_set_nproc = this_thr->th.th_set_nth_teams;
    __kmp_fork_call( loc, gtid, TRUE,
          team->t.t_argc,
-         microtask,
+         microtask, // "unwrapped" task
+         microtask, // "wrapped" task
          VOLATILE_CAST(launch_t) __kmp_invoke_task_func,
          NULL );
    __kmp_join_call( loc, gtid, 1 ); // AC: last parameter "1" eliminates join barrier which won't work because

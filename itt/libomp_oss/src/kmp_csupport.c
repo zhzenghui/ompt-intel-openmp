@@ -317,7 +317,8 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     __kmp_fork_call( loc, gtid, TRUE,
             argc,
-            VOLATILE_CAST(microtask_t) microtask,
+            VOLATILE_CAST(microtask_t) microtask, // "unwrapped" task
+            VOLATILE_CAST(microtask_t) microtask, // "wrapped" task
             VOLATILE_CAST(launch_t)    __kmp_invoke_task_func,
 /* TODO: revert workaround for Intel(R) 64 tracker #96 */
 #if (KMP_ARCH_X86_64 || KMP_ARCH_ARM) && KMP_OS_LINUX
@@ -388,7 +389,8 @@ __kmpc_fork_teams(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     __kmp_fork_call( loc, gtid, TRUE,
             argc,
-            VOLATILE_CAST(microtask_t) __kmp_teams_master,
+            VOLATILE_CAST(microtask_t) microtask,          // "unwrapped" task
+            VOLATILE_CAST(microtask_t) __kmp_teams_master, // "wrapped" task
             VOLATILE_CAST(launch_t)    __kmp_invoke_teams_master,
 #if (KMP_ARCH_X86_64 || KMP_ARCH_ARM) && KMP_OS_LINUX
             &ap
