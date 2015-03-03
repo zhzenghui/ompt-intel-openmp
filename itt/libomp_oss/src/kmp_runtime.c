@@ -2637,7 +2637,7 @@ __kmp_fork_call(
             ompt_lw_taskteam_t lw_taskteam;
 
             if (ompt_status & ompt_status_track) {
-                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, (void *) microtask, ompt_parallel_id);
+                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, (void *) unwrapped_task, ompt_parallel_id);
                 lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
                 exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 
@@ -2690,6 +2690,9 @@ __kmp_fork_call(
          return TRUE;
       }
       parent_team->t.t_pkfn  = microtask;
+#if OMPT_SUPPORT
+      parent_team->t.ompt_unwrapped_pkfn = unwrapped_task;
+#endif
       parent_team->t.t_invoke = invoker;
       KMP_TEST_THEN_INC32( (kmp_int32*) &root->r.r_in_parallel );
       parent_team->t.t_active_level ++;
@@ -2785,7 +2788,7 @@ __kmp_fork_call(
 #if OMPT_SUPPORT
         ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t *) 
            __kmp_allocate(sizeof(ompt_lw_taskteam_t));
-	__ompt_lw_taskteam_init(lwt, master_th, gtid, (void *) microtask, ompt_parallel_id);
+	__ompt_lw_taskteam_init(lwt, master_th, gtid, (void *) unwrapped_task, ompt_parallel_id);
 	lwt->ompt_task_info.task_id = __ompt_task_id_new(gtid);
 	lwt->ompt_task_info.frame.exit_runtime_frame = 0;
 	__ompt_lw_taskteam_link(lwt, master_th);
@@ -2809,7 +2812,7 @@ __kmp_fork_call(
             ompt_lw_taskteam_t lw_taskteam;
 
             if (ompt_status & ompt_status_track) {
-                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, (void *) microtask, ompt_parallel_id);
+                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, (void *) unwrapped_task, ompt_parallel_id);
                 lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
                 exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 
@@ -2902,7 +2905,7 @@ __kmp_fork_call(
             ompt_lw_taskteam_t lw_taskteam;
 
             if (ompt_status & ompt_status_track) {
-                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, (void *) microtask, ompt_parallel_id);
+                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, (void *) unwrapped_task, ompt_parallel_id);
                 lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
                 exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 
@@ -3115,6 +3118,9 @@ __kmp_fork_call(
 
    team->t.t_parent     = parent_team;
    TCW_SYNC_PTR(team->t.t_pkfn, microtask);
+#if OMPT_SUPPORT
+   TCW_SYNC_PTR(team->t.ompt_unwrapped_pkfn, unwrapped_task);
+#endif
    team->t.t_invoke     = invoker;  /* TODO move this to root, maybe */
    team->t.t_ident      = loc;
 #if OMP_30_ENABLED
