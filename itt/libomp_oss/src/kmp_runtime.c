@@ -4263,19 +4263,13 @@ __kmp_initialize_root( kmp_root_t *root )
    /* allocate the root team structure */
    KF_TRACE( 10, ( "__kmp_initialize_root: before root_team\n" ) );
 
-#if OMPT_SUPPORT
-   int gtid = __kmp_gtid_get_specific();
-   kmp_info_t *ti = ompt_get_thread_gtid(gtid);
-   ompt_parallel_id_t ompt_parallel_id_1 = 0; // __ompt_parallel_id_new(gtid);
-#endif
-
    root_team =
       __kmp_allocate_team(
             root,
             1,                                                         // new_nproc
             1,                                                         // max_nproc
 #if OMPT_SUPPORT
-            ompt_parallel_id_1,
+            0, // root parallel id
 #endif
 #if OMP_40_ENABLED
             __kmp_nested_proc_bind.bind_types[0],
@@ -4314,17 +4308,13 @@ __kmp_initialize_root( kmp_root_t *root )
    /* allocate the hot team structure */
    KF_TRACE( 10, ( "__kmp_initialize_root: before hot_team\n" ) );
 
-#if OMPT_SUPPORT
-   ompt_parallel_id_t ompt_parallel_id_2 = 0; // __ompt_parallel_id_new(gtid);
-#endif
-
    hot_team =
       __kmp_allocate_team(
             root,
             1,                                                         // new_nproc
             __kmp_dflt_team_nth_ub * 2,                                // max_nproc
 #if OMPT_SUPPORT
-          ompt_parallel_id_2,
+            0, // root parallel id
 #endif
 #if OMP_40_ENABLED
             __kmp_nested_proc_bind.bind_types[0],
@@ -4915,13 +4905,9 @@ __kmp_register_root( int initial_thread )
 #endif // OMP_30_ENABLED
       KF_TRACE( 10, ( "__kmp_register_root: before serial_team\n" ) );
 
-#if OMPT_SUPPORT
-      ompt_parallel_id_t ompt_parallel_id_3 = 0; // __ompt_parallel_id_new(gtid);
-#endif
-    
       root_thread -> th.th_serial_team = __kmp_allocate_team( root, 1, 1,
 #if OMPT_SUPPORT
-          ompt_parallel_id_3,
+            0, // root parallel id
 #endif
 #if OMP_40_ENABLED
             proc_bind_default,
@@ -5358,15 +5344,10 @@ __kmp_allocate_thread( kmp_root_t *root, kmp_team_t *team, int new_tid )
 #endif // OMP_30_ENABLED
       KF_TRACE( 10, ( "__kmp_allocate_thread: before th_serial/serial_team\n" ) );
 
-#if OMPT_SUPPORT
-    kmp_info_t *ti = ompt_get_thread_gtid(new_gtid);
-    ompt_parallel_id_t ompt_parallel_id_4 = 0; // __ompt_parallel_id_new(new_gtid);
-#endif
-
       new_thr -> th.th_serial_team = serial_team =
          (kmp_team_t*) __kmp_allocate_team( root, 1, 1,
 #if OMPT_SUPPORT
-          ompt_parallel_id_4,
+               0, // root parallel id
 #endif
 #if OMP_40_ENABLED
                proc_bind_default,
