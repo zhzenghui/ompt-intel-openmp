@@ -2669,7 +2669,8 @@ __kmp_fork_call(
 #if OMPT_TRACE
                 lw_taskteam.ompt_task_info.frame.exit_runtime_frame = 0;
 
-      	        if (ompt_callbacks.ompt_callback (ompt_event_implicit_task_end))
+      	        if ((ompt_status == ompt_status_track_callback) &&
+      	            ompt_callbacks.ompt_callback (ompt_event_implicit_task_end))
                     ompt_callbacks.ompt_callback (ompt_event_implicit_task_end) (ompt_parallel_id, ompt_task_id);
 
                 __ompt_lw_taskteam_unlink(master_th);
@@ -2820,7 +2821,8 @@ __kmp_fork_call(
 
 #if OMPT_SUPPORT && OMPT_TRACE
                 my_task_id = lw_taskteam.ompt_task_info.task_id;
-                if (ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)) {
+                if ((ompt_status == ompt_status_track_callback) &&
+                    ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin)) {
                     ompt_callbacks.ompt_callback(ompt_event_implicit_task_begin) (ompt_parallel_id, my_task_id);
 		}
 #endif
@@ -2842,7 +2844,8 @@ __kmp_fork_call(
                 lw_taskteam.ompt_task_info.frame.exit_runtime_frame = 0;
 
 #if OMPT_TRACE
-                if (ompt_callbacks.ompt_callback (ompt_event_implicit_task_end))
+                if ((ompt_status == ompt_status_track_callback) &&
+                    ompt_callbacks.ompt_callback (ompt_event_implicit_task_end))
                     ompt_callbacks.ompt_callback (ompt_event_implicit_task_end) (ompt_parallel_id, my_task_id);
 #endif
 
@@ -8380,7 +8383,8 @@ __kmp_invoke_task_func( int gtid )
 
 #if OMPT_SUPPORT && OMPT_TRACE
     if (ompt_status & ompt_status_track) {
-        if (ompt_callbacks.ompt_callback(ompt_event_implicit_task_end)) {
+        if ((ompt_status == ompt_status_track_callback) &&
+            ompt_callbacks.ompt_callback(ompt_event_implicit_task_end)) {
             ompt_callbacks.ompt_callback(ompt_event_implicit_task_end)(my_parallel_id, my_task_id);
         }
         // the implicit task is not dead yet, so we can't clear its task id here

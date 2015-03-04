@@ -534,7 +534,8 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void)
         }
 #endif
       // task callback
-        if (ompt_callbacks.ompt_callback(ompt_event_implicit_task_end)) {
+        if ((ompt_status == ompt_status_track_callback) &&
+          ompt_callbacks.ompt_callback(ompt_event_implicit_task_end)) {
           ompt_callbacks.ompt_callback(ompt_event_implicit_task_end)
             (parallel_id, task_info->task_id);
         }
@@ -558,7 +559,8 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void)
 
 #if OMPT_SUPPORT 
         if (ompt_status & ompt_status_track) {
-          if (ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
+          if ((ompt_status == ompt_status_track_callback) &&
+            ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
             ompt_task_info_t *task_info = __ompt_get_taskinfo(0);
             ompt_callbacks.ompt_callback(ompt_event_parallel_end)
               (parallel_id, task_info->task_id);
