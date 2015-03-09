@@ -155,7 +155,13 @@ sub check_file($;$$) {
     if ( "$mic_os" eq "bsd" ) {
         execute( [ "x86_64-freebsd-objdump", "-d", $file ], -stdout => \@bulk );
     } else {
-        execute( [ "objdump", "-d", $file ], -stdout => \@bulk );
+	      if ( "$mic_arch" eq "knc" ) {
+            info ("___Using x86_64-k1om-linux-objdump");
+            execute( [ "x86_64-k1om-linux-objdump", "-d", $file ], -stdout => \@bulk );
+        } else {
+            info ("___Using objdump");
+            execute( [ "objdump", "-d", $file ], -stdout => \@bulk );
+        }; 
     }
 
     my $n = 0;
