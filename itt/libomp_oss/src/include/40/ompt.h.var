@@ -216,9 +216,10 @@ typedef uint64_t ompt_data_size_t;
 } ompt_target_data_map_t; //TODO: Really use this ugly typedef as map type?*/
 
 typedef enum{
-  ompt_data_map_IN   = 0,
-	ompt_data_map_OUT  = 1,
-  ompt_data_map_INOUT =2,
+  ompt_data_map_INVALID   = 0,
+  ompt_data_map_IN        = 1,
+	ompt_data_map_OUT       = 2,
+  ompt_data_map_INOUT     = 3,
 } ompt_data_map_t;
 
 typedef enum{
