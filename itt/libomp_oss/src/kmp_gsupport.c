@@ -288,19 +288,7 @@ __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
     kmp_team_t *the_team = thr->th.th_team;
 
     // if we have a serialized parallel region, the team info was never initialized with a task pointer.
-    if ((ompt_status & ompt_status_track) && the_team->t.ompt_team_info.microtask != NULL) {
-#if OMPT_TRACE 
-        ompt_parallel_id = the_team->t.ompt_team_info.parallel_id;
-        ompt_task_id = __ompt_get_task_id_internal(0);
-
-        // loop callback
-        if ((ompt_status == ompt_status_track_callback) &&
-             ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
-            ompt_callbacks.ompt_callback(ompt_event_loop_begin)
-              (ompt_parallel_id, ompt_task_id, (void *) task);
-        }
-#endif  // OMPT_TRACE
-
+    if (ompt_status & ompt_status_track) {
         // save enclosing task state; set current state for task
         enclosing_state = thr->th.ompt_thread_info.state;
         thr->th.ompt_thread_info.state = ompt_state_work_parallel; 
@@ -314,18 +302,11 @@ __kmp_GOMP_microtask_wrapper(int *gtid, int *npr, void (*task)(void *),
     task(data);
 
 #if OMPT_SUPPORT 
-    if ((ompt_status & ompt_status_track) && the_team->t.ompt_team_info.microtask != NULL) {
+    if (ompt_status & ompt_status_track) {
         // clear task frame
         ompt_frame->exit_runtime_frame = NULL;
         // restore enclosing state
         thr->th.ompt_thread_info.state = enclosing_state;
-#if OMPT_TRACE 
-        if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) {
-            ompt_task_info_t *task_info = __ompt_get_taskinfo(0);
-            ompt_callbacks.ompt_callback(ompt_event_loop_end)
-            (ompt_parallel_id, ompt_task_id);
-        }
-#endif  // OMPT_TRACE
     }
 #endif  // OMPT_SUPPORT
 }
