@@ -48,6 +48,10 @@
 #include "kmp_str.h"
 #include "kmp_error.h"
 
+#if OMPT_SUPPORT
+#include "ompt-specific.h"
+#endif
+
 // template for type limits
 template< typename T >
 struct i_maxmin {
@@ -107,6 +111,11 @@ __kmp_for_static_init(
     register UT          trip_count;
     register kmp_team_t *team;
 
+#if OMPT_SUPPORT && OMPT_TRACE
+    ompt_team_info_t *team_info = __ompt_get_teaminfo(0, NULL);
+    ompt_task_info_t *task_info = __ompt_get_taskinfo(0);
+#endif
+
     KE_TRACE( 10, ("__kmpc_for_static_init called (%d)\n", global_tid));
     #ifdef KMP_DEBUG
     {
@@ -150,15 +159,10 @@ __kmp_for_static_init(
         #endif
         KE_TRACE( 10, ("__kmpc_for_static_init: T#%d return\n", global_tid ) );
 #if OMPT_SUPPORT && OMPT_TRACE
-        kmp_info_t  *this_thr        = __kmp_threads[ global_tid ];
         if ((ompt_status == ompt_status_track_callback) &&
           (ompt_callbacks.ompt_callback(ompt_event_loop_begin))) {
-            tid  = __kmp_tid_from_gtid( global_tid );
-            team = __kmp_threads[ global_tid ]->th.th_team;
             ompt_callbacks.ompt_callback(ompt_event_loop_begin)(
-              team->t.ompt_team_info.parallel_id,
-              team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
-              team->t.ompt_team_info.microtask);
+              team_info->parallel_id, task_info->task_id, team_info->microtask);
         }
 #endif // OMPT_SUPPORT && OMPT_TRACE
         return;
@@ -201,8 +205,7 @@ __kmp_for_static_init(
         if ((ompt_status == ompt_status_track_callback) &&
           (ompt_callbacks.ompt_callback(ompt_event_loop_begin))) {
             ompt_callbacks.ompt_callback(ompt_event_loop_begin)(
-            team->t.ompt_team_info.parallel_id,
-            team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id, team->t.ompt_team_info.microtask);
+            team_info->parallel_id, task_info->task_id, team_info->microtask);
         }
 #endif // OMPT_SUPPORT  && OMPT_TRACE
         return;
@@ -228,8 +231,7 @@ __kmp_for_static_init(
         if ((ompt_status & ompt_status_track_callback) &&
           ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
             ompt_callbacks.ompt_callback(ompt_event_loop_begin)(
-              team->t.ompt_team_info.parallel_id,
-              team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id, team->t.ompt_team_info.microtask);
+              team_info->parallel_id, task_info->task_id, team_info->microtask);
         }
 #endif // OMPT_SUPPORT && OMPT_TRACE
         return;
@@ -342,8 +344,7 @@ __kmp_for_static_init(
     if ((ompt_status & ompt_status_track_callback) &&
       ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
         ompt_callbacks.ompt_callback(ompt_event_loop_begin)(
-          team->t.ompt_team_info.parallel_id,
-          team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id, team->t.ompt_team_info.microtask);
+          team_info->parallel_id, task_info->task_id, team_info->microtask);
     }
 #endif // OMPT_SUPPORT && OMPT_TRACE
     return;

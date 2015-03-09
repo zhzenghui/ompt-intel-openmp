@@ -57,6 +57,7 @@
 
 #if OMPT_SUPPORT
 #include "ompt-internal.h"
+#include "ompt-specific.h"
 #endif
 
 /* ------------------------------------------------------------------------ */
@@ -1160,13 +1161,12 @@ __kmp_dispatch_init(
     }
     #endif // ( KMP_STATIC_STEAL_ENABLED && USE_STEALING )
 #if OMPT_SUPPORT && OMPT_TRACE
-    int  tid = __kmp_tid_from_gtid( gtid );
     if ((ompt_status & ompt_status_track_callback)) {    
         if (ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
+            ompt_team_info_t *team_info = __ompt_get_teaminfo(0, NULL);
+            ompt_task_info_t *task_info = __ompt_get_taskinfo(0);
             ompt_callbacks.ompt_callback(ompt_event_loop_begin)(
-                team->t.ompt_team_info.parallel_id,
-                team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
-                team->t.ompt_team_info.microtask);
+                team_info->parallel_id, task_info->task_id, team_info->microtask);
         }
     }
 #endif // OMPT_SUPPORT && OMPT_TRACE
@@ -1239,19 +1239,6 @@ __kmp_dispatch_finish( int gtid, ident_t *loc )
         } // if
     } // if
     KD_TRACE(100, ("__kmp_dispatch_finish: T#%d returned\n", gtid ) );
-#if OMPT_SUPPORT && 0
-    kmp_info_t  *this_thr        = __kmp_threads[ gtid ];
-    kmp_team_t  *team            = this_thr -> th.th_team;
-    int  tid = __kmp_tid_from_gtid( gtid );
-    if ((ompt_status & ompt_status_track_callback)) {
-        if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) {
-            ompt_callbacks.ompt_callback(ompt_event_loop_end)(
-              team->t.ompt_team_info.parallel_id,
-              team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
-              (void*) team->t.ompt_unwrapped_pkfn);
-        }
-    }
-#endif
 }
 
 #ifdef KMP_GOMP_COMPAT
@@ -1339,14 +1326,12 @@ __kmp_dispatch_finish_chunk( int gtid, ident_t *loc )
 #if OMPT_SUPPORT && OMPT_TRACE
 #define OMPT_LOOP_END \                 
     if (status == 0) { \
-        kmp_info_t  *this_thr        = __kmp_threads[ gtid ]; \
-        kmp_team_t  *team            = this_thr -> th.th_team; \
-        int  tid = __kmp_tid_from_gtid( gtid ); \
         if ((ompt_status & ompt_status_track_callback)) { \
             if (ompt_callbacks.ompt_callback(ompt_event_loop_end)) { \
+              ompt_team_info_t *team_info = __ompt_get_teaminfo(0, NULL); \
+              ompt_task_info_t *task_info = __ompt_get_taskinfo(0); \
               ompt_callbacks.ompt_callback(ompt_event_loop_end)( \
-                team->t.ompt_team_info.parallel_id, \
-                team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id); \
+                team_info->parallel_id, task_info->task_id); \
             } \
         }\
     }
