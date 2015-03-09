@@ -2528,7 +2528,7 @@ __kmp_fork_call(
       // 1 - Intel code, master invokes microtask
       // 2 - MS native code, use special invoker
       kmp_int32   argc,
-      microtask_t unwrapped_task,
+      void       *unwrapped_task,
       microtask_t microtask,
       launch_t    invoker,
       /* TODO: revert workaround for Intel(R) 64 tracker #96 */
@@ -2599,7 +2599,7 @@ __kmp_fork_call(
       // if this is a fork from the GOMP support, the true task is inside this wrapper
       ompt_callbacks.ompt_callback(ompt_event_parallel_begin)
 	(ompt_task_id, ompt_frame, ompt_parallel_id, 
-	 team_size, (void *) unwrapped_task);
+	 team_size, unwrapped_task);
     }
 #endif
 
@@ -2637,7 +2637,7 @@ __kmp_fork_call(
             ompt_lw_taskteam_t lw_taskteam;
 
             if (ompt_status & ompt_status_track) {
-                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, (void *) unwrapped_task, ompt_parallel_id);
+                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, unwrapped_task, ompt_parallel_id);
                 lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
                 exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 
@@ -2691,7 +2691,7 @@ __kmp_fork_call(
       }
       parent_team->t.t_pkfn  = microtask;
 #if OMPT_SUPPORT
-      parent_team->t.ompt_unwrapped_pkfn = unwrapped_task;
+      parent_team->t.ompt_team_info.microtask = unwrapped_task;
 #endif
       parent_team->t.t_invoke = invoker;
       KMP_TEST_THEN_INC32( (kmp_int32*) &root->r.r_in_parallel );
@@ -2788,7 +2788,7 @@ __kmp_fork_call(
 #if OMPT_SUPPORT
         ompt_lw_taskteam_t *lwt = (ompt_lw_taskteam_t *) 
            __kmp_allocate(sizeof(ompt_lw_taskteam_t));
-	__ompt_lw_taskteam_init(lwt, master_th, gtid, (void *) unwrapped_task, ompt_parallel_id);
+	__ompt_lw_taskteam_init(lwt, master_th, gtid, unwrapped_task, ompt_parallel_id);
 	lwt->ompt_task_info.task_id = __ompt_task_id_new(gtid);
 	lwt->ompt_task_info.frame.exit_runtime_frame = 0;
 	__ompt_lw_taskteam_link(lwt, master_th);
@@ -2812,7 +2812,7 @@ __kmp_fork_call(
             ompt_lw_taskteam_t lw_taskteam;
 
             if (ompt_status & ompt_status_track) {
-                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, (void *) unwrapped_task, ompt_parallel_id);
+                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, unwrapped_task, ompt_parallel_id);
                 lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
                 exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 
@@ -2905,7 +2905,7 @@ __kmp_fork_call(
             ompt_lw_taskteam_t lw_taskteam;
 
             if (ompt_status & ompt_status_track) {
-                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, (void *) unwrapped_task, ompt_parallel_id);
+                __ompt_lw_taskteam_init(&lw_taskteam, master_th, gtid, unwrapped_task, ompt_parallel_id);
                 lw_taskteam.ompt_task_info.task_id = __ompt_task_id_new(gtid);
                 exit_runtime_p = &(lw_taskteam.ompt_task_info.frame.exit_runtime_frame);
 
@@ -3119,7 +3119,7 @@ __kmp_fork_call(
    team->t.t_parent     = parent_team;
    TCW_SYNC_PTR(team->t.t_pkfn, microtask);
 #if OMPT_SUPPORT
-   TCW_SYNC_PTR(team->t.ompt_unwrapped_pkfn, unwrapped_task);
+   TCW_SYNC_PTR(team->t.ompt_team_info.microtask, unwrapped_task);
 #endif
    team->t.t_invoke     = invoker;  /* TODO move this to root, maybe */
    team->t.t_ident      = loc;
@@ -8407,8 +8407,8 @@ __kmp_teams_master( microtask_t microtask, int gtid )
    this_thr->th.th_set_nproc = this_thr->th.th_set_nth_teams;
    __kmp_fork_call( loc, gtid, TRUE,
          team->t.t_argc,
-         microtask, // "unwrapped" task
-         microtask, // "wrapped" task
+         (void *)microtask, // "unwrapped" task
+         microtask,         // "wrapped" task
          VOLATILE_CAST(launch_t) __kmp_invoke_task_func,
          NULL );
    __kmp_join_call( loc, gtid, 1 ); // AC: last parameter "1" eliminates join barrier which won't work because

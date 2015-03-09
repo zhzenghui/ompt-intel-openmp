@@ -398,7 +398,7 @@ __kmp_GOMP_fork_call(ident_t *loc, int gtid, void (*unwrapped_task)(void *), mic
         ompt_task_info.frame.reenter_runtime_frame = NULL;
 #endif
 
-    rc = __kmp_fork_call(loc, gtid, FALSE, argc, VOLATILE_CAST(microtask_t) unwrapped_task, wrapper, __kmp_invoke_task_func,
+    rc = __kmp_fork_call(loc, gtid, FALSE, argc, VOLATILE_CAST(void *) unwrapped_task, wrapper, __kmp_invoke_task_func,
 #if (KMP_ARCH_X86_64 || KMP_ARCH_ARM) && KMP_OS_LINUX
       &ap
 #else

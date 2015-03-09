@@ -2380,7 +2380,6 @@ typedef struct KMP_ALIGN_CACHE kmp_base_team {
 #if OMPT_SUPPORT
     ompt_team_info_t        ompt_team_info;
     ompt_lw_taskteam_t      *ompt_serialized_team_info;
-    microtask_t             ompt_unwrapped_pkfn; /* for GOMP support, the unwrapped task pointer. */
 #endif
 
 #if KMP_ARCH_X86 || KMP_ARCH_X86_64
@@ -3126,7 +3125,7 @@ extern int  __kmp_barrier( enum barrier_type bt, int gtid, int is_split,
 extern void __kmp_end_split_barrier ( enum barrier_type bt, int gtid );
 
 extern int __kmp_fork_call( ident_t *loc, int gtid, int exec_master,
-  kmp_int32 argc, microtask_t unwrapped_task, microtask_t microtask, launch_t invoker,
+  kmp_int32 argc, void *unwrapped_task, microtask_t microtask, launch_t invoker,
 /* TODO: revert workaround for Intel(R) 64 tracker #96 */
 #if (KMP_ARCH_ARM || KMP_ARCH_X86_64) && KMP_OS_LINUX
                              va_list *ap
