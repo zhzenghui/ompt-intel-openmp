@@ -1398,7 +1398,7 @@ __kmpc_single(ident_t *loc, kmp_int32 global_tid)
                 ompt_callbacks.ompt_callback(ompt_event_single_in_block_begin)(
                   team->t.ompt_team_info.parallel_id,
                   team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
-                  (void*) team->t.t_pkfn);                 
+                  (void*) team->t.ompt_unwrapped_pkfn);
             }
         }else{
             if (ompt_callbacks.ompt_callback(ompt_event_single_others_begin)) {
