@@ -3336,10 +3336,6 @@ __kmp_join_call(ident_t *loc, int gtid
 
    master_th->th.th_ident = loc;
 
-#if OMPT_SUPPORT
-   ompt_parallel_id_t parallel_id = team->t.ompt_team_info.parallel_id;
-#endif
-
 #if OMP_30_ENABLED && KMP_DEBUG
    if ( __kmp_tasking_mode != tskm_immediate_exec ) {
       KA_TRACE( 20, ( "__kmp_join_call: T#%d, old team = %p old task_team = %p, th_task_team = %p\n",
@@ -3368,12 +3364,6 @@ __kmp_join_call(ident_t *loc, int gtid
 #endif /* OMP_40_ENABLED */
       __kmpc_end_serialized_parallel( loc, gtid );
 
-#if OMPT_SUPPORT
-      if (ompt_status == ompt_status_track_callback) {
-        __kmp_join_ompt(master_th, parent_team, parallel_id);
-      }
-#endif
-
       return;
    }
 
@@ -3388,6 +3378,11 @@ __kmp_join_call(ident_t *loc, int gtid
       __kmp_internal_join( loc, gtid, team );
    }
    KMP_MB();
+
+#if OMPT_SUPPORT
+   ompt_parallel_id_t parallel_id = team->t.ompt_team_info.parallel_id;
+#endif
+
 #if USE_ITT_BUILD
    if ( __itt_stack_caller_create_ptr ) {
       __kmp_itt_stack_caller_destroy( (__itt_caller)team->t.t_stack_id ); // destroy the stack stitching id after join barrier
