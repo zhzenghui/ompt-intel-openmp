@@ -563,8 +563,11 @@ xexpand(KMP_API_NAME_GOMP_PARALLEL_END)(void)
             ompt_callbacks.ompt_callback(ompt_event_parallel_end)
               (parallel_id, task_info->task_id);
           }
-          // FIXME johnmc - serial is not right if we are in a nested region. 
-          thr->th.ompt_thread_info.state = ompt_state_work_serial; 
+
+          thr->th.ompt_thread_info.state =
+            (((thr->th.th_team)->t.t_serialized) ?
+             ompt_state_work_serial : ompt_state_work_parallel);
+
           ompt_frame->exit_runtime_frame = NULL;
 #if 0
           parent_frame->reenter_runtime_frame = NULL;

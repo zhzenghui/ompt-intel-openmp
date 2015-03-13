@@ -3286,6 +3286,26 @@ __kmp_fork_call(
    return TRUE;
 }
 
+#if OMPT_SUPPORT
+static inline void
+__kmp_join_ompt(
+   kmp_info_t *thread, 
+   kmp_team_t *team, 
+   ompt_parallel_id_t parallel_id)
+{
+     if (ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
+       ompt_task_info_t *task_info = __ompt_get_taskinfo(0);
+       ompt_callbacks.ompt_callback(ompt_event_parallel_end)
+         (parallel_id, task_info->task_id);
+     }
+
+     // restore state outside the region
+     thread->th.ompt_thread_info.state = 
+       ((team->t.t_serialized) ? 
+        ompt_state_work_serial : ompt_state_work_parallel);
+}
+#endif
+
 
 void
 __kmp_join_call(ident_t *loc, int gtid
@@ -3316,6 +3336,10 @@ __kmp_join_call(ident_t *loc, int gtid
 
    master_th->th.th_ident = loc;
 
+#if OMPT_SUPPORT
+   ompt_parallel_id_t parallel_id = team->t.ompt_team_info.parallel_id;
+#endif
+
 #if OMP_30_ENABLED && KMP_DEBUG
    if ( __kmp_tasking_mode != tskm_immediate_exec ) {
       KA_TRACE( 20, ( "__kmp_join_call: T#%d, old team = %p old task_team = %p, th_task_team = %p\n",
@@ -3343,6 +3367,13 @@ __kmp_join_call(ident_t *loc, int gtid
       }
 #endif /* OMP_40_ENABLED */
       __kmpc_end_serialized_parallel( loc, gtid );
+
+#if OMPT_SUPPORT
+      if (ompt_status == ompt_status_track_callback) {
+        __kmp_join_ompt(master_th, parent_team, parallel_id);
+      }
+#endif
+
       return;
    }
 
@@ -3357,11 +3388,6 @@ __kmp_join_call(ident_t *loc, int gtid
       __kmp_internal_join( loc, gtid, team );
    }
    KMP_MB();
-
-#if OMPT_SUPPORT
-   ompt_parallel_id_t parallel_id = team->t.ompt_team_info.parallel_id;
-#endif
-
 #if USE_ITT_BUILD
    if ( __itt_stack_caller_create_ptr ) {
       __kmp_itt_stack_caller_destroy( (__itt_caller)team->t.t_stack_id ); // destroy the stack stitching id after join barrier
@@ -3416,6 +3442,13 @@ __kmp_join_call(ident_t *loc, int gtid
             other_threads[i]->th.th_task_state = master_th->th.th_task_state;
          }
       }
+
+#if OMPT_SUPPORT
+      if (ompt_status == ompt_status_track_callback) {
+        __kmp_join_ompt(master_th, parent_team, parallel_id);
+      }
+#endif
+
       return;
    }
 #endif /* OMP_40_ENABLED */
@@ -3512,11 +3545,8 @@ __kmp_join_call(ident_t *loc, int gtid
    __kmp_release_bootstrap_lock( &__kmp_forkjoin_lock );
 
 #if OMPT_SUPPORT
-   if ((ompt_status == ompt_status_track_callback) &&
-       ompt_callbacks.ompt_callback(ompt_event_parallel_end)) {
-      ompt_task_info_t *task_info = __ompt_get_taskinfo(0);
-      ompt_callbacks.ompt_callback(ompt_event_parallel_end)
-        (parallel_id, task_info->task_id);
+   if (ompt_status == ompt_status_track_callback) {
+      __kmp_join_ompt(master_th, parent_team, parallel_id);
    }
 #endif
 
@@ -6762,18 +6792,23 @@ __kmp_join_barrier( int gtid )
    KMP_MB();       /* Flush all pending memory write invalidates.  */
    KA_TRACE( 10, ("__kmp_join_barrier: T#%d(%d:%d) leaving\n",
             gtid, team_id, tid ));
-#if OMPT_SUPPORT && OMPT_TRACE
-   if ((ompt_status == ompt_status_track_callback) &&
-     ompt_callbacks.ompt_callback(ompt_event_barrier_end)) {
+
+#if OMPT_SUPPORT 
+   if (ompt_status == ompt_status_track_callback) {
+
+#if OMPT_TRACE
+     if (ompt_callbacks.ompt_callback(ompt_event_barrier_end)) {
        int  tid = __kmp_tid_from_gtid( gtid );
        ompt_callbacks.ompt_callback(ompt_event_barrier_end)(
          team->t.ompt_team_info.parallel_id,
          team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id);
-   }
-   // return to default state
-   this_thr->th.ompt_thread_info.state = ompt_state_overhead;
-#endif /* OMPT_SUPPORT && OMPT_TRACE */
+     }
+#endif /* OMPT_TRACE */
 
+     // return to default state
+     this_thr->th.ompt_thread_info.state = ompt_state_overhead;
+   }
+#endif /* OMPT_SUPPORT */
 }
 
 

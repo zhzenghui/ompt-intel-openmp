@@ -158,6 +158,7 @@ __ompt_init_internal()
            ompt_callbacks.ompt_callback(ompt_event_thread_begin)) {
         __ompt_thread_begin(ompt_thread_initial, gtid);
       }
+      root_thread->th.ompt_thread_info.state = ompt_state_work_serial;
     }
   }
 }
