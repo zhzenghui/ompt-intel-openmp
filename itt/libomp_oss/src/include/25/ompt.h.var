@@ -17,7 +17,7 @@
  * iteration macros 
  *****************************************************************************/
 
-#define FOREACH_OMPT_FN(macro) \
+#define FOREACH_OMPT_INQUIRY_FN(macro) \
 	macro (ompt_enumerate_state ) 		\
 						\
 	macro (ompt_set_callback) 		\
@@ -32,6 +32,14 @@
 	macro (ompt_get_parallel_team_size) 	\
 	macro (ompt_get_task_id) 		\
 	macro (ompt_get_thread_id)
+
+
+#define FOREACH_OMPT_PLACEHOLDER_FN(macro) \
+	macro (omp_idle) 			\
+	macro (omp_overhead) 			\
+	macro (omp_barrier_wait)		\
+	macro (omp_task_wait)			\
+	macro (omp_mutex_wait)
 
 
 #define FOREACH_OMPT_STATE(macro) \
@@ -361,6 +369,36 @@ OMPT_API_FUNCTION(ompt_task_id_t, ompt_get_task_id, (
 
 OMPT_API_FUNCTION(ompt_frame_t *, ompt_get_task_frame, (
   int depth
+));
+
+
+/*---------------------------------------------------------------------------
+ * PLACEHOLDERS FOR PERFORMANCE REPORTING 
+ *-------------------------------------------------------------------------*/
+
+/* idle */
+OMPT_API_FUNCTION(void, omp_idle, (
+  void
+));
+
+/* overhead */
+OMPT_API_FUNCTION(void, omp_overhead, (
+  void
+));
+
+/* barrier wait */
+OMPT_API_FUNCTION(void, omp_barrier_wait, (
+  void
+));
+
+/* task wait */
+OMPT_API_FUNCTION(void, omp_task_wait, (
+  void
+));
+
+/* mutex wait */
+OMPT_API_FUNCTION(void, omp_mutex_wait, (
+  void
 ));
 
 
