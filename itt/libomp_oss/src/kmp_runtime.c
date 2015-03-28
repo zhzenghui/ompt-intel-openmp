@@ -3291,6 +3291,17 @@ __kmp_fork_call(
 
 #if OMPT_SUPPORT
 static inline void
+__kmp_join_restore_state(
+   kmp_info_t *thread, 
+   kmp_team_t *team)
+{
+     // restore state outside the region
+     thread->th.ompt_thread_info.state = 
+       ((team->t.t_serialized) ? 
+        ompt_state_work_serial : ompt_state_work_parallel);
+}
+
+static inline void
 __kmp_join_ompt(
    kmp_info_t *thread, 
    kmp_team_t *team, 
@@ -3301,11 +3312,7 @@ __kmp_join_ompt(
        ompt_callbacks.ompt_callback(ompt_event_parallel_end)
          (parallel_id, task_info->task_id);
      }
-
-     // restore state outside the region
-     thread->th.ompt_thread_info.state = 
-       ((team->t.t_serialized) ? 
-        ompt_state_work_serial : ompt_state_work_parallel);
+     __kmp_join_restore_state(thread,team);
 }
 #endif
 
@@ -3366,6 +3373,12 @@ __kmp_join_call(ident_t *loc, int gtid
       }
 #endif /* OMP_40_ENABLED */
       __kmpc_end_serialized_parallel( loc, gtid );
+
+#if OMPT_SUPPORT
+      if (ompt_status == ompt_status_track_callback) {
+        __kmp_join_restore_state(master_th, parent_team);
+      }
+#endif
 
       return;
    }
