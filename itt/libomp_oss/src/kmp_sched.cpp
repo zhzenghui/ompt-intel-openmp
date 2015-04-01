@@ -228,7 +228,7 @@ __kmp_for_static_init(
         KE_TRACE( 10, ("__kmpc_for_static_init: T#%d return\n", global_tid ) );
 #if OMPT_SUPPORT && OMPT_TRACE
         kmp_info_t  *this_thr        = __kmp_threads[ global_tid ];
-        if ((ompt_status & ompt_status_track_callback) &&
+        if ((ompt_status == ompt_status_track_callback) &&
           ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
             ompt_callbacks.ompt_callback(ompt_event_loop_begin)(
               team_info->parallel_id, task_info->task_id, team_info->microtask);
@@ -341,7 +341,7 @@ __kmp_for_static_init(
     KE_TRACE( 10, ("__kmpc_for_static_init: T#%d return\n", global_tid ) );
 #if OMPT_SUPPORT && OMPT_TRACE
     kmp_info_t  *this_thr        = __kmp_threads[ global_tid ];
-    if ((ompt_status & ompt_status_track_callback) &&
+    if ((ompt_status == ompt_status_track_callback) &&
       ompt_callbacks.ompt_callback(ompt_event_loop_begin)) {
         ompt_callbacks.ompt_callback(ompt_event_loop_begin)(
           team_info->parallel_id, task_info->task_id, team_info->microtask);
