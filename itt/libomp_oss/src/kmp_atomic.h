@@ -432,9 +432,6 @@ static inline void
 __kmp_init_atomic_lock( kmp_atomic_lock_t *lck )
 {
     __kmp_init_queuing_lock( lck );
-#if OMPT_SUPPORT
-    __kmp_set_queuing_lock_flags(lck, kmp_lf_atomic);
-#endif
 }
 
 static inline void

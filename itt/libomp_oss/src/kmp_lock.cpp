@@ -1965,7 +1965,7 @@ __kmp_get_queuing_lock_flags( kmp_queuing_lock_t *lck )
     return lck->lk.flags;
 }
 
-void
+static void
 __kmp_set_queuing_lock_flags( kmp_queuing_lock_t *lck, kmp_lock_flags_t flags )
 {
     lck->lk.flags = flags;

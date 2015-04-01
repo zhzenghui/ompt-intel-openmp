@@ -95,7 +95,6 @@ typedef struct ident ident_t;
 typedef kmp_uint32 kmp_lock_flags_t;
 
 #define kmp_lf_critical_section 1
-#define kmp_lf_atomic           2
 
 //
 // When a lock table is used, the indices are of kmp_lock_index_t
@@ -395,11 +394,6 @@ extern int __kmp_test_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid );
 extern void __kmp_release_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid );
 extern void __kmp_init_queuing_lock( kmp_queuing_lock_t *lck );
 extern void __kmp_destroy_queuing_lock( kmp_queuing_lock_t *lck );
-
-#if OMPT_SUPPORT
-/* expose this so that locks for atomics can be tagged as such */
-extern void __kmp_set_queuing_lock_flags( kmp_queuing_lock_t *lck, kmp_lock_flags_t flags );
-#endif
 
 extern void __kmp_acquire_nested_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid );
 extern int __kmp_test_nested_queuing_lock( kmp_queuing_lock_t *lck, kmp_int32 gtid );
