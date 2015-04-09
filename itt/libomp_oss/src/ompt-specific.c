@@ -162,7 +162,7 @@ __ompt_init_internal()
     }
 
     // init target stuff
-    root_thread->th.ompt_target_info.target_data_id = 0;
+    root_thread->th.ompt_target_info.target_data_id_stack = NULL;
     root_thread->th.ompt_target_info.is_target_data = 1;
   }
 }

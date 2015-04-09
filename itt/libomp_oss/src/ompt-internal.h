@@ -73,8 +73,13 @@ typedef struct {
 #endif
 } ompt_thread_info_t;
 
+typedef struct ompt_target_data_id_stack_t {
+    ompt_target_id_t target_data_id;
+    struct ompt_target_data_id_stack_t *prev;
+} ompt_target_data_id_stack_t;
+
 typedef struct {
-  ompt_target_id_t target_data_id; /* Id for the current target data region */
+  ompt_target_data_id_stack_t *target_data_id_stack; /* Stack for the ids for the current target data region */
   int              is_target_data; /* boolean flag to differentiate target data and target update*/
 } ompt_target_info_t;
 

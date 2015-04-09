@@ -2138,13 +2138,18 @@ bool OffloadDescriptor::offload(
        if(target_info->is_target_data && vars_total == 0) is_target_data_begin = true;
 
        if(!is_update){
-         if(ompt_callbacks.ompt_callback(ompt_event_target_data_begin) && is_target_data_begin) {
+         if(is_target_data_begin) {
+           if(ompt_callbacks.ompt_callback(ompt_event_target_data_begin)) {
            ompt_callbacks.ompt_callback(ompt_event_target_data_begin)(task_id,
                                            target_id,
                                            device_id,
                                            0);//m_device.m_funcs[Engine::c_func_compute]); //FIXME
-           // Store target id for the corresponding target data end event
-           target_info->target_data_id = target_id;
+           }
+           // Store target id for the corresponding target data end event (push to stack)
+           ompt_target_data_id_stack_t *item = (ompt_target_data_id_stack_t*) malloc(sizeof(ompt_target_data_id_stack_t));
+           item->target_data_id = target_id;
+           item->prev = target_info->target_data_id_stack;
+           target_info->target_data_id_stack = item;
          }
        } else {
          if(ompt_callbacks.ompt_callback(ompt_event_target_update_begin)) {
@@ -2256,7 +2261,7 @@ bool OffloadDescriptor::offload(
 #if OMPT_SUPPORT
    if (ompt_status == ompt_status_track_callback) {
 
-     // target data end
+     // target end
      if (ompt_callbacks.ompt_callback(ompt_event_target_end) && !is_empty) {
        ompt_callbacks.ompt_callback(ompt_event_target_end)(task_id,
                                        target_id);
@@ -2269,9 +2274,16 @@ bool OffloadDescriptor::offload(
            ompt_callbacks.ompt_callback(ompt_event_target_data_end) ) &&
            is_empty ) {
        if(!is_update){
-         if(ompt_callbacks.ompt_callback(ompt_event_target_data_end) && !is_target_data_begin) {
-           ompt_callbacks.ompt_callback(ompt_event_target_data_end)(task_id,
-                                           target_info->target_data_id);
+         if(!is_target_data_begin && target_info->target_data_id_stack != NULL) {
+           if(ompt_callbacks.ompt_callback(ompt_event_target_data_end)) {
+             ompt_callbacks.ompt_callback(ompt_event_target_data_end)(task_id,
+                                           target_info->target_data_id_stack->target_data_id);
+           }
+           // target_data_end, pop out of the stack
+           ompt_target_data_id_stack_t *old = target_info->target_data_id_stack;
+           target_info->target_data_id_stack = target_info->target_data_id_stack->prev;
+           free(old);
+
            // Set to 1 again, because next call can be a target data again
            target_info->is_target_data = 1;
          }
