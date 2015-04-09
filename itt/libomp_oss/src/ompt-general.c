@@ -60,8 +60,6 @@ ompt_state_info_t ompt_state_info[] = {
 
 ompt_callbacks_t ompt_callbacks;
 
-_OMP_EXTERN char **ompd_dll_locations;
-
 
 
 /*****************************************************************************
@@ -311,6 +309,54 @@ OMPT_API_ROUTINE ompt_target_id_t ompt_get_target_id(void)
 #endif
 
 /*****************************************************************************
+ * placeholders
+ ****************************************************************************/
+
+
+OMPT_API_ROUTINE void omp_idle(void)
+{
+  // this function is a placeholder used to represent the calling context of
+  // idle OpenMP worker threads. It is not meant to be invoked.
+  assert(0); 
+}
+
+
+OMPT_API_ROUTINE void omp_overhead(void)
+{
+  // this function is a placeholder used to represent the OpenMP context of
+  // threads working in the OpenMP runtime.  It is not meant to be invoked.
+  assert(0); 
+}
+
+
+OMPT_API_ROUTINE void omp_barrier_wait(void)
+{
+  // this function is a placeholder used to represent the OpenMP context of
+  // threads waiting for a barrier in the OpenMP runtime. It is not meant 
+  // to be invoked.
+  assert(0); 
+}
+
+
+OMPT_API_ROUTINE void omp_task_wait(void)
+{
+  // this function is a placeholder used to represent the OpenMP context of
+  // threads waiting for a task in the OpenMP runtime. It is not meant 
+  // to be invoked.
+  assert(0); 
+}
+
+
+OMPT_API_ROUTINE void omp_mutex_wait(void)
+{
+  // this function is a placeholder used to represent the OpenMP context of
+  // threads waiting for a mutex in the OpenMP runtime. It is not meant 
+  // to be invoked.
+  assert(0); 
+}
+
+
+/*****************************************************************************
  * compatability
  ****************************************************************************/
 
@@ -351,7 +397,9 @@ static ompt_interface_fn_t ompt_fn_lookup(const char *s)
 #define ompt_interface_fn(fn) \
   if (strcmp(s, #fn) == 0) return (ompt_interface_fn_t) fn; 
 
-  FOREACH_OMPT_FN(ompt_interface_fn);
+  FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
+
+  FOREACH_OMPT_PLACEHOLDER_FN(ompt_interface_fn)
 
   return (ompt_interface_fn_t) 0;
 }

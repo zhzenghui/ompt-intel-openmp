@@ -317,7 +317,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     __kmp_fork_call( loc, gtid, TRUE,
             argc,
-            VOLATILE_CAST(microtask_t) microtask, // "unwrapped" task
+            VOLATILE_CAST(void *) microtask,      // "unwrapped" task
             VOLATILE_CAST(microtask_t) microtask, // "wrapped" task
             VOLATILE_CAST(launch_t)    __kmp_invoke_task_func,
 /* TODO: revert workaround for Intel(R) 64 tracker #96 */
@@ -389,7 +389,7 @@ __kmpc_fork_teams(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     __kmp_fork_call( loc, gtid, TRUE,
             argc,
-            VOLATILE_CAST(microtask_t) microtask,          // "unwrapped" task
+            VOLATILE_CAST(void *) microtask,               // "unwrapped" task
             VOLATILE_CAST(microtask_t) __kmp_teams_master, // "wrapped" task
             VOLATILE_CAST(launch_t)    __kmp_invoke_teams_master,
 #if (KMP_ARCH_X86_64 || KMP_ARCH_ARM) && KMP_OS_LINUX
@@ -1398,7 +1398,7 @@ __kmpc_single(ident_t *loc, kmp_int32 global_tid)
                 ompt_callbacks.ompt_callback(ompt_event_single_in_block_begin)(
                   team->t.ompt_team_info.parallel_id,
                   team->t.t_implicit_task_taskdata[tid].ompt_task_info.task_id,
-                  (void*) team->t.t_pkfn);                 
+                  team->t.ompt_team_info.microtask);
             }
         }else{
             if (ompt_callbacks.ompt_callback(ompt_event_single_others_begin)) {

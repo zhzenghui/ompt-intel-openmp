@@ -45,8 +45,8 @@ VERSION {
 # interface for liboffload.
         *ompt_*;
         __ompt_*;
-#        ompt_initialize;     # OMPT initialization interface
-#        ompt_control;        # OMPT control interface
+        ompt_initialize;     # OMPT initialization interface
+        ompt_control;        # OMPT control interface
         ompd_dll_locations;  # OMPD debugging library locations
         ompc_*;    # omp.h renames some standard functions to ompc_*.
         kmp_*;     # Intel extensions.
