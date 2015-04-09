@@ -472,7 +472,6 @@ OMPT_API_FUNCTION(void, omp_mutex_wait, (
 ));
 
 
->>>>>>> ompt-support-14x
 
 /****************************************************************************
  * INITIALIZATION FUNCTIONS
