@@ -145,9 +145,9 @@ options_target?=
 opts_target=$(options_target) -DHOST_LIBRARY=0
 ifeq ($(os_target), linux)
   opts_target+=-DLINUX
-  opts_host+=-DOMPT_SUPPORT
-  opts_host+=-I$(include_omp)
-  opts_host+=-I$(include_i118n)
+  opts_target+=-DOMPT_SUPPORT
+  opts_target+=-I$(include_omp)
+  opts_target+=-I$(include_i118n)
   opts_target+=-mmic
 endif
 
