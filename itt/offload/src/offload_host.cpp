@@ -2126,10 +2126,15 @@ bool OffloadDescriptor::offload(
        // If one of the one of the variables is allocated
        // it has to be the begin event.
        for(i=0; i<vars_total; i++){
+         // if size = 0 and is_stack_buf, then it has to be the stack buffer,
+         // because all scalars have size != 0
+         if (!vars[i].size && vars[i].flags.is_stack_buf) {
+             continue;
+         }
          if(!vars[i].alloc_if && !vars[i].free_if && !(target_info->is_target_data)){
            is_update = true;
          } else {
-           if(vars[i].alloc_if)
+           if(vars[i].alloc_if && !vars[i].size)
              is_target_data_begin = true;
          }
        }
